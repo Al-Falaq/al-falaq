@@ -6,6 +6,12 @@ namespace AlFalaq\AlFalak\Prayer\Enums;
 
 use AlFalaq\AlFalak\Prayer\ValueObjects\CalculationParameters;
 
+/**
+ * The 18 frozen calculation methods (Appendix A normative, M1 freeze).
+ *
+ * String values are lowercase canonical keys; NONE means "caller supplies
+ * every parameter, no defaults".
+ */
 enum CalculationMethod: string
 {
     case NONE = 'none';
@@ -28,7 +34,9 @@ enum CalculationMethod: string
     case BRUNEI = 'brunei';
 
     /**
-     * M0 stub: throws until Appendix A is frozen from PYTHON_PIN (M1).
+     * Shipped defaults for this method (M1; M0 throws until Appendix A frozen).
+     *
+     * @return CalculationParameters Defaults to customize via with*().
      */
     public function defaultParameters(): CalculationParameters
     {

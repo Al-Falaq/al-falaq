@@ -6,6 +6,9 @@ namespace AlFalaq\AlFalak\SharedKernel\Traits;
 
 use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
 
+/**
+ * Shared guard for `with*()` minute offsets (rejects bools, clamps range).
+ */
 trait HasWithersGuard
 {
     private static function guardOffsetMinutes(mixed $value, string $name, int $min = 0, int $max = 60): int

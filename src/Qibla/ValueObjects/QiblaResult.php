@@ -6,8 +6,20 @@ namespace AlFalaq\AlFalak\Qibla\ValueObjects;
 
 use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
 
+/**
+ * Qibla answer: initial bearing + great-circle/ellipsoid distance.
+ *
+ * Makkah-self (distance < 1 m) yields direction 0.0; never throws for the
+ * degenerate two (self, antipode).
+ */
 final readonly class QiblaResult
 {
+    /**
+     * Validated bearing + distance pair.
+     *
+     * @param float $direction Initial bearing [0, 360); 0.0 at Makkah-self.
+     * @param float $distanceKm Distance ≥ 0.
+     */
     public function __construct(
         public float $direction,
         public float $distanceKm,
@@ -23,6 +35,12 @@ final readonly class QiblaResult
         }
     }
 
+    /**
+     * Compass heading given caller-supplied magnetic declination.
+     *
+     * @param mixed $declinationEast East-positive declination in degrees.
+     * @return float Heading unwound to [0, 360).
+     */
     public function magneticHeading(mixed $declinationEast): float
     {
         if (is_bool($declinationEast) || ! is_int($declinationEast) && ! is_float($declinationEast)) {

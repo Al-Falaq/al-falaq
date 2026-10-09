@@ -4,8 +4,19 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalak\SharedKernel\Exceptions;
 
+/**
+ * Coordinates failed validation; the message states the valid range, the
+ * received value, and a doc link.
+ */
 final class InvalidCoordinatesException extends ValidationException
 {
+    /**
+     * Build an out-of-range error naming the axis and what was received.
+     *
+     * @param string $which Either 'lat' or 'lon'.
+     * @param mixed $received The offending value, echoed back for debugging.
+     * @return self Ready to throw.
+     */
     public static function outOfRange(string $which, mixed $received): self
     {
         $range = $which === 'lat' ? '[-90, 90]' : '[-180, 180]';
@@ -22,6 +33,11 @@ final class InvalidCoordinatesException extends ValidationException
         );
     }
 
+    /**
+     * Build a misshapen-array error (assoc arrays are rejected to avoid swaps).
+     *
+     * @return self Ready to throw.
+     */
     public static function malformedArray(): self
     {
         return new self(

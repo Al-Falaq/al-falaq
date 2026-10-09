@@ -6,6 +6,9 @@ namespace AlFalaq\AlFalak\SharedKernel\Traits;
 
 use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
 
+/**
+ * Shared finite-float guard: bools and NaN/INF never reach the trig.
+ */
 trait ValidatesFinite
 {
     /** @phpstan-assert float $value */

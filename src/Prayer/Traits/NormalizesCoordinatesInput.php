@@ -6,6 +6,9 @@ namespace AlFalaq\AlFalak\Prayer\Traits;
 
 use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
 
+/**
+ * Coerce Coordinates|[lat, lon] inputs at service boundaries (single place).
+ */
 trait NormalizesCoordinatesInput
 {
     /**

@@ -7,16 +7,33 @@ namespace AlFalaq\AlFalak\Prayer\ValueObjects;
 use AlFalaq\AlFalak\Prayer\Enums\Prayer;
 use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
 
+/**
+ * Per-prayer minute offsets keyed by Prayer value (method + caller layers).
+ */
 final readonly class PrayerAdjustments
 {
-    /** @param array<string, int> $offsets */
+    /**
+     * @param array<string, int> $offsets Prayer value → minutes (-60…60).
+     */
     private function __construct(public array $offsets) {}
 
+    /**
+     * Zero adjustments everywhere (ordering invariant holds).
+     *
+     * @return self Empty set.
+     */
     public static function empty(): self
     {
         return new self([]);
     }
 
+    /**
+     * Set one prayer's offset, keeping the rest.
+     *
+     * @param Prayer $prayer Which marker.
+     * @param int $minutes Offset in [-60, 60].
+     * @return self New set; this instance is unchanged.
+     */
     public function with(Prayer $prayer, int $minutes): self
     {
         if ($minutes < -60 || $minutes > 60) {
@@ -29,11 +46,23 @@ final readonly class PrayerAdjustments
         return new self($offsets);
     }
 
+    /**
+     * Read one prayer's offset (0 when unset).
+     *
+     * @param Prayer $prayer Which marker.
+     * @return int Offset minutes.
+     */
     public function for(Prayer $prayer): int
     {
         return $this->offsets[$prayer->value] ?? 0;
     }
 
+    /**
+     * Add two layers together (method + caller = effective offset).
+     *
+     * @param self $other Layer to add on top.
+     * @return self Merged set; neither input changes.
+     */
     public function combinedWith(self $other): self
     {
         $merged = $this->offsets;

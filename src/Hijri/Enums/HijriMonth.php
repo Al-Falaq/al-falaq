@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalak\Hijri\Enums;
 
+/**
+ * The twelve Hijri months with en/ar display labels (no intl needed).
+ */
 enum HijriMonth: int
 {
     case MUHARRAM = 1;
@@ -19,6 +22,12 @@ enum HijriMonth: int
     case DHU_AL_QADAH = 11;
     case DHU_AL_HIJJAH = 12;
 
+    /**
+     * Display name without ICU: English transliteration or Arabic.
+     *
+     * @param string $locale 'ar' for Arabic, anything else for English.
+     * @return string Month label in the requested script.
+     */
     public function label(string $locale): string
     {
         $en = [

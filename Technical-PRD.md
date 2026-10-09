@@ -215,7 +215,7 @@ tests/
 ├── Sweep/              # deterministic property sweeps (seeded mt_srand inline per test)
 ├── Wiring/             # plain-new constructibility smoke test (no container)
 ├── Goldens/            # CSV + Comparator.php + vectors citing Meeus page/ed., Takwim URL+date; generated from PYTHON_PIN
-└── ArchTest.php        # layer + final + no-Util-namespace + exception-hierarchy + no-Error-suffix + DateTimeImmutable-only + offline-IO rules
+└── ArchTest.php        # layer + final + no-Util-namespace + exception-hierarchy + no-Error-suffix + DateTimeImmutable-only + offline-IO + docblock rules
 examples/
 ├── basic.php, methods.php, qibla.php, sunnah.php, hijri.php, polar.php, timetable.php, bench.php
 ```
@@ -348,7 +348,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 }
 ```
 
-- **Tests**: plain PHPUnit 11 (no ecosystem runner); layout mirrors `src/` as contexts land (M0: `SharedKernel` + `Sweep` + `Wiring`); `tests/bootstrap.php` fixes UTC; `tests/Goldens/` (pinned-Python parity vectors + `Comparator.php` with dual tolerances + primary-source citations), `tests/Sweep/` (seeded `mt_srand(1234)` property: ordering invariant only when adjustments empty, round-trip `CivilDate`, unwind idempotence), `tests/ArchTest.php` (reflection-based layer bans per §7, `final` rules, `Util`-namespace ban, exception-hierarchy check, `Error`-suffix ban, `DateTimeImmutable`-only check, offline-IO bans), `tests/Wiring/` (plain-`new` constructibility smoke test). Coverage floor enforced by `tools/coverage_gate.php` via pcov on CI as a ratchet: M0 baseline `--min=20`, raised per milestone as contexts land, 95 at M5. Without a local driver the gate runs the suite and passes on green tests with a notice.
+- **Tests**: plain PHPUnit 11 (no ecosystem runner); layout mirrors `src/` as contexts land (M0: `SharedKernel` + `Sweep` + `Wiring`); `tests/bootstrap.php` fixes UTC; `tests/Goldens/` (pinned-Python parity vectors + `Comparator.php` with dual tolerances + primary-source citations), `tests/Sweep/` (seeded `mt_srand(1234)` property: ordering invariant only when adjustments empty, round-trip `CivilDate`, unwind idempotence), `tests/ArchTest.php` (reflection-based layer bans per §7, `final` rules, `Util`-namespace ban, exception-hierarchy check, `Error`-suffix ban, `DateTimeImmutable`-only check, offline-IO bans, docblock rules: every class-like and public/protected method needs a summary, every `@param $name`, every non-void `@return`), `tests/Wiring/` (plain-`new` constructibility smoke test). Coverage floor enforced by `tools/coverage_gate.php` via pcov on CI as a ratchet: M0 baseline `--min=20`, raised per milestone as contexts land, 95 at M5. Without a local driver the gate runs the suite and passes on green tests with a notice.
 - **Mutation** (nightly, not gate until M5, then gate): Infection MSI ≥ 85% on `Prayer/ + Hijri/ + Qibla/ + Astro/ + Moon/` (all math paths — previous Prayer+Hijri-only scope removed).
 - **CI** (`.github/workflows/test.yml`, push): `lint → cs → stan → test → bench` on PHP `8.2, 8.3, 8.4` × `ubuntu/windows` × `TZ=UTC / TZ=America/New_York`. Windows leg asserts UTC goldens (documents that PHP bundles its own tzdata; no OS tzdata requirement). Docs + release workflows mirror upstream.
 

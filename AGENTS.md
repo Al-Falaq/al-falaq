@@ -48,6 +48,12 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - `declare(strict_types=1)` everywhere; PER style via php-cs-fixer
   (`.php-cs-fixer.php`, `@PER` — a strict superset of PSR-12); PHPStan max +
   strict-rules clean.
+- Inline docs are a hard gate (`tests/ArchTest.php`, `#[Group('arch')]`):
+  every class-like and public/protected method in `src/` needs a docblock
+  summary; every parameter needs `@param $name`; every declared non-void
+  return needs `@return`. Engine-provided enum methods (`cases/from/tryFrom`)
+  and `tests/` are exempt. Docblock types must resolve (PHPStan validates
+  them) — use FQCN where the file has no import.
 - `src/{Context}/{Role}/`, one class per file, PSR-4 `AlFalaq\AlFalak\`.
 - `Contracts/`: interfaces only — driving ports (service API,
   `*Interface` suffix) and driven ports (strategy SPIs, short names).

@@ -11,13 +11,33 @@ use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalak\SharedKernel\ValueObjects\Minutes;
 
+/**
+ * Sunnah night markers (middle of night, thirds) from two UTC schedules (M2).
+ *
+ * Night runs today.maghrib → tomorrow.fajr; all math in UTC, DST-safe.
+ */
 final class SunnahCalculator
 {
+    /**
+     * Bind the two schedules bracketing one night (both UTC).
+     *
+     * @param PrayerSchedule $today Schedule holding tonight's maghrib.
+     * @param PrayerSchedule $tomorrow Schedule holding tomorrow's fajr.
+     */
     public function __construct(
         private readonly PrayerSchedule $today,
         private readonly PrayerSchedule $tomorrow,
     ) {}
 
+    /**
+     * Build from a calculator instead of precomputed schedules.
+     *
+     * @param PrayerTimesCalculator $calculator Single-day pipeline.
+     * @param Coordinates $coordinates Observer location.
+     * @param CivilDate $date Civil date of tonight's maghrib.
+     * @param CalculationParameters $parameters Method defaults + overrides.
+     * @return self Calculator bound to tonight + tomorrow night.
+     */
     public static function fromCalculator(
         PrayerTimesCalculator $calculator,
         Coordinates $coordinates,
@@ -30,6 +50,11 @@ final class SunnahCalculator
         return new self($today, $tomorrow);
     }
 
+    /**
+     * Compute middle of night, thirds, and tahajjud window (UTC).
+     *
+     * @return SunnahTimes Markers in UTC; display via forZone().
+     */
     public function calculate(): SunnahTimes
     {
         $maghrib = $this->today->maghrib;

@@ -12,6 +12,12 @@ use AlFalaq\AlFalak\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalak\SharedKernel\Traits\HasWithersGuard;
 use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
 
+/**
+ * Immutable prayer configuration: method defaults plus caller overrides.
+ *
+ * Build via CalculationMethod::X->defaultParameters(), then with*().
+ * Effective per-prayer offset = methodAdjustments + adjustments.
+ */
 final readonly class CalculationParameters
 {
     use HasWithersGuard;
@@ -33,6 +39,12 @@ final readonly class CalculationParameters
         public PrayerAdjustments $adjustments,
     ) {}
 
+    /**
+     * Override the Asr school, keeping everything else.
+     *
+     * @param Madhab $madhab Replacement school.
+     * @return self New parameters; this instance is unchanged.
+     */
     public function withMadhab(Madhab $madhab): self
     {
         return new self(
@@ -53,6 +65,12 @@ final readonly class CalculationParameters
         );
     }
 
+    /**
+     * Override observer elevation (dip-of-horizon), 0–8848 m.
+     *
+     * @param mixed $meters Finite number in [0, 8848]; bools reject.
+     * @return self New parameters; this instance is unchanged.
+     */
     public function withElevationM(mixed $meters): self
     {
         if (is_bool($meters) || ! is_int($meters) && ! is_float($meters)) {
@@ -83,6 +101,12 @@ final readonly class CalculationParameters
         );
     }
 
+    /**
+     * Override caller minute adjustments (added on top of method ones).
+     *
+     * @param PrayerAdjustments $adjustments Replacement caller adjustments.
+     * @return self New parameters; this instance is unchanged.
+     */
     public function withAdjustments(PrayerAdjustments $adjustments): self
     {
         return new self(
@@ -103,6 +127,12 @@ final readonly class CalculationParameters
         );
     }
 
+    /**
+     * Toggle Umm al-Qura Ramadan Isha mode (120 vs 90 min after Maghrib).
+     *
+     * @param bool $isRamadan True during Ramadan (UQU only; else throws later).
+     * @return self New parameters; this instance is unchanged.
+     */
     public function withRamadan(bool $isRamadan): self
     {
         return new self(

@@ -57,3 +57,5 @@ M5), CI matrix. Next: M1 prayer pipeline (blocked on Appendix A freeze +
   providers, or framework types in `src/`.
 - Coverage floor only moves up; lock stays PHP-8.2-installable via
   `config.platform`.
+- Docblocks on all public API (class + method + `@param`/`@return`) —
+  ArchTest fails without them; engine enum methods exempt.

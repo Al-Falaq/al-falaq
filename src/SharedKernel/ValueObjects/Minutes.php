@@ -6,10 +6,19 @@ namespace AlFalaq\AlFalak\SharedKernel\ValueObjects;
 
 use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
 
+/**
+ * UTC-only minute math (rounding and shifting prayer instants).
+ */
 final class Minutes
 {
     private function __construct() {}
 
+    /**
+     * Round to the minute, half-up, with hour/day rollover (UTC only).
+     *
+     * @param \DateTimeImmutable $utc Instant in UTC; other zones throw.
+     * @return \DateTimeImmutable Truncated/rounded copy, seconds zeroed.
+     */
     public static function roundedHalfUp(\DateTimeImmutable $utc): \DateTimeImmutable
     {
         if ($utc->getTimezone()->getName() !== 'UTC') {
@@ -32,6 +41,13 @@ final class Minutes
         return $truncated;
     }
 
+    /**
+     * Shift an instant by whole minutes (caller owns the zone).
+     *
+     * @param \DateTimeImmutable $utc Base instant.
+     * @param int $minutes Signed shift.
+     * @return \DateTimeImmutable Shifted copy.
+     */
     public static function add(\DateTimeImmutable $utc, int $minutes): \DateTimeImmutable
     {
         $moved = $utc->modify(sprintf('%+d minutes', $minutes));

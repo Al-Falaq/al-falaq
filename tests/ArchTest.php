@@ -37,9 +37,15 @@ final class ArchTest extends TestCase
             }
         }
 
-        $classes = array_values(array_filter(
+        $names = array_merge(
             get_declared_classes(),
-            static fn(string $class): bool => str_starts_with($class, 'AlFalaq\\AlFalak\\'),
+            get_declared_interfaces(),
+            get_declared_traits(),
+        );
+        $classes = array_values(array_filter(
+            $names,
+            static fn(string $class): bool => str_starts_with($class, 'AlFalaq\\AlFalak\\')
+                && ! str_starts_with($class, 'AlFalaq\\AlFalak\\Tests\\'),
         ));
 
         return $classes;
@@ -190,6 +196,148 @@ final class ArchTest extends TestCase
             foreach ($patterns as $pattern => $label) {
                 if (preg_match($pattern, $contents) === 1) {
                     $violations[] = $path . ': offline invariant violated (' . $label . ')';
+                }
+            }
+        }
+
+        self::assertSame([], $violations);
+    }
+
+    /**
+     * Extract the one-line summary from a docblock (first non-empty line).
+     *
+     * @return string empty when the docblock is missing or blank.
+     */
+    private static function docSummary(string|false $doc): string
+    {
+        if ($doc === false) {
+            return '';
+        }
+
+        $body = trim(preg_replace(['/^\/\*\*/', '/\*\/$/'], '', $doc));
+
+        foreach (explode("\n", $body) as $line) {
+            $cleaned = trim(preg_replace('/^\s*\*\s?/', '', $line));
+
+            if ($cleaned !== '' && ! str_starts_with($cleaned, '@')) {
+                return $cleaned;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Every class-like needs a docblock summary: DX starts at the FQCN.
+     */
+    public function testClassesHaveDocblocks(): void
+    {
+        $violations = [];
+
+        foreach (self::srcClasses() as $class) {
+            if (self::docSummary((new \ReflectionClass($class))->getDocComment()) === '') {
+                $violations[] = $class . ': missing class-level docblock summary';
+            }
+        }
+
+        self::assertSame([], $violations);
+    }
+
+    /**
+     * Every public/protected method needs a docblock: no undocumented API.
+     */
+    public function testPublicMethodsHaveDocblocks(): void
+    {
+        $violations = [];
+
+        foreach (self::srcClasses() as $class) {
+            foreach ((new \ReflectionClass($class))->getMethods() as $method) {
+                if ($method->isInternal()
+                    || (! $method->isPublic() && ! $method->isProtected())
+                    || $method->getDeclaringClass()->getName() !== $class
+                ) {
+                    continue;
+                }
+
+                if (self::docSummary($method->getDocComment()) === '') {
+                    $violations[] = $class . '::' . $method->getName() . ': missing method docblock';
+                }
+            }
+        }
+
+        self::assertSame([], $violations);
+    }
+
+    /**
+     * Every method parameter must have a matching @param $name tag.
+     *
+     * @return list<string> documented parameter names.
+     */
+    private static function docParams(string|false $doc): array
+    {
+        if ($doc === false) {
+            return [];
+        }
+
+        preg_match_all('/@param\s+[^\$]*\$(\w+)/', $doc, $matches);
+
+        return $matches[1];
+    }
+
+    public function testDocblocksDocumentParams(): void
+    {
+        $violations = [];
+
+        foreach (self::srcClasses() as $class) {
+            foreach ((new \ReflectionClass($class))->getMethods() as $method) {
+                if ($method->isInternal()
+                    || (! $method->isPublic() && ! $method->isProtected())
+                    || $method->getDeclaringClass()->getName() !== $class
+                ) {
+                    continue;
+                }
+
+                $documented = self::docParams($method->getDocComment());
+
+                foreach ($method->getParameters() as $param) {
+                    if (! in_array($param->getName(), $documented, true)) {
+                        $violations[] = $class . '::' . $method->getName()
+                            . ': missing @param $' . $param->getName();
+                    }
+                }
+            }
+        }
+
+        self::assertSame([], $violations);
+    }
+
+    /**
+     * Every declared non-void return type must have an @return tag.
+     */
+    public function testDocblocksDocumentReturn(): void
+    {
+        $violations = [];
+
+        foreach (self::srcClasses() as $class) {
+            foreach ((new \ReflectionClass($class))->getMethods() as $method) {
+                if ($method->isInternal()
+                    || (! $method->isPublic() && ! $method->isProtected())
+                    || $method->getDeclaringClass()->getName() !== $class
+                    || ! $method->hasReturnType()
+                ) {
+                    continue;
+                }
+
+                $type = $method->getReturnType();
+
+                if ($type instanceof \ReflectionNamedType
+                    && in_array($type->getName(), ['void', 'never'], true)
+                ) {
+                    continue;
+                }
+
+                if (preg_match('/@return\s+\S+/', (string) $method->getDocComment()) !== 1) {
+                    $violations[] = $class . '::' . $method->getName() . ': missing @return tag';
                 }
             }
         }
