@@ -22,6 +22,7 @@ jobs:
           extensions: date
           coverage: pcov
       - run: composer install --no-progress
+      - run: php -r 'exit(count(json_decode(file_get_contents("composer.lock"), true)["packages"]) === 0 ? 0 : 1);'
       - run: composer lint
       - run: composer cs
       - run: composer stan

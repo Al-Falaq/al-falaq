@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalak\SharedKernel\ValueObjects;
 
-use AlFalaq\AlFalak\SharedKernel\Concerns\ValidatesFinite;
+use AlFalaq\AlFalak\SharedKernel\Traits\ValidatesFinite;
 
 final readonly class Angle
 {

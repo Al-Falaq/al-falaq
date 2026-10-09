@@ -9,7 +9,7 @@ use AlFalaq\AlFalak\Prayer\Contracts\MaghribRule;
 use AlFalaq\AlFalak\Prayer\Enums\HighLatitudeRule;
 use AlFalaq\AlFalak\Prayer\Enums\Madhab;
 use AlFalaq\AlFalak\Prayer\Enums\PolarCircleRule;
-use AlFalaq\AlFalak\SharedKernel\Concerns\HasWithersGuard;
+use AlFalaq\AlFalak\SharedKernel\Traits\HasWithersGuard;
 use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
 
 final readonly class CalculationParameters

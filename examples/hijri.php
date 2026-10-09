@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . "/../vendor/autoload.php";
 
-use AlFalaq\AlFalak\Hijri\Services\TabularCalendar;
+use AlFalaq\AlFalak\Hijri\Strategies\TabularCalendar;
 use AlFalaq\AlFalak\Hijri\Services\GregorianToHijriConverter;
 
 try {

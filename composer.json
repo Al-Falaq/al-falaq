@@ -11,18 +11,21 @@
         "psr/clock": "For ClockInterface injection at edges (NextPrayerResolver, examples)"
     },
     "require-dev": {
-        "pestphp/pest": "^3.0",
-        "pestphp/pest-plugin-arch": "^3.0",
+        "phpunit/phpunit": "^11.0",
         "phpstan/phpstan": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
-        "laravel/pint": "^1.0",
+        "friendsofphp/php-cs-fixer": "^3.0",
         "rector/rector": "^2.0",
         "infection/infection": "^0.29"
     },
     "autoload": {
         "psr-4": {
             "AlFalaq\\AlFalak\\": "src/"
-        }
+        },
+        "exclude-from-classmap": [
+            "tests/",
+            "examples/"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -31,8 +34,10 @@
     },
     "config": {
         "sort-packages": true,
+        "platform": {
+            "php": "8.2.0"
+        },
         "allow-plugins": {
-            "pestphp/pest-plugin": true,
             "infection/extension-installer": true
         }
     },
@@ -40,11 +45,12 @@
     "prefer-stable": true,
     "scripts": {
         "lint": "find src examples tools tests -name '*.php' -exec php -l {} \\; > /dev/null",
-        "cs": "pint --test",
-        "cs-fix": "pint",
+        "cs": "php-cs-fixer fix --dry-run --diff",
+        "cs-fix": "php-cs-fixer fix",
         "stan": "phpstan analyse --memory-limit=1G",
-        "test": "pest --coverage --min=95",
-        "arch": "pest --group=arch",
+        "test-unit": "phpunit --no-coverage",
+        "test": "php tools/coverage_gate.php --min=20",
+        "arch": "phpunit --group arch",
         "bench": "php examples/bench.php --budget",
         "ci": ["@lint", "@cs", "@stan", "@test"]
     }

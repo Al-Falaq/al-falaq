@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalak\Prayer\Services;
 
-use AlFalaq\AlFalak\Prayer\Concerns\NormalizesCoordinatesInput;
+use AlFalaq\AlFalak\Prayer\Traits\NormalizesCoordinatesInput;
 use AlFalaq\AlFalak\Prayer\Contracts\HighLatitudeCorrection;
 use AlFalaq\AlFalak\Prayer\Contracts\PolarCircleHandler;
 use AlFalaq\AlFalak\Prayer\Contracts\PrayerTimesCalculatorInterface;

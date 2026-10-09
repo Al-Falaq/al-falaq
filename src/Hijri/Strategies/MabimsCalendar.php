@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Hijri\Services;
+namespace AlFalaq\AlFalak\Hijri\Strategies;
 
 use AlFalaq\AlFalak\Hijri\Contracts\HijriCalendar;
 use AlFalaq\AlFalak\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
 
-final class TabularCalendar implements HijriCalendar
+final class MabimsCalendar implements HijriCalendar
 {
     public function fromGregorian(\DateTimeImmutable|CivilDate $date): HijriDate
     {
-        throw new \LogicException('not implemented: M4 tabular pending Appendix B');
+        throw new \LogicException('not implemented: M4 MABIMS pending');
     }
 
     public function monthLength(int $year, int $month): int
     {
-        throw new \LogicException('not implemented: M4 tabular pending');
+        throw new \LogicException('not implemented: M4 MABIMS pending');
     }
 
     public function name(): string
     {
-        return 'tabular';
+        return 'mabims';
     }
 }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\Concerns;
+namespace AlFalaq\AlFalak\SharedKernel\Traits;
 
 use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
 

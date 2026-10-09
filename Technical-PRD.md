@@ -17,7 +17,7 @@
 Why a fresh architecture instead of mirroring `calculation/astronomy/data/util/`:
 
 - Python's layout is technical-layering + module functions + a `PrayerTimes.__init__` god-object. Idiomatic in Python, an anti-pattern in strict PHP.
-- PHP static analysis (PHPStan max), Pest Arch tests, and IDE DX reward explicit interfaces, small final classes, and `Enums/ValueObjects/Services/Strategies` role folders.
+- PHP static analysis (PHPStan max), reflection-based Arch tests, and IDE DX reward explicit interfaces, small final classes, and `Enums/ValueObjects/Services/Strategies` role folders.
 - Long-term cost: a mirror port is cheaper once, then every extension (new calendar, new geodetic model, new high-latitude rule) touches the god-object. A strategy-based design pays once, extends cleanly.
 
 ---
@@ -45,7 +45,7 @@ Why a fresh architecture instead of mirroring `calculation/astronomy/data/util/`
 
 | Persona | Use case | API entry |
 |---|---|---|
-| App dev (Laravel/Symfony/WordPress/plain) | Daily + monthly prayer timetable for a mosque site | `PrayerTimesCalculator::calculate()` + `TimetableService::monthly()` |
+| App dev (plain PHP) | Daily + monthly prayer timetable for a mosque site | `PrayerTimesCalculator::calculate()` + `TimetableService::monthly()` |
 | App dev | "What is next prayer / how long until?" badge | `NextPrayerResolver::resolve()` |
 | Mobile-backend dev | Qibla compass + distance | `QiblaCalculator::calculate()` |
 | Content dev | "Middle of night / last third" cards | `SunnahCalculator` |
@@ -121,20 +121,20 @@ All use cases must work **offline on shared hosting** (no extensions beyond `dat
 
 | NFR | Target |
 |---|---|
-| Zero deps | `composer show` runtime = `php` only. CI asserts `composer depends --no-dev` empty. |
+| Zero deps | `composer show` runtime = `php` only. CI asserts zero locked runtime packages (`composer.lock` `packages` empty). |
 | Stateless | No static mutable props, no singletons, no `date_default_timezone_set` calls. Clock injected only at edges (`NextPrayerResolver::resolve(now)`, examples); domain takes explicit dates. |
 | Offline | No `curl/file_get_contents(http)`, no `exec`, no GD/ICU requirement. ArchTest bans `curl_, file_get_contents('http', exec, shell_exec`. |
 | Determinism | Minute-rounded goldens identical across PHP 8.2–8.4 × UTC/non-UTC ini. Tests force `date_default_timezone_set('UTC')` in bootstrap + a dedicated non-UTC matrix leg asserting same UTC goldens. No `byte-identical float` claim. |
 | Precision | Prayer goldens match pinned-Python minute-rounded UTC values 100% (hard gate). Float intermediates: absolute tolerance `1e-9` deg on reference `linux/x86_64/PHP8.2` leg, `1e-7` deg on other legs (arm64/Windows/8.3/8.4). Haversine `clamp(a,0,1)` preserved. Tolerance logic lives in `tests/Goldens/Comparator.php`, not inline. |
 | Performance | Budgets enforced by `examples/bench.php --budget` in CI (not ad-hoc): single-day schedule p50 < 2ms on `ubuntu-latest` runner, 1-year `TimetableService` < 1s wall, peak memory < 16MB. Umm al-Qura data indexed by absolute day number (binary search). No memoization with unbounded growth; any cache is caller-owned. Budgets are informative in M1–M2, gates from M5. |
-| Compatibility | `php >=8.2`, 64-bit float assumed. 32-bit is explicitly **unsupported** (previous "best-effort" removed — it contradicted determinism; `composer.json` suggests 64-bit via `conflict` note + docs). No fibers, no 8.3-only syntax in `src/`. |
+| Compatibility | `php >=8.2`, 64-bit float assumed. 32-bit is explicitly **unsupported** (previous "best-effort" removed — it contradicted determinism; 64-bit requirement documented in `README.md`/docs — Composer has no arch-level constraint to express it). No fibers, no 8.3-only syntax in `src/`. |
 | Security | No unserialize, no eval, no dynamic include. All numeric inputs validated with `is_finite()` before trig; any residual `NaN`/`INF` → `AstronomicalException`, never returned. |
 
 ---
 
 ## 7. Architecture
 
-Hexagonal-lite + DDD bounded contexts. Dependency rule (enforced by Pest Arch):
+Hexagonal-lite + DDD bounded contexts. Dependency rule (enforced by reflection-based ArchTest):
 
 ```
 Domain (Contracts, VOs, Enums, Exceptions) has ZERO dependencies inward.
@@ -146,7 +146,7 @@ Nothing depends on Infrastructure (there is none). Examples/tests depend inward 
 - **Domain**: `SharedKernel`, `Prayer`, `Qibla`, `Moon`, `Hijri` value objects, enums, contracts, exceptions. Zero I/O, zero math beyond trivial normalization.
 - **Application**: `*Calculator` / `*Converter` / `TimetableService` / `NextPrayerResolver` orchestrating domain + `Astro`. No trig here.
 - **`Astro` internal**: `@internal` pure astronomy engine. Userland MUST NOT import it; public moon path is `Moon/` facade.
-- Framework adapters (Laravel provider, Symfony bundle, WP shortcode) live in separate repos/cookbooks; they depend on this package, never vice versa. `docs/integrations.md` recipes are CI-tested via stub container (see §11).
+- Host-app wiring (any PHP app, any framework, or none) lives outside this package: callers construct services with plain `new` / `::default()` (see `docs/integrations.md`). Adapters depend on this package, never vice versa.
 
 Python → PHP concept map:
 
@@ -174,7 +174,7 @@ src/
 │   ├── Exceptions/     # AlFalakException (base, extends RuntimeException),
 │   │                    # AstronomicalException, ConfigurationException, ValidationException,
 │   │                    # InvalidCoordinatesException extends ValidationException
-│   └── Concerns/       # traits only: ValidatesFinite, HasWithersGuard
+│   └── Traits/         # traits only: ValidatesFinite, HasWithersGuard
 ├── Prayer/
 │   ├── Contracts/      # PrayerTimesCalculatorInterface, HighLatitudeCorrection,
 │   │                    # IshaRule, MaghribRule, AsrRule, PolarCircleHandler, TwilightModel,
@@ -188,7 +188,7 @@ src/
 │   │                    # ShafiAsr, HanafiAsr, SeasonAdjustedTwilight,
 │   │                    # NearestLatitudeHandler, NearestDayHandler, MakkahHandler, ThrowHandler
 │   ├── Exceptions/     # UndefinedScheduleException extends AstronomicalException
-│   └── Concerns/       # NormalizesCoordinatesInput (array|VO coercion, single place)
+│   └── Traits/         # NormalizesCoordinatesInput (array|VO coercion, single place)
 ├── Qibla/
 │   ├── Contracts/      # GeodesyCalculator
 │   ├── ValueObjects/   # QiblaResult
@@ -203,31 +203,32 @@ src/
 │   ├── Contracts/      # HijriCalendar, OffsetStore
 │   ├── Enums/          # HijriMonth (with label('en'|'ar'))
 │   ├── ValueObjects/   # HijriDate
-│   ├── Services/       # GregorianToHijriConverter, TabularCalendar, UmmAlQuraCalendar, MabimsCalendar
+│   ├── Services/       # GregorianToHijriConverter (orchestration; calendars selected by caller)
+│   ├── Strategies/     # TabularCalendar, UmmAlQuraCalendar, MabimsCalendar (calendar variants)
 │   └── Exceptions/     # HijriOutOfRangeException extends ValidationException
 └── Astro/              # @internal
     ├── Contracts/      # SolarModel
     ├── ValueObjects/   # SolarPosition, SolarTime, LunarPosition
     └── Services/       # MeanSolarCalculator, DeltaTProvider, GeodesyEngine
 tests/
-├── SharedKernel/…      # mirrors src/
-├── Prayer/… ├── Qibla/… ├── Moon/… ├── Hijri/… ├── Astro/…
+├── SharedKernel/       # mirrors src/SharedKernel/ (context suites land with M1+)
+├── Sweep/              # deterministic property sweeps (seeded mt_srand inline per test)
+├── Wiring/             # plain-new constructibility smoke test (no container)
 ├── Goldens/            # CSV + Comparator.php + vectors citing Meeus page/ed., Takwim URL+date; generated from PYTHON_PIN
-├── Sweep/              # deterministic property sweeps (seeded mt_srand)
-└── ArchTest.php        # layer + final/readonly/trait + no-Astro-import + no-Util-namespace rules
+└── ArchTest.php        # layer + final + no-Util-namespace + exception-hierarchy + no-Error-suffix + DateTimeImmutable-only + offline-IO rules
 examples/
 ├── basic.php, methods.php, qibla.php, sunnah.php, hijri.php, polar.php, timetable.php, bench.php
 ```
 
 Role rules:
 
-- `Contracts/`: interfaces only. Name without `Interface` suffix except the two service interfaces that need it for container autodiscovery (`PrayerTimesCalculatorInterface` kept for BC with Laravel/Symfony). Exactly one responsibility each; no default method bodies except pure delegation.
+- `Contracts/`: interfaces only. Service contracts keep the explicit `Interface` suffix (`PrayerTimesCalculatorInterface`, `TimetableServiceInterface`, `NextPrayerResolverInterface`) so architectural roles stay transparent; all other contracts use short names. Exactly one responsibility each; no default method bodies except pure delegation.
 - `Enums/`: native `enum` only. Behavior limited to self-description (`values()`, `defaultParameters()` on `CalculationMethod` reading Appendix A).
 - `ValueObjects/`: `final readonly`, validated in ctor, `equals/compareTo/toArray/isoformat/forZone` behavior allowed, no service calls, no trig.
 - `Services/`: `final`, constructor-promoted strategy deps with defaults via `default()` named ctor, single command method (plus `defaultFor()` where method-dependent). No statics holding state. Qibla injection is ctor-only.
 - `Strategies/`: `final`, implement one `Contracts/` interface, no branching on sibling type.
 - `Exceptions/`: one per file, `*Exception` suffix, hierarchy `AlFalakException ← {AstronomicalException, ConfigurationException, ValidationException} ← context-specific`. Static ctors (`::outOfRange(...)`) preferred. `*Error` names are forbidden by ArchTest (regex `Error\.php$`).
-- `Concerns/`: traits only, stateless, `private` helpers. Any trait needing state is rejected in review — convert to collaborator.
+- `Traits/`: traits only, stateless, `private` helpers. Any trait needing state is rejected in review — convert to collaborator.
 
 ---
 
@@ -240,7 +241,7 @@ use AlFalaq\AlFalak\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalak\Prayer\Enums\Prayer;
 use AlFalaq\AlFalak\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalak\Qibla\Services\QiblaCalculator;
-use AlFalaq\AlFalak\Hijri\Services\TabularCalendar;
+use AlFalaq\AlFalak\Hijri\Strategies\TabularCalendar;
 use AlFalaq\AlFalak\Hijri\Services\GregorianToHijriConverter;
 use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
@@ -278,14 +279,14 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 - **One obvious path**: `*Calculator::default()` static factory wires recommended strategies; advanced users inject alternatives explicitly. No service-locator, no container config to learn.
 - **Errors that teach**: `InvalidCoordinatesException::outOfRange('lat', 91.0)` message includes valid range + received value + doc link; `UndefinedScheduleException` message includes coords/date + which `PolarCircleRule` would resolve it. No `NaN`, no `null` times, no silent clamping (except documented polar-boundary `asr` saturation).
 - **Bilingual naming awareness**: `syuruk` (= sunrise alias, MY/SG), `ishraq`/`dhuha` offsets documented as configurable conventions per Appendix A, not universal fiqh — prevents misuse. `HijriMonth::label('ar')` gives Arabic names without intl.
-- **Docs**: `README` quickstart + `docs/{prayer,qibla,sunnah,moon,hijri,migration,integrations}.md` (relative links, versioned snapshots frozen per release like upstream). Examples runnable via `php examples/basic.php`. `docs/integrations.md` recipes are executed in CI.
+- **Docs**: `README` quickstart + `docs/{prayer,qibla,sunnah,moon,hijri,migration,integrations}.md` (relative links, versioned snapshots frozen per release like upstream). Examples runnable via `php examples/basic.php`. `docs/integrations.md` shows plain-`new` wiring (smoke-tested by `tests/Wiring/`).
 
 ## 11. Developer Experience (DX)
 
 - **Install**: `composer require al-falaq/al-falaq`, no ext beyond `date`, works on shared hosting PHP 8.2 (64-bit).
 - **IDE-first**: `final readonly` + enums + promoted ctor types give complete autocomplete; PHPStan level max keeps refactoring safe; `composer ci` runs `lint + cs + stan + test` in one command (single canonical name; `check` alias removed).
 - **Debuggability**: value objects implement `__toString`/`toArray` (JSON-able schedule per Appendix C frozen schema); exceptions carry structured context (`coordinates`, `civilDate`, `rule`) as typed props, not string-parsing.
-- **Testability**: pure domain → plain `new` in tests, no mocks needed except strategy doubles via anonymous classes; clock never read inside domain so no time-freezing library required (`NextPrayerResolver` takes explicit `$nowUtc`); `Sweep/` seeded via `mt_srand(1234)` constant in `tests/bootstrap.php` for reproducibility.
+- **Testability**: pure domain → plain `new` in tests, no mocks needed except strategy doubles via anonymous classes; clock never read inside domain so no time-freezing library required (`NextPrayerResolver` takes explicit `$nowUtc`); `Sweep/` seeds via `mt_srand(1234)` inline per test for reproducibility, `tests/bootstrap.php` fixes UTC.
 - **Contribution path**: `CONTRIBUTING.md` (setup, `composer ci`, golden-citation rule: every numeric vector cites Meeus page+ed. or Takwim URL+date + `PYTHON_PIN`), `ARCHITECTURE.md` (this doc's §7–8 condensed), PR template requiring test evidence.
 - **BC policy**: SemVer; public API = `src/{SharedKernel,Prayer,Qibla,Moon,Hijri}/{Contracts,Enums,ValueObjects,Services}` + documented `*Exception`s. `Astro` is `@internal` and may break minor-to-minor.
 
@@ -302,13 +303,13 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 - **New rule variant** (e.g., alternative twilight model): new `Contracts` implementation + wiring in `defaultFor()` behind config flag; old behavior preserved.
 - **New calendar**: implement 3-method `HijriCalendar` interface; sunset-rollover and offsets compose automatically via converter.
 - **New geodetic model** (e.g., Vincenty fallback if Karney spike fails): implement `GeodesyCalculator`; `QiblaCalculator` ctor accepts it. No string-flag proliferation.
-- **Framework embedding**: thin userland adapters in `docs/integrations.md` (Laravel `AlFalakServiceProvider` returning `PrayerTimesCalculator::default()`, Symfony `al_falak.yaml` service def, WP helper functions) — none in this repo's `src/`, but recipes are smoke-tested in CI via `tests/Integrations/` stubs.
+- **Host-app wiring**: `docs/integrations.md` shows plain-`new` construction (`PrayerTimesCalculator::default()`, explicit strategy injection) — no service providers, no config files, none of it in this repo's `src/`. `tests/Wiring/` smoke-tests that every service is constructible in one expression.
 - **Output shapes**: `PrayerSchedule::all()` + `toArray()` per Appendix C feed JSON APIs, iCal generators, and PDF timetables without library changes.
 
 ## 14. Future-Proofness
 
 - **PHP trajectory**: 8.2 baseline avoids 8.3+ lock-in; code is `Rector`-upgradeable (typed constants, readonly evolution). When `php: >=8.3` becomes safe (shared-hosting lag ~2y), adopt typed-class-constants and `#[\Override]` mechanically.
-- **Standards track**: PER-3.0 via Pint upgrades; PHPStan max + strict-rules absorb new checks; Pest 3 baseline (Pest 2 line retired 2026-10-09 per init decision for PHP 8.4 support). `psr/clock` accepted as `suggest` for edge injection (decided §20); domain never type-hints it, only `NextPrayerResolver`/examples accept `ClockInterface` optionally.
+- **Standards track**: PER-3.0 via php-cs-fixer upgrades; PHPStan max + strict-rules absorb new checks; PHPUnit 11 baseline (PHP 8.2-compatible, no framework-ecosystem runner). `psr/clock` accepted as `suggest` for edge injection (decided §20); domain never type-hints it, only `NextPrayerResolver`/examples accept `ClockInterface` optionally.
 - **Astronomy track**: `DeltaTProvider` contract isolates polynomial-vs-table updates; Meeus citations pin formulas so future errata map to single `Astro` classes. Lunar/moon-sighting evaluators versioned (`Mabims1992Evaluator` vs `NeoMabims2021Evaluator`) so criteria revisions coexist.
 - **Deprecation discipline**: `@deprecated` + `E_USER_DEPRECATED` one minor before removal; `CHANGELOG.md` (Keep-a-Changelog) + `UPGRADE.md` per major; `composer audit` + `roave/security-advisories` (dev) in CI.
 
@@ -326,28 +327,28 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
   "require": { "php": ">=8.2" },
   "suggest": { "psr/clock": "For ClockInterface injection at edges (NextPrayerResolver, examples)" },
   "require-dev": {
-    "pestphp/pest": "^3",
-    "pestphp/pest-plugin-arch": "^3",
-    "phpstan/phpstan": "^2",
-    "phpstan/phpstan-strict-rules": "^2",
-    "laravel/pint": "^1",
-    "rector/rector": "^2",
+    "phpunit/phpunit": "^11.0",
+    "phpstan/phpstan": "^2.0",
+    "phpstan/phpstan-strict-rules": "^2.0",
+    "friendsofphp/php-cs-fixer": "^3.0",
+    "rector/rector": "^2.0",
     "infection/infection": "^0.29"
   },
   "scripts": {
-    "lint": "find src examples -name '*.php' -exec php -l {} \\;",
-    "cs": "pint --test",
-    "cs-fix": "pint",
+    "lint": "find src examples tools tests -name '*.php' -exec php -l {} \\;",
+    "cs": "php-cs-fixer fix --dry-run --diff",
+    "cs-fix": "php-cs-fixer fix",
     "stan": "phpstan analyse --memory-limit=1G",
-    "test": "pest --coverage --min=95",
-    "arch": "pest --group=arch",
+    "test-unit": "phpunit --no-coverage",
+    "test": "php tools/coverage_gate.php --min=20",
+    "arch": "phpunit --group arch",
     "bench": "php examples/bench.php --budget",
     "ci": ["@lint", "@cs", "@stan", "@test"]
   }
 }
 ```
 
-- **Tests**: PHPUnit-via-Pest; layout mirrors `src/`; `tests/Goldens/` (pinned-Python parity vectors + `Comparator.php` with dual tolerances + primary-source citations), `tests/Sweep/` (seeded `mt_srand(1234)` property: ordering invariant only when adjustments empty, round-trip `CivilDate`, unwind idempotence), `tests/ArchTest.php` (layer bans per §7, `final`/`readonly`/trait rules, `Error`-suffix ban, `DateTimeInterface`-union ban, `Astro`-import ban outside `Moon/Services`, `Util`-namespace ban). Coverage `--min=95` via pcov on CI.
+- **Tests**: plain PHPUnit 11 (no ecosystem runner); layout mirrors `src/` as contexts land (M0: `SharedKernel` + `Sweep` + `Wiring`); `tests/bootstrap.php` fixes UTC; `tests/Goldens/` (pinned-Python parity vectors + `Comparator.php` with dual tolerances + primary-source citations), `tests/Sweep/` (seeded `mt_srand(1234)` property: ordering invariant only when adjustments empty, round-trip `CivilDate`, unwind idempotence), `tests/ArchTest.php` (reflection-based layer bans per §7, `final` rules, `Util`-namespace ban, exception-hierarchy check, `Error`-suffix ban, `DateTimeImmutable`-only check, offline-IO bans), `tests/Wiring/` (plain-`new` constructibility smoke test). Coverage floor enforced by `tools/coverage_gate.php` via pcov on CI as a ratchet: M0 baseline `--min=20`, raised per milestone as contexts land, 95 at M5. Without a local driver the gate runs the suite and passes on green tests with a notice.
 - **Mutation** (nightly, not gate until M5, then gate): Infection MSI ≥ 85% on `Prayer/ + Hijri/ + Qibla/ + Astro/ + Moon/` (all math paths — previous Prayer+Hijri-only scope removed).
 - **CI** (`.github/workflows/test.yml`, push): `lint → cs → stan → test → bench` on PHP `8.2, 8.3, 8.4` × `ubuntu/windows` × `TZ=UTC / TZ=America/New_York`. Windows leg asserts UTC goldens (documents that PHP bundles its own tzdata; no OS tzdata requirement). Docs + release workflows mirror upstream.
 
@@ -381,7 +382,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 - **M2 qibla+sunnah**: spherical + WGS84 (Karney spike accepted or Vincenty fallback recorded), magnetic hook, DST-safe sunnah + `forZone()`; goldens green.
 - **M3 moon**: public `Moon/` facade + `CrescentGeometry` fields + Yallop/Odeh/MABIMS evaluators with cited vectors; no userland `Astro` imports.
 - **M4 hijri**: Tabular + UQ (1356–1500 + provenance) + MABIMS + rollover (coords+params required) + `offsetDaysFor()`; bridge-parity tests with explicit-zone cases (naive-doc removed).
-- **M5 hardening**: ArchTest + PHPStan max + Pint clean + 95% coverage + Infection MSI≥85% on all math contexts + `bench --budget` gate + docs/examples + 1.0.0 tag.
+- **M5 hardening**: ArchTest + PHPStan max + php-cs-fixer clean + 95% coverage + Infection MSI≥85% on all math contexts + `bench --budget` gate + docs/examples + 1.0.0 tag.
 
 Done = `composer ci` green on all matrix legs + minute-goldens 100% + float tolerances per §6 + `bench --budget` pass + docs build with relative links intact.
 

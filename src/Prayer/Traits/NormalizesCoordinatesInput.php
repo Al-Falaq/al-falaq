@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Concerns;
+namespace AlFalaq\AlFalak\Prayer\Traits;
 
 use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
 
