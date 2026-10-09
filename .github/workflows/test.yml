@@ -1,0 +1,29 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+        os: [ubuntu-latest, windows-latest]
+        tz: ['UTC', 'America/New_York']
+    runs-on: ${{ matrix.os }}
+    env:
+      TZ: ${{ matrix.tz }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: date
+          coverage: pcov
+      - run: composer install --no-progress
+      - run: composer lint
+      - run: composer cs
+      - run: composer stan
+      - run: composer test
+      - run: composer bench

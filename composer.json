@@ -1,0 +1,51 @@
+{
+    "name": "al-falaq/al-falaq",
+    "description": "Offline, zero-dependency PHP library for Islamic astronomy: prayer times, Qibla, Sunnah markers, crescent visibility, and Hijri conversion.",
+    "keywords": ["islam", "prayer-times", "qibla", "hijri", "astronomy", "crescent", "umm-al-qura"],
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.2"
+    },
+    "suggest": {
+        "psr/clock": "For ClockInterface injection at edges (NextPrayerResolver, examples)"
+    },
+    "require-dev": {
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-arch": "^3.0",
+        "phpstan/phpstan": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "laravel/pint": "^1.0",
+        "rector/rector": "^2.0",
+        "infection/infection": "^0.29"
+    },
+    "autoload": {
+        "psr-4": {
+            "AlFalaq\\AlFalak\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AlFalaq\\AlFalak\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "infection/extension-installer": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts": {
+        "lint": "find src examples tools tests -name '*.php' -exec php -l {} \\; > /dev/null",
+        "cs": "pint --test",
+        "cs-fix": "pint",
+        "stan": "phpstan analyse --memory-limit=1G",
+        "test": "pest --coverage --min=95",
+        "arch": "pest --group=arch",
+        "bench": "php examples/bench.php --budget",
+        "ci": ["@lint", "@cs", "@stan", "@test"]
+    }
+}

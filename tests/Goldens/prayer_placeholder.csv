@@ -1,0 +1,3 @@
+method,date,latitude,longitude,imsak,fajr,sunrise,dhuhr,asr,maghrib,isha,source
+# M1: generated from PYTHON_PIN via tools/export_goldens.py --pin <sha> --path <local-path>
+# Placeholder until Appendix A freeze. Every row MUST cite Meeus page/ed. or Takwim URL+date.
