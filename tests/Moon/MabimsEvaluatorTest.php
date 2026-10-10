@@ -68,4 +68,29 @@ final class MabimsEvaluatorTest extends TestCase
 
         (new NeoMabims2021Evaluator())->evaluate($this->geometry(INF, 7.0, 5.0));
     }
+
+    public function test1992AgeEpsilonEdges(): void
+    {
+        $evaluator = new Mabims1992Evaluator();
+
+        self::assertFalse($evaluator->evaluate($this->geometry(1.0, 2.0, 7.9999))->visible);
+        self::assertTrue($evaluator->evaluate($this->geometry(1.0, 2.0, 8.0))->visible);
+        self::assertTrue($evaluator->evaluate($this->geometry(1.0, 2.0, 8.0001))->visible);
+    }
+
+    public function testNeoElongationEpsilonEdges(): void
+    {
+        $evaluator = new NeoMabims2021Evaluator();
+
+        self::assertFalse($evaluator->evaluate($this->geometry(3.0, 6.3999, 5.0))->visible);
+        self::assertTrue($evaluator->evaluate($this->geometry(3.0, 6.4001, 5.0))->visible);
+    }
+
+    public function test1992AltitudeElongationEpsilon(): void
+    {
+        $evaluator = new Mabims1992Evaluator();
+
+        self::assertFalse($evaluator->evaluate($this->geometry(1.9999, 3.0, 5.0))->visible);
+        self::assertFalse($evaluator->evaluate($this->geometry(2.0, 2.9999, 5.0))->visible);
+    }
 }
