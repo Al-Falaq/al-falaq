@@ -50,6 +50,7 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   `{dhuhr:+5,maghrib:+3}`).
   TURKEY/KEMENAG/MUIS/BRUNEI were provisional at freeze, then confirmed against
   official tables (Diyanet temkin; Kemenag ihtiyat; MUIS/KHEU `+1` zohor
-  convention — `28ff5ce`); TEHRAN/MOROCCO tables are still pending (NO preset
-  change — cells stay provisional, no golden CSVs). UOIF gap: pin-only method,
+  convention — `28ff5ce`); TEHRAN/MOROCCO official tables are still pending
+  (NO preset change — cells stay provisional; self-established golden CSVs
+  now exist via `tools/gen_self_prayer_goldens.php`, source-tagged `self:`). UOIF gap: pin-only method,
   no PHP preset (future minor with Appendix A amendment).

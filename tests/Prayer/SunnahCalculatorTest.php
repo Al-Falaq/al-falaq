@@ -61,6 +61,23 @@ final class SunnahCalculatorTest extends TestCase
         self::assertSame($night->fajr, $window['to']);
     }
 
+    /**
+     * Pinned half-up rounding (KL 2025-01-15 MWL: night 39000 s from
+     * maghrib 11:21 to fajr 22:11 UTC). firstThird raw offset is 13000 s
+     * (+3h36m40s → 14:57:40, seconds ≥ 30 so half-up gives 14:58, while
+     * truncation would give 14:57); lastThird raw offset is 26000 s
+     * (+7h13m20s → 18:34:20, seconds < 30 so it stays 18:34, while
+     * always-round-up would give 18:35).
+     */
+    public function testMarkersApplyHalfUpRoundingBothSidesOfBoundary(): void
+    {
+        $night = $this->nightFor(3.1390, 101.6869, 2025, 1, 15);
+
+        self::assertSame('2025-01-15T16:46:00+00:00', $night->middleOfNight->format('Y-m-d\TH:i:sP'));
+        self::assertSame('2025-01-15T14:58:00+00:00', $night->firstThird->format('Y-m-d\TH:i:sP'));
+        self::assertSame('2025-01-15T18:34:00+00:00', $night->lastThird->format('Y-m-d\TH:i:sP'));
+    }
+
     public function testForZonePreservesInstantsAcrossDstSpringForward(): void
     {
         $night = $this->nightFor(40.7128, -74.0060, 2015, 3, 8);
@@ -69,7 +86,10 @@ final class SunnahCalculatorTest extends TestCase
         self::assertSame($night->middleOfNight->getTimestamp(), $display->middleOfNight->getTimestamp());
         self::assertSame($night->firstThird->getTimestamp(), $display->firstThird->getTimestamp());
         self::assertSame($night->lastThird->getTimestamp(), $display->lastThird->getTimestamp());
-        self::assertSame('America/New_York', $display->middleOfNight->getTimezone()->getName());
+
+        foreach ([$display->middleOfNight, $display->firstThird, $display->lastThird, $display->fajr] as $marker) {
+            self::assertSame('America/New_York', $marker->getTimezone()->getName());
+        }
     }
 
     public function testDegenerateNightIsRejected(): void

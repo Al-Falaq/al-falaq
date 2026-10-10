@@ -41,10 +41,11 @@ $methods = [CalculationMethod::TEHRAN, CalculationMethod::MOROCCO];
 
 foreach ($methods as $method) {
     $path = __DIR__ . '/../tests/Goldens/prayer_' . $method->value . '.csv';
-    $handle = fopen($path, 'w');
+    $tmpPath = $path . '.tmp';
+    $handle = fopen($tmpPath, 'w');
 
     if ($handle === false) {
-        throw new RuntimeException('Cannot open ' . $path);
+        throw new RuntimeException('Cannot open ' . $tmpPath);
     }
 
     fputcsv($handle, array_merge(['method', 'date', 'latitude', 'longitude'], $markers, ['source']));
@@ -91,5 +92,10 @@ foreach ($methods as $method) {
     }
 
     fclose($handle);
+
+    if (! rename($tmpPath, $path)) {
+        throw new RuntimeException('Cannot replace ' . $path);
+    }
+
     echo 'wrote ' . $path . PHP_EOL;
 }

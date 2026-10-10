@@ -78,6 +78,63 @@ final class PrayerGoldensTest extends TestCase
     }
 
     /**
+     * Exactly one all-empty row exists by construction (Tehran AngleMaghrib
+     * is unreachable during Tromsoe polar day); any other empty row means
+     * lost golden coverage and must fail loudly instead of being skipped.
+     */
+    public function testOnlyDocumentedRowsAreEmpty(): void
+    {
+        $empty = [];
+
+        foreach (self::expectedFiles() as $file) {
+            $handle = fopen(self::GOLDEN_DIR . '/' . $file, 'r');
+
+            if ($handle === false) {
+                self::fail('Cannot open golden file ' . $file);
+            }
+
+            $header = fgetcsv($handle, escape: '');
+
+            if (! is_array($header)) {
+                fclose($handle);
+                self::fail('Empty golden file ' . $file);
+            }
+
+            while (is_array($row = fgetcsv($handle, escape: ''))) {
+                $data = [];
+
+                foreach ($header as $index => $key) {
+                    $data[$key] = $row[$index] ?? null;
+                }
+
+                $hasExpectation = false;
+
+                foreach (Prayer::cases() as $prayer) {
+                    if (($data[$prayer->value] ?? '') !== '') {
+                        $hasExpectation = true;
+
+                        break;
+                    }
+                }
+
+                if (! $hasExpectation) {
+                    $empty[] = sprintf(
+                        '%s|%s|%s|%s',
+                        $data['method'] ?? '?',
+                        $data['date'] ?? '?',
+                        $data['latitude'] ?? '?',
+                        $data['longitude'] ?? '?',
+                    );
+                }
+            }
+
+            fclose($handle);
+        }
+
+        self::assertSame(['tehran|2025-06-21|69.6496|18.9553'], $empty);
+    }
+
+    /**
      * Check one golden file row by row.
      *
      * @param string $path CSV path.

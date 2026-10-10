@@ -12,8 +12,10 @@ pipeline throws first — `SunnahCalculator` never invents a night.
 
 ## Markers
 
-`SunnahTimes{middleOfNight, firstThird, lastThird, fajr}` (all UTC) with
-`tahajjudWindow() === [lastThird, fajr)`. Degenerate intervals
+`SunnahTimes{middleOfNight, firstThird, lastThird, fajr}` as calculated are
+all UTC, with `tahajjudWindow() === [lastThird, fajr)`. `forZone()` returns
+the same value object with every marker converted to the requested display
+zone (instants preserved). Degenerate intervals
 (fajr ≤ maghrib) are rejected with `ValidationException`, never clamped.
 
 ## Deferred

@@ -29,6 +29,11 @@ final class QiblaCalculatorTest extends TestCase
 
         self::assertSame($fromVo->direction, $fromArray->direction);
         self::assertSame($fromVo->distanceKm, $fromArray->distanceKm);
+
+        // Distinct city pinned to goldens: proves the array pair is honored,
+        // not ignored or hardcoded (London 118.987219° / 4793.778 km).
+        self::assertTrue(abs($fromArray->direction - 118.987219) <= 1e-6);
+        self::assertTrue(abs($fromArray->distanceKm - 4793.778) <= 1e-3);
     }
 
     public function testMissingGeodesyThrowsConfigurationException(): void
