@@ -50,7 +50,7 @@ final class CrescentEphemerisTest extends TestCase
     {
         $geo = (new CrescentEphemeris())->lunarGeocentric(2448724.5);
 
-        self::assertTrue(abs($geo['distanceKm'] - 368409.7) <= 1.0);
+        self::assertTrue(abs($geo['distanceKm'] - 368409.7) <= 1.0, 'lunar distanceKm vs Meeus Example 47.a (368409.7 km), precision 1 km');
     }
 
     public function testSiderealTimeUnwinds(): void

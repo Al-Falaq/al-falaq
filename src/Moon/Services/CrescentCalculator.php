@@ -212,14 +212,29 @@ final class CrescentCalculator
      * window never reaches Mabims1992Evaluator (it throws on null age) and
      * instead takes the alt/elongation-only fallback here per spec §3.2.
      *
+     * Delegates to evaluateGeometry().
+     *
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date of the evening observation.
      * @return array{yallop: CrescentVerdict, odeh: CrescentVerdict, mabims1992: CrescentVerdict, neomabims2021: CrescentVerdict} Verdicts keyed by criterion.
      */
     public function evaluate(Coordinates $coordinates, CivilDate $date): array
     {
-        $geometry = $this->atSunset($coordinates, $date);
+        return $this->evaluateGeometry($this->atSunset($coordinates, $date));
+    }
 
+    /**
+     * Run all four criteria on an existing sunset geometry (pure scoring).
+     *
+     * Same composition as evaluate(), minus the ephemeris run: the null
+     * (no-moonset) window takes the alt/elongation-only 1992 fallback per
+     * spec §3.2 instead of reaching Mabims1992Evaluator.
+     *
+     * @param CrescentGeometry $geometry Sunset geometry, e.g. from atSunset().
+     * @return array{yallop: CrescentVerdict, odeh: CrescentVerdict, mabims1992: CrescentVerdict, neomabims2021: CrescentVerdict} Verdicts keyed by criterion.
+     */
+    public function evaluateGeometry(CrescentGeometry $geometry): array
+    {
         $yallop = $this->yallop->evaluate($geometry);
         $odeh = $this->odeh->evaluate($geometry);
 

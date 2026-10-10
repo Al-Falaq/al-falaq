@@ -45,10 +45,7 @@ final class MoonGoldensTest extends TestCase
             self::assertTrue(abs($geometry->moonAgeHours / 24.0 - (float) self::field($row, 'moon_age_days', $line, $file)) <= 0.01, 'age line ' . $line);
             self::assertTrue(abs(($geometry->ageAtMoonsetHours ?? NAN) / 24.0 - (float) self::field($row, 'moon_age_at_moonset_days', $line, $file)) <= 0.01, 'agem line ' . $line);
 
-            $verdicts = $calculator->evaluate(
-                Coordinates::fromDegrees((float) self::field($row, 'latitude', $line, $file), (float) self::field($row, 'longitude', $line, $file)),
-                CivilDate::fromYmd($y, $m, $d),
-            );
+            $verdicts = $calculator->evaluateGeometry($geometry);
 
             self::assertSame(self::field($row, 'yallop_zone', $line, $file), $verdicts['yallop']->zone, 'yallop zone line ' . $line);
             self::assertTrue(abs($verdicts['yallop']->score - (float) self::field($row, 'yallop_q', $line, $file)) <= 0.01, 'q line ' . $line);
@@ -76,7 +73,7 @@ final class MoonGoldensTest extends TestCase
             );
             $date = CivilDate::fromYmd($y, $m, $d);
             $geometry = $calculator->atSunset($coordinates, $date);
-            $verdicts = $calculator->evaluate($coordinates, $date);
+            $verdicts = $calculator->evaluateGeometry($geometry);
 
             self::assertTrue(abs($geometry->elongationDeg - (float) self::field($row, 'arcl_deg', $line, $file)) <= 0.01, 'arcl line ' . $line);
             self::assertTrue(abs($geometry->moonAltitude - (float) self::field($row, 'moon_alt_topo_deg', $line, $file)) <= 0.01, 'malt line ' . $line);
@@ -158,7 +155,7 @@ final class MoonGoldensTest extends TestCase
 
             // Composition-root fallback must not throw on the null window
             // and must follow the alt/elongation-only branch.
-            $verdicts = $calculator->evaluate($coordinates, $date);
+            $verdicts = $calculator->evaluateGeometry($geometry);
             $expected = $geometry->moonAltitude >= 2.0 && $geometry->elongationDeg >= 3.0;
 
             self::assertSame($expected, $verdicts['mabims1992']->visible);
