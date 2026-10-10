@@ -85,4 +85,13 @@ final class SunnahCalculatorTest extends TestCase
 
         (new SunnahCalculator($schedule, $schedule))->calculate();
     }
+
+    public function testDirectDegenerateValueConstructionIsRejected(): void
+    {
+        $anchor = new \DateTimeImmutable('2025-01-15 12:00:00', new \DateTimeZone('UTC'));
+
+        $this->expectException(ValidationException::class);
+
+        new SunnahTimes($anchor, $anchor, $anchor, $anchor);
+    }
 }
