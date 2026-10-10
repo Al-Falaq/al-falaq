@@ -378,11 +378,11 @@ enum CalculationMethod: string
                 28,
                 0.0,
                 false,
-                // MUIS Zohor publishes 1 min after transit on both T2 rows, same
-                // convention as the pin SINGAPORE arm (dhuhr +1: same MUIS
-                // Singapore 20/18 method, same city). PROVISIONAL: 2025-06-21
-                // fajr cell is 1 min under (sub-minute rounding noise); emptied in
-                // prayer_muis.csv for M1-close follow-up.
+                // CONFIRMED: MUIS Zohor publishes 1 min after transit on both
+                // T2 rows, same convention as the pin SINGAPORE arm (dhuhr +1:
+                // same MUIS Singapore 20/18 method, same city). PROVISIONAL:
+                // 2025-06-21 fajr cell is 1 min under (sub-minute rounding
+                // noise); emptied in prayer_muis.csv for M1-close follow-up.
                 PrayerAdjustments::empty()->with(Prayer::DHUHR, 1),
                 PrayerAdjustments::empty(),
             ),
@@ -402,8 +402,8 @@ enum CalculationMethod: string
                 28,
                 0.0,
                 false,
-                // KHEU Zohor publishes 1 min after transit on both T2 rows
-                // (source table: mora.gov.bn SitePages/WaktuSembahyang.aspx,
+                // CONFIRMED: KHEU Zohor publishes 1 min after transit on both
+                // T2 rows (source table: mora.gov.bn SitePages/WaktuSembahyang.aspx,
                 // accessed 2026-10-10); same +1 convention as the pin JAKIM and
                 // SINGAPORE arms. PROVISIONAL: KHEU publishes no Doha/dhuha
                 // altitude definition (Doha floats ~22-24 min after Syuruk, so no

@@ -16,7 +16,6 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
-use AlFalaq\AlFalaq\Tests\Goldens\Comparator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -33,24 +32,22 @@ final class PrayerTimesCalculatorTest extends TestCase
         );
 
         $expected = [
-            'imsak' => '2025-01-14T22:00:00+00:00',
-            'fajr' => '2025-01-14T22:10:00+00:00',
-            'sunrise' => '2025-01-14T23:24:00+00:00',
-            'syuruk' => '2025-01-14T23:24:00+00:00',
-            'ishraq' => '2025-01-14T23:39:00+00:00',
-            'dhuha' => '2025-01-14T23:52:00+00:00',
-            'dhuhr' => '2025-01-15T05:24:00+00:00',
-            'asr' => '2025-01-15T08:46:00+00:00',
-            'maghrib' => '2025-01-15T11:21:00+00:00',
-            'isha' => '2025-01-15T12:31:00+00:00',
+            'imsak' => '2025-01-14 22:00',
+            'fajr' => '2025-01-14 22:10',
+            'sunrise' => '2025-01-14 23:24',
+            'syuruk' => '2025-01-14 23:24',
+            'ishraq' => '2025-01-14 23:39',
+            'dhuha' => '2025-01-14 23:52',
+            'dhuhr' => '2025-01-15 05:24',
+            'asr' => '2025-01-15 08:46',
+            'maghrib' => '2025-01-15 11:21',
+            'isha' => '2025-01-15 12:31',
         ];
 
         foreach ($expected as $marker => $minute) {
-            self::assertTrue(
-                Comparator::minutesEqual(
-                    $schedule->timeFor(Prayer::from($marker)),
-                    new \DateTimeImmutable($minute, new \DateTimeZone('UTC')),
-                ),
+            self::assertSame(
+                $minute,
+                $schedule->timeFor(Prayer::from($marker))->format('Y-m-d H:i'),
                 "marker {$marker}",
             );
         }
@@ -65,24 +62,22 @@ final class PrayerTimesCalculatorTest extends TestCase
         );
 
         $expected = [
-            'imsak' => '2025-06-21T07:09:00+00:00',
-            'fajr' => '2025-06-21T07:19:00+00:00',
-            'sunrise' => '2025-06-21T09:25:00+00:00',
-            'syuruk' => '2025-06-21T09:25:00+00:00',
-            'ishraq' => '2025-06-21T09:40:00+00:00',
-            'dhuha' => '2025-06-21T09:53:00+00:00',
-            'dhuhr' => '2025-06-21T16:59:00+00:00',
-            'asr' => '2025-06-21T20:58:00+00:00',
-            'maghrib' => '2025-06-22T00:31:00+00:00',
-            'isha' => '2025-06-22T02:28:00+00:00',
+            'imsak' => '2025-06-21 07:09',
+            'fajr' => '2025-06-21 07:19',
+            'sunrise' => '2025-06-21 09:25',
+            'syuruk' => '2025-06-21 09:25',
+            'ishraq' => '2025-06-21 09:40',
+            'dhuha' => '2025-06-21 09:53',
+            'dhuhr' => '2025-06-21 16:59',
+            'asr' => '2025-06-21 20:58',
+            'maghrib' => '2025-06-22 00:31',
+            'isha' => '2025-06-22 02:28',
         ];
 
         foreach ($expected as $marker => $minute) {
-            self::assertTrue(
-                Comparator::minutesEqual(
-                    $schedule->timeFor(Prayer::from($marker)),
-                    new \DateTimeImmutable($minute, new \DateTimeZone('UTC')),
-                ),
+            self::assertSame(
+                $minute,
+                $schedule->timeFor(Prayer::from($marker))->format('Y-m-d H:i'),
                 "marker {$marker}",
             );
         }

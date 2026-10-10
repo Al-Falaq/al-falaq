@@ -14,8 +14,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Pinned-Python parity: minute-rounded UTC equality on golden vectors.
  *
- * Skips prayer_placeholder.csv (pre-freeze artifact) and empty marker
- * fields (unpublished markers in T2 tables). Ramadan rows are exactly
+ * Skips empty marker fields (unpublished markers in T2 tables). Ramadan rows are exactly
  * the UMM_AL_QURA rows dated 2025-03-02 (exporter sets Ramadan mode
  * only there). Expected file set is explicit: 15 present (11 pin + 4
  * provisional); tehran + morocco pending (no obtainable official tables).
@@ -57,13 +56,7 @@ final class PrayerGoldensTest extends TestCase
         }
 
         foreach ($paths as $path) {
-            $base = basename($path);
-
-            if ($base === 'prayer_placeholder.csv') {
-                continue;
-            }
-
-            $found[] = $base;
+            $found[] = basename($path);
         }
 
         sort($found);
@@ -96,7 +89,7 @@ final class PrayerGoldensTest extends TestCase
             self::fail('Cannot open golden file ' . $path);
         }
 
-        $headerRow = fgetcsv($handle);
+        $headerRow = fgetcsv($handle, escape: '');
 
         if (! is_array($headerRow)) {
             fclose($handle);
@@ -120,7 +113,7 @@ final class PrayerGoldensTest extends TestCase
         $line = 1;
 
         while (true) {
-            $row = fgetcsv($handle);
+            $row = fgetcsv($handle, escape: '');
 
             if (! is_array($row)) {
                 break;

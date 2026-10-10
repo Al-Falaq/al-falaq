@@ -11,6 +11,8 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 /**
  * Polar fallback substituting Makkah coordinates (pin Constants.MAKKAH verbatim).
  *
+ * Pin pointer: data/Constants.py::MAKKAH.
+ *
  * Keeps the input date; only the location is remapped.
  */
 final class MakkahHandler implements PolarCircleHandler

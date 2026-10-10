@@ -159,7 +159,10 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         $coords = self::normalizeCoordinates($coordinates);
 
         if ($parameters->isRamadan && $parameters->method !== CalculationMethod::UMM_AL_QURA) {
-            throw new ConfigurationException('isRamadan requires UMM_AL_QURA.');
+            throw new ConfigurationException(sprintf(
+                'isRamadan requires UMM_AL_QURA (got %s).',
+                $parameters->method->value,
+            ));
         }
 
         $elev = $parameters->elevationM;
@@ -167,6 +170,8 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         $effCoords = $coords;
 
         if (! $this->solar->isSolarDefined($effCoords, $effDate, $elev)) {
+            // NONE short-circuit duplicates ThrowHandler on purpose: the handler serves
+            // explicit-wiring/direct-call users while the calculator fails fast here.
             if ($parameters->polarCircleRule === PolarCircleRule::NONE) {
                 throw UndefinedScheduleException::polar($effCoords, $effDate, 'none');
             }
@@ -217,6 +222,7 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         $seventh = 0;
 
         if ($useSeasonalSafe) {
+            // Twilight model consulted only on the seasonal path.
             $seasonalSeconds = $this->twilightModel->seasonalSeconds(
                 $effDate->dayOfYear(),
                 $effDate->year,

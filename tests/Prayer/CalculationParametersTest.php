@@ -123,7 +123,7 @@ final class CalculationParametersTest extends TestCase
         );
     }
 
-    public function testWithersPreserveMethodAndValidate(): void
+    public function testWithersPreserveMethodAndBase(): void
     {
         $base = self::qatarBase();
 

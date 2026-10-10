@@ -9,6 +9,7 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -33,6 +34,32 @@ final class MeanSolarCalculatorTest extends TestCase
         $pos = $calc->position(2451545.0);
         self::assertEqualsWithDelta(-23.03251608590199, $pos->declinationDeg, 1e-9);
         self::assertEqualsWithDelta(-3.3007602707561516, $pos->equationOfTimeMinutes, 1e-9);
+    }
+
+    public function testDeclinationAndEotAtSolsticesAndEquinoxes(): void
+    {
+        // Noon JDs verified via JulianDay::fromCivilDate()->toFloat() + 0.5
+        // (task-listed 2460756.0/2460940.0 are a day off; corrected here).
+        $noon = static fn(int $y, int $m, int $d): float => JulianDay::fromCivilDate(CivilDate::fromYmd($y, $m, $d))->toFloat() + 0.5;
+
+        self::assertSame(2460848.0, $noon(2025, 6, 21));
+        self::assertSame(2461031.0, $noon(2025, 12, 21));
+        self::assertSame(2460755.0, $noon(2025, 3, 20));
+        self::assertSame(2460941.0, $noon(2025, 9, 22));
+
+        // Oracle: engine outputs at the verified noon JDs (solstice ~±23.44 deg, equinox ~0 deg).
+        // The 2025-03-20 vector also covers the closestAngle |a| > 180 wrap via the
+        // public API (pre-wrap raw ~358 deg straddling 0/360 at equinox), so no seam is needed.
+        $calc = new MeanSolarCalculator();
+
+        self::assertEqualsWithDelta(23.437986011489127, $calc->declination(2460848.0), 1e-9);
+        self::assertEqualsWithDelta(-1.877726531614626, $calc->equationOfTime(2460848.0), 1e-9);
+        self::assertEqualsWithDelta(-23.43829565413616, $calc->declination(2461031.0), 1e-9);
+        self::assertEqualsWithDelta(1.8118972631640113, $calc->equationOfTime(2461031.0), 1e-9);
+        self::assertEqualsWithDelta(0.051876763952494256, $calc->declination(2460755.0), 1e-9);
+        self::assertEqualsWithDelta(-7.3861146271274265, $calc->equationOfTime(2460755.0), 1e-9);
+        self::assertEqualsWithDelta(0.10361645537528823, $calc->declination(2460941.0), 1e-9);
+        self::assertEqualsWithDelta(7.373036802749785, $calc->equationOfTime(2460941.0), 1e-9);
     }
 
     public function testSolarTripleMatchesPin(): void

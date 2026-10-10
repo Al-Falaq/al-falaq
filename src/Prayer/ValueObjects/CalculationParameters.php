@@ -53,7 +53,7 @@ final readonly class CalculationParameters
      * @param HighLatitudeRule $highLatitudeRule Night-splitting rule.
      * @param PolarCircleRule $polarCircleRule Polar fallback selector.
      * @param mixed $fajrAngle Finite float in [0, 30].
-     * @param IshaRule $ishaRule Angle (angle in [0, 30]) or interval (minutes >= 1).
+     * @param IshaRule $ishaRule Angle-based (angle in [0, 30]) or interval (minutes >= 1).
      * @param MaghribRule $maghribRule Angle (in [0, 30]) or minutes after sunset (>= 0).
      * @param mixed $dhuhrOffsetMinutes Int in [0, 5]; bools reject.
      * @param mixed $imsakOffsetMinutes Int in [0, 60]; bools reject.
@@ -309,7 +309,7 @@ final readonly class CalculationParameters
     /**
      * Override the Isha rule, keeping everything else.
      *
-     * @param IshaRule $ishaRule Angle (angle in [0, 30]) or interval (minutes >= 1).
+     * @param IshaRule $ishaRule Angle-based (angle in [0, 30]) or interval (minutes >= 1).
      * @return self New parameters; this instance is unchanged.
      */
     public function withIshaRule(IshaRule $ishaRule): self

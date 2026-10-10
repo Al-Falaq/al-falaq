@@ -13,6 +13,8 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 /**
  * Polar fallback scanning ±366 days for the nearest solvable date (pin _nearest_date verbatim).
  *
+ * Pin pointer: PrayerTimes.py::_nearest_date_with_sunrise_sunset.
+ *
  * Tries offsets 1…366 with deltas (−o, +o); plusDays outside 1900–2100 throws
  * ValidationException and is treated as unsolvable. Exhaustion means the
  * exact geographic poles, where no rise/set date exists numerically.

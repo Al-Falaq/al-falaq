@@ -11,6 +11,8 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 /**
  * Polar fallback bisecting toward the equator for solvable sunrise (pin _nearest_latitude verbatim).
  *
+ * Pin pointer: PrayerTimes.py::_nearest_latitude_with_sunrise_sunset.
+ *
  * Rise/set existence is monotonic in |latitude| for a fixed date, so bisect
  * between the (invalid) requested latitude and the equator (always defined),
  * then back off 0.5° toward the equator for a usable day/night split.
@@ -19,6 +21,8 @@ final class NearestLatitudeHandler implements PolarCircleHandler
 {
     /**
      * Resolve to the nearest solvable latitude, keeping the date.
+     *
+     * Caller must guarantee the input is unsolvable (the calculator probes via isSolarDefined first); the bisect invariant depends on it.
      *
      * @param Coordinates $coordinates Original observer location.
      * @param CivilDate $date Original civil date.

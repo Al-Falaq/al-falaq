@@ -12,6 +12,8 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Fixed-twilight-angle high-latitude correction (M1).
+ *
+ * Pin pointer: CalculationParameters::night_portions.
  */
 final class TwilightAngleCorrection implements HighLatitudeCorrection
 {
