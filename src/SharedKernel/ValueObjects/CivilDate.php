@@ -91,6 +91,16 @@ final readonly class CivilDate
     }
 
     /**
+     * Day of year, 1–366 (leap-aware, for seasonal models).
+     *
+     * @return int 1 on Jan 1 through 365/366 on Dec 31.
+     */
+    public function dayOfYear(): int
+    {
+        return (int) $this->toUtcMidnight()->format('z') + 1;
+    }
+
+    /**
      * Total ordering by (year, month, day).
      *
      * @param self $other Date to compare against.

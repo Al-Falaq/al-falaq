@@ -63,7 +63,7 @@ final class PrayerOrderingTest extends TestCase
                 $params,
             );
 
-            $t = static fn (\DateTimeImmutable $dt): int => $dt->getTimestamp();
+            $t = static fn(\DateTimeImmutable $dt): int => $dt->getTimestamp();
             $ctx = "{$method->value} {$date->isoformat()} {$lat},{$lon}";
 
             self::assertTrue($t($schedule->fajr) <= $t($schedule->sunrise), "fajr after sunrise: {$ctx}");
