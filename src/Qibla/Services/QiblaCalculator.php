@@ -8,6 +8,7 @@ use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
 use AlFalaq\AlFalaq\Qibla\Strategies\SphericalCalculator;
 use AlFalaq\AlFalaq\Qibla\Strategies\Wgs84KarneyCalculator;
 use AlFalaq\AlFalaq\Qibla\ValueObjects\QiblaResult;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
@@ -61,8 +62,14 @@ final class QiblaCalculator
      */
     public function calculate(Coordinates|array $coordinates): QiblaResult
     {
-        $coordinates instanceof Coordinates ? $coordinates : Coordinates::fromArray($coordinates);
+        $observer = $coordinates instanceof Coordinates ? $coordinates : Coordinates::fromArray($coordinates);
 
-        throw new \LogicException('not implemented: M2 qibla pending');
+        if ($this->geodesy === null) {
+            throw new ConfigurationException('QiblaCalculator has no geodesy; use QiblaCalculator::default() or inject a GeodesyCalculator.');
+        }
+
+        $solved = $this->geodesy->inverse($observer);
+
+        return new QiblaResult($solved['direction'], $solved['distanceKm']);
     }
 }
