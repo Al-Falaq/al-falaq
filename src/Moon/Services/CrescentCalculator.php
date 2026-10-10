@@ -80,8 +80,8 @@ final class CrescentCalculator
      * solar day engine (sea level, no refraction beyond the depression),
      * JD anchored on the UTC sunset instant with TT for the ephemeris and
      * UT for sidereal time, parallax-corrected topocentric moon, ARCL from
-     * geocentric RA/dec separation, hourly moonset sampling, 30-day hourly
-     * ARCL-minimum age search. Topocentric ARCV is NOT stored — consumers
+     * geocentric RA/dec separation, analytic (Meeus Ch.15) moonset, 30-day
+     * hourly ARCL-minimum age search. Topocentric ARCV is NOT stored — consumers
      * derive it as moonAltitude − sunAltitude.
      *
      * @param Coordinates $coordinates Observer location.
@@ -319,11 +319,18 @@ final class CrescentCalculator
     /**
      * Clamp an asin/acos argument to [-1, 1] (float overshoot guard).
      *
+     * Non-finite values pass through untouched so bad inputs surface as
+     * NaN downstream, exactly like CrescentEphemeris::clamp().
+     *
      * @param float $value Candidate trig argument.
      * @return float Value clamped to [-1, 1].
      */
     private function clamp(float $value): float
     {
+        if (! is_finite($value)) {
+            return $value;
+        }
+
         return max(-1.0, min(1.0, $value));
     }
 }
