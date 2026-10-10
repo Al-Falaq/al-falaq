@@ -20,7 +20,7 @@ final readonly class CrescentGeometry
      * @param float $moonAgeHours Hours since conjunction at sunset.
      * @param float|null $lagMinutes Moonset minus sunset; null = no-moonset window.
      * @param float $deltaAzimuthDeg Azimuth difference (DAZ) in degrees.
-     * @param float $illuminatedFraction (1 − cos ARCL)/2, 0–1.
+     * @param float $illuminatedFraction (1 − cos ARCL)/2; expected 0–1, stored raw.
      * @param float $arcvGeoDeg Geocentric ARCV in degrees (stored).
      * @param float $widthArcmin Raw width in arcmin (stored; clamped only in evaluators).
      * @param float|null $ageAtMoonsetHours Age at moonset; null iff lagMinutes null.

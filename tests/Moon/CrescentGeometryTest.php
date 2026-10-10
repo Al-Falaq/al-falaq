@@ -52,6 +52,10 @@ final class CrescentGeometryTest extends TestCase
     {
         $geometry = $this->geometry();
 
+        self::assertSame(-0.8325, $geometry->sunAltitude);
+        self::assertSame(4.2545, $geometry->moonAltitude);
+        self::assertSame(24.7257, $geometry->lagMinutes);
+        self::assertSame(1.0279, $geometry->deltaAzimuthDeg);
         self::assertSame(6.0880, $geometry->arcvGeoDeg);
         self::assertSame(0.0953, $geometry->widthArcmin);
         self::assertSame(10.4121, $geometry->ageAtMoonsetHours);
@@ -70,6 +74,20 @@ final class CrescentGeometryTest extends TestCase
         $this->expectException(ValidationException::class);
 
         $this->geometry(['lagMinutes' => null]);
+    }
+
+    public function testReverseHalfNullWindowIsRejected(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->geometry(['ageAtMoonsetHours' => null]);
+    }
+
+    public function testNonFiniteNullableFieldIsRejected(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->geometry(['lagMinutes' => INF, 'ageAtMoonsetHours' => 10.4121]);
     }
 
     public function testNonFiniteStoredFieldIsRejected(): void
