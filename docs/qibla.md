@@ -24,8 +24,8 @@ M2 scope: spherical earth only (WGS84/Karney deferred — see Technical-PRD.md �
   then `diff tests/Goldens/qibla_spherical.csv /tmp/qibla_regen.csv`.
   `tests/Goldens/QiblaGoldensTest.php` gates CSV structure (header, 23 rows,
   ranges, precision, source tags, no degenerate rows) plus `magneticHeading`
-  vectors; numeric engine parity against the PHP spherical implementation
-  lands with the M2 implementation (engine still throws until then).
+  vectors and numeric engine parity against the PHP spherical
+  implementation (bearings ≤ 1e-6, distances ≤ 1e-3).
 
 ## Degenerate contract (invariants only, never bearing goldens)
 

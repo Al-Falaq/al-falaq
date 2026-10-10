@@ -49,7 +49,7 @@
         "cs-fix": "php-cs-fixer fix",
         "stan": "phpstan analyse --memory-limit=1G",
         "test-unit": "phpunit --no-coverage",
-        "test": "php tools/coverage_gate.php --min=75",
+        "test": "php tools/coverage_gate.php --min=80",
         "arch": "phpunit --group arch",
         "bench": "php examples/bench.php --budget",
         "ci": ["@lint", "@cs", "@stan", "@test"]

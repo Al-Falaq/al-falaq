@@ -16,8 +16,8 @@ use PHPUnit\Framework\TestCase;
  *
  * Skips empty marker fields (unpublished markers in T2 tables). Ramadan rows are exactly
  * the UMM_AL_QURA rows dated 2025-03-02 (exporter sets Ramadan mode
- * only there). Expected file set is explicit: 15 present (11 pin + 4
- * provisional); tehran + morocco pending (no obtainable official tables).
+ * only there). Expected file set is explicit: 17 present (11 pin + 4
+ * provisional + tehran/morocco self-established by tools/gen_self_prayer_goldens.php).
  */
 final class PrayerGoldensTest extends TestCase
 {
@@ -42,6 +42,8 @@ final class PrayerGoldensTest extends TestCase
             'prayer_kemenag.csv',
             'prayer_muis.csv',
             'prayer_brunei.csv',
+            'prayer_tehran.csv',
+            'prayer_morocco.csv',
         ];
     }
 
@@ -73,6 +75,63 @@ final class PrayerGoldensTest extends TestCase
 
             self::assertGreaterThan(0, $rows, sprintf('Golden file %s contributed 0 rows.', $file));
         }
+    }
+
+    /**
+     * Exactly one all-empty row exists by construction (Tehran AngleMaghrib
+     * is unreachable during Tromsoe polar day); any other empty row means
+     * lost golden coverage and must fail loudly instead of being skipped.
+     */
+    public function testOnlyDocumentedRowsAreEmpty(): void
+    {
+        $empty = [];
+
+        foreach (self::expectedFiles() as $file) {
+            $handle = fopen(self::GOLDEN_DIR . '/' . $file, 'r');
+
+            if ($handle === false) {
+                self::fail('Cannot open golden file ' . $file);
+            }
+
+            $header = fgetcsv($handle, escape: '');
+
+            if (! is_array($header)) {
+                fclose($handle);
+                self::fail('Empty golden file ' . $file);
+            }
+
+            while (is_array($row = fgetcsv($handle, escape: ''))) {
+                $data = [];
+
+                foreach ($header as $index => $key) {
+                    $data[$key] = $row[$index] ?? null;
+                }
+
+                $hasExpectation = false;
+
+                foreach (Prayer::cases() as $prayer) {
+                    if (($data[$prayer->value] ?? '') !== '') {
+                        $hasExpectation = true;
+
+                        break;
+                    }
+                }
+
+                if (! $hasExpectation) {
+                    $empty[] = sprintf(
+                        '%s|%s|%s|%s',
+                        $data['method'] ?? '?',
+                        $data['date'] ?? '?',
+                        $data['latitude'] ?? '?',
+                        $data['longitude'] ?? '?',
+                    );
+                }
+            }
+
+            fclose($handle);
+        }
+
+        self::assertSame(['tehran|2025-06-21|69.6496|18.9553'], $empty);
     }
 
     /**
@@ -136,6 +195,20 @@ final class PrayerGoldensTest extends TestCase
 
             foreach ($header as $index => $key) {
                 $data[$key] = $row[$index] ?? null;
+            }
+
+            $hasExpectation = false;
+
+            foreach (Prayer::cases() as $prayer) {
+                if (($data[$prayer->value] ?? '') !== '') {
+                    $hasExpectation = true;
+
+                    break;
+                }
+            }
+
+            if (! $hasExpectation) {
+                continue;
             }
 
             $params = $method->defaultParameters();

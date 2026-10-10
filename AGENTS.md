@@ -27,8 +27,10 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - Single-command equivalents: `composer lint`, `composer cs` (`cs-fix` to
   write), `composer stan`, `composer test-unit` (fast, no coverage),
   `composer test` (coverage ratchet gate), `composer arch`
-- CI (`.github/workflows/test.yml`): zero-runtime-deps assert → lint → cs →
-  stan → test → bench on PHP 8.2/8.3/8.4 × ubuntu/windows × UTC/America/New_York
+- CI (`.github/workflows/test.yml`, ubuntu-only): lint/cs/stan once on PHP 8.4,
+  then test + bench on PHP 8.2/8.3/8.4 × UTC plus one America/New_York leg on
+  8.4. Windows gate lives in `.github/workflows/pre-release.yml` (manual
+  dispatch + `v*` tags) and runs as a pre-release check.
 
 ## Testing Instructions
 

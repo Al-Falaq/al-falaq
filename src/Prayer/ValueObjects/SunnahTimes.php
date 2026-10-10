@@ -55,7 +55,7 @@ final readonly class SunnahTimes
             throw new ValidationException('nightFraction expects f in (0, 1) exclusive.');
         }
 
-        throw new \LogicException('not implemented: SunnahCalculator pending M2');
+        throw new \LogicException('deferred: nightFraction needs a maghrib anchor (pre-M5 no-throw sweep)');
     }
 
     /**
