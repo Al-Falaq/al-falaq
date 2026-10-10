@@ -19,6 +19,7 @@ final class OdehEvaluator implements CrescentEvaluator
      *
      * Topocentric ARCV derives exactly as moonAltitude − sunAltitude.
      * Danjon floor is strict (arcl < 6.4); classes are >= edges.
+     * Width 0 clamps to 1e-6 arcmin.
      *
      * @param CrescentGeometry $geometry Sun/moon geometry at local sunset.
      * @return CrescentVerdict Odeh verdict, V score, class zone.

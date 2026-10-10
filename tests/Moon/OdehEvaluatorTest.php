@@ -6,6 +6,7 @@ namespace AlFalaq\AlFalaq\Tests\Moon;
 
 use AlFalaq\AlFalaq\Moon\Strategies\OdehEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -34,6 +35,7 @@ final class OdehEvaluatorTest extends TestCase
         self::assertSame('odeh', $verdict->criterion);
         self::assertTrue(abs($verdict->score - 6.6344) <= 0.01);
         self::assertSame('A', $verdict->zone);
+        self::assertTrue($verdict->visible);
     }
 
     public function testDanjonFloorForcesDBelow64(): void
@@ -58,5 +60,13 @@ final class OdehEvaluatorTest extends TestCase
 
         self::assertTrue(abs($verdict->score - (-5.0459)) <= 0.01);
         self::assertSame('D', $verdict->zone);
+        self::assertFalse($verdict->visible);
+    }
+
+    public function testNegativeWidthIsRejected(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        (new OdehEvaluator())->evaluate($this->geometry(8.0, 6.0, -0.5));
     }
 }
