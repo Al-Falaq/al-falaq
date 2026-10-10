@@ -315,17 +315,250 @@ final class CrescentEphemeris
      */
     public function siderealTime(float $julianDayUT, float $longitudeDeg): float
     {
-        $century = $this->julianCentury($julianDayUT);
-        $obliquity = $this->meanObliquity($century) + $this->nutationObliquity($century);
-        $greenwich = $this->meanSiderealTime($century)
-            + $this->nutationLongitude($century) * cos(deg2rad($obliquity));
-        $lst = $this->unwindAngle($greenwich + $longitudeDeg) / 15.0;
+        $lst = $this->siderealDegrees($julianDayUT, $longitudeDeg) / 15.0;
 
         if (! is_finite($lst)) {
             throw new AstronomicalException('CrescentEphemeris::siderealTime produced a non-finite LST.');
         }
 
         return $lst;
+    }
+
+    /**
+     * UTC Julian day of moonset on a civil date; NaN when none occurs.
+     *
+     * Pin a7baa8b CrescentGeometry._moonset_jd_utc verbatim: the event runs
+     * on geocentric lunar RA/dec through the single-iteration Meeus
+     * corrected hour angle (Ch.15 p. 102) with NO parallax correction.
+     * Time bases stay physical: sidereal time on the UTC midnight triple,
+     * the lunar ephemeris on the TT triple (pin docstring: TT-for-sidereal
+     * would bias altitudes by ~0.3 deg).
+     *
+     * @param float $jdMidnightUt UT Julian day of midnight starting the civil date.
+     * @param float $deltaT Delta-T in seconds (TT = UT + dt).
+     * @param Coordinates $observer Observer location.
+     * @return float Moonset as a UT Julian day, or NAN when the moon never crosses the depression.
+     */
+    public function moonsetJulianDay(float $jdMidnightUt, float $deltaT, Coordinates $observer): float
+    {
+        $siderealDeg = $this->greenwichSiderealDegrees($jdMidnightUt);
+        $jdMidnightTt = $jdMidnightUt + $deltaT / 86400.0;
+        $moonPrev = $this->lunarGeocentric($jdMidnightTt - 1.0);
+        $moonDay = $this->lunarGeocentric($jdMidnightTt);
+        $moonNext = $this->lunarGeocentric($jdMidnightTt + 1.0);
+
+        $approx = $this->approximateTransit($observer->longitude, $siderealDeg, $moonDay['ra']);
+        $moonsetHours = $this->correctedHourAngle(
+            $approx,
+            -50.0 / 60.0,
+            $observer,
+            true,
+            $siderealDeg,
+            $moonDay['ra'],
+            $moonPrev['ra'],
+            $moonNext['ra'],
+            $moonDay['dec'],
+            $moonPrev['dec'],
+            $moonNext['dec'],
+        );
+
+        if (is_nan($moonsetHours)) {
+            return NAN;
+        }
+
+        return $jdMidnightUt + $moonsetHours / 24.0;
+    }
+
+    /**
+     * Greenwich sidereal time in degrees (pin SolarCoordinates collar).
+     *
+     * Pin a7baa8b: apparent_sidereal_time is GREENWICH (unwound mean plus
+     * the nutation term, longitude NOT added) — the Moonset/sunset
+     * hour-angle routines add longitude themselves via Lw. This is NOT the
+     * local sidereal time; see siderealDegrees() for that.
+     *
+     * @param float $julianDayUT UT Julian day.
+     * @return float Greenwich angle in degrees (mean unwound, nutation added raw).
+     */
+    private function greenwichSiderealDegrees(float $julianDayUT): float
+    {
+        $century = $this->julianCentury($julianDayUT);
+        $obliquity = $this->meanObliquity($century) + $this->nutationObliquity($century);
+
+        return $this->meanSiderealTime($century)
+            + $this->nutationLongitude($century) * cos(deg2rad($obliquity));
+    }
+
+    /**
+     * Local sidereal time in degrees (shared body of siderealTime).
+     *
+     * Pin a7baa8b SolarCoordinates.apparent_sidereal_time shifted by
+     * east-positive longitude; Meeus 2nd ed. pp. 87-88.
+     *
+     * @param float $julianDayUT UT Julian day.
+     * @param float $longitudeDeg East-positive longitude in degrees.
+     * @return float Angle unwound to [0, 360).
+     */
+    private function siderealDegrees(float $julianDayUT, float $longitudeDeg): float
+    {
+        $century = $this->julianCentury($julianDayUT);
+        $obliquity = $this->meanObliquity($century) + $this->nutationObliquity($century);
+        $greenwich = $this->meanSiderealTime($century)
+            + $this->nutationLongitude($century) * cos(deg2rad($obliquity));
+
+        return $this->unwindAngle($greenwich + $longitudeDeg);
+    }
+
+    /**
+     * Approximate transit fraction for one body (Meeus Ch.15 p. 102).
+     *
+     * Pin a7baa8b Astronomical.approximate_transit verbatim.
+     *
+     * @param float $longitudeDeg Observer longitude in degrees.
+     * @param float $siderealDeg Greenwich sidereal time in degrees.
+     * @param float $raDeg Right ascension in degrees.
+     * @return float Day fraction in [0, 1).
+     */
+    private function approximateTransit(float $longitudeDeg, float $siderealDeg, float $raDeg): float
+    {
+        return $this->normalizeBound(($raDeg + (-$longitudeDeg) - $siderealDeg) / 360.0, 1.0);
+    }
+
+    /**
+     * Corrected hour angle in float hours, NaN when unreachable (Meeus Ch.15 p. 102).
+     *
+     * Pin a7baa8b Astronomical.corrected_hour_angle verbatim: H0 from the
+     * current-day declination, then a single-iteration delta-m correction.
+     * The pin catches acos-domain ValueError and ZeroDivisionError; PHP
+     * returns NaN via explicit guards (acos returns NaN, no throw).
+     *
+     * @param float $approx Approximate transit fraction.
+     * @param float $altitudeDeg Target altitude in degrees.
+     * @param Coordinates $observer Observer location.
+     * @param bool $afterTransit True for evening, false for morning.
+     * @param float $siderealDeg Greenwich sidereal time at midnight in degrees.
+     * @param float $raDay Current-day right ascension in degrees.
+     * @param float $raPrev Previous-day right ascension in degrees.
+     * @param float $raNext Next-day right ascension in degrees.
+     * @param float $decDay Current-day declination in degrees.
+     * @param float $decPrev Previous-day declination in degrees.
+     * @param float $decNext Next-day declination in degrees.
+     * @return float Event in float hours since midnight, or NAN when the body never reaches the altitude.
+     */
+    private function correctedHourAngle(
+        float $approx,
+        float $altitudeDeg,
+        Coordinates $observer,
+        bool $afterTransit,
+        float $siderealDeg,
+        float $raDay,
+        float $raPrev,
+        float $raNext,
+        float $decDay,
+        float $decPrev,
+        float $decNext,
+    ): float {
+        $term1 = sin(deg2rad($altitudeDeg))
+            - sin(deg2rad($observer->latitude)) * sin(deg2rad($decDay));
+        $term2 = cos(deg2rad($observer->latitude)) * cos(deg2rad($decDay));
+        $ratio = $term2 === 0.0 ? NAN : $term1 / $term2;
+
+        if (! is_finite($ratio) || abs($ratio) > 1.0) {
+            return NAN;
+        }
+
+        $halfAngle = rad2deg(acos($ratio));
+        $m = $afterTransit ? $approx + $halfAngle / 360.0 : $approx - $halfAngle / 360.0;
+
+        $theta = $this->unwindAngle($siderealDeg + 360.985647 * $m);
+        $rightAscension = $this->unwindAngle($this->interpAngles($raDay, $raPrev, $raNext, $m));
+        $declination = $this->interp($decDay, $decPrev, $decNext, $m);
+        $hour = $theta - (-$observer->longitude) - $rightAscension;
+        $altitude = $this->bodyAltitude($observer->latitude, $declination, $hour);
+
+        $denominator = 360.0 * cos(deg2rad($declination))
+            * cos(deg2rad($observer->latitude)) * sin(deg2rad($hour));
+
+        if ($denominator === 0.0) {
+            return NAN;
+        }
+
+        return ($m + ($altitude - $altitudeDeg) / $denominator) * 24.0;
+    }
+
+    /**
+     * Spherical altitude for latitude/declination/hour angle (Meeus p. 93).
+     *
+     * Pin a7baa8b Astronomical.altitude_of_celestial_body verbatim (no
+     * asin clamp there — out-of-domain inputs propagate as NaN, which the
+     * corrected-hour-angle caller maps to an unreachable event).
+     *
+     * @param float $latitudeDeg Observer latitude in degrees.
+     * @param float $declinationDeg Declination in degrees.
+     * @param float $hourAngleDeg Hour angle in degrees.
+     * @return float Altitude in degrees.
+     */
+    private function bodyAltitude(float $latitudeDeg, float $declinationDeg, float $hourAngleDeg): float
+    {
+        return rad2deg(asin(
+            sin(deg2rad($latitudeDeg)) * sin(deg2rad($declinationDeg))
+            + cos(deg2rad($latitudeDeg)) * cos(deg2rad($declinationDeg)) * cos(deg2rad($hourAngleDeg)),
+        ));
+    }
+
+    /**
+     * Lagrange interpolation for declination across three days.
+     *
+     * Pin a7baa8b Astronomical.interpolate; Meeus 2nd ed. p. 24.
+     *
+     * @param float $yDay Current-day value.
+     * @param float $yPrev Previous-day value.
+     * @param float $yNext Next-day value.
+     * @param float $n Interpolation fraction.
+     * @return float Interpolated value.
+     */
+    private function interp(float $yDay, float $yPrev, float $yNext, float $n): float
+    {
+        $a = $yDay - $yPrev;
+        $b = $yNext - $yDay;
+        $c = $b - $a;
+
+        return $yDay + ($n / 2.0) * ($a + $b + $n * $c);
+    }
+
+    /**
+     * Angle-aware interpolation for right ascension across three days.
+     *
+     * Pin a7baa8b Astronomical.interpolate_angles; Meeus 2nd ed. p. 24.
+     * Deltas are unwound but c is NOT unwound — verbatim.
+     *
+     * @param float $yDay Current-day angle.
+     * @param float $yPrev Previous-day angle.
+     * @param float $yNext Next-day angle.
+     * @param float $n Interpolation fraction.
+     * @return float Interpolated angle.
+     */
+    private function interpAngles(float $yDay, float $yPrev, float $yNext, float $n): float
+    {
+        $a = $this->unwindAngle($yDay - $yPrev);
+        $b = $this->unwindAngle($yNext - $yDay);
+        $c = $b - $a;
+
+        return $yDay + ($n / 2.0) * ($a + $b + $n * $c);
+    }
+
+    /**
+     * Reduce a value into [0, max) via floor (handles negatives).
+     *
+     * Pin a7baa8b FloatUtil.normalize_with_bound; no Meeus page.
+     *
+     * @param float $value Value to wrap.
+     * @param float $max Exclusive upper bound.
+     * @return float Wrapped value.
+     */
+    private function normalizeBound(float $value, float $max): float
+    {
+        return $value - $max * floor($value / $max);
     }
 
     /**
