@@ -188,19 +188,20 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         $isMsc = $parameters->method === CalculationMethod::MOON_SIGHTING_COMMITTEE;
 
         // Pin _set_fajr/_set_isha MSC branches (PrayerTimes.py verbatim): the
-        // seasonal safe caps apply to every MSC row; the seventh-of-night
-        // temp replaces the angle temp at high latitude. The rule arm gives
-        // custom SEASONAL_TWILIGHT configs the identical high-latitude path.
+        // seasonal safe caps apply whenever the MSC method or the
+        // SEASONAL_TWILIGHT rule arm is in play (the rule arm is
+        // MSC-equivalent by design); the seventh-of-night temp replaces
+        // the angle temp only at high latitude.
         // NOTE: the pin gates its temp branch on signed `latitude >= 55`;
         // abs() is used here instead (symmetric like the model itself) — no
         // golden row discriminates (southernmost high-lat vector absent).
-        $seasonal = ($isMsc || $parameters->highLatitudeRule === HighLatitudeRule::SEASONAL_TWILIGHT)
-            && abs($effCoords->latitude) >= 55;
+        $useSeasonalSafe = $isMsc || $parameters->highLatitudeRule === HighLatitudeRule::SEASONAL_TWILIGHT;
+        $useSeventh = $useSeasonalSafe && abs($effCoords->latitude) >= 55;
 
         $seasonalSeconds = ['morning' => 0, 'evening' => 0];
         $seventh = 0;
 
-        if ($isMsc || $seasonal) {
+        if ($useSeasonalSafe) {
             $seasonalSeconds = $this->twilightModel->seasonalSeconds(
                 $effDate->dayOfYear(),
                 $effDate->year,
@@ -209,10 +210,10 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
             $seventh = intdiv($nightSec, 7);
         }
 
-        if ($isMsc || $seasonal) {
+        if ($useSeasonalSafe) {
             $fajrSafe = $this->addSeconds($day->sunrise, -$seasonalSeconds['morning']);
 
-            if ($seasonal) {
+            if ($useSeventh) {
                 // Angle temp discarded (the pin overwrites it on this path).
                 $fajrTemp = $this->addSeconds($day->sunrise, -$seventh);
             } else {
@@ -307,13 +308,13 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
                 ));
             }
 
-            if ($isMsc || $seasonal) {
-                // Pin _set_isha MSC branch: seasonal evening safe (every MSC
-                // row); seventh-of-night temp on the high-latitude path, the
-                // angle temp discarded like fajr above.
+            if ($useSeasonalSafe) {
+                // Pin _set_isha MSC branch: seasonal evening safe; the
+                // seventh-of-night temp replaces the angle temp only on the
+                // high-latitude path, like fajr above.
                 $ishaSafe = $this->addSeconds($day->sunset, $seasonalSeconds['evening']);
 
-                if ($seasonal) {
+                if ($useSeventh) {
                     $ishaTemp = $this->addSeconds($day->sunset, $seventh);
                 } else {
                     $ishaTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$ishaAngle, true);

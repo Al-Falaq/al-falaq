@@ -168,4 +168,56 @@ final class PrayerTimesCalculatorTest extends TestCase
             'seasonal isha matches MSC isha',
         );
     }
+
+    public function testSeasonalTwilightRuleArmMatchesMscPathBelow55(): void
+    {
+        // Sydney 2025-01-15 (|lat| < 55): the seasonal safes bind here (MSC
+        // isha 10:23 vs portion-path 10:49), so this discriminates the rule
+        // arm engaging MSC-equivalent safes. (Kuala Lumpur was considered,
+        // but neither safe binds there — both paths agree trivially at
+        // 22:10/12:35 — so it cannot prove the rule arm engages.)
+        $coords = Coordinates::fromDegrees(-33.8688, 151.2093);
+        $date = CivilDate::fromYmd(2025, 1, 15);
+
+        $msc = PrayerTimesCalculator::default()->calculate(
+            $coords,
+            $date,
+            CalculationMethod::MOON_SIGHTING_COMMITTEE->defaultParameters(),
+        );
+
+        // Same MSC-mirroring custom config as the Oslo rule-arm test.
+        $custom = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::SEASONAL_TWILIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(18.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        $alt = PrayerTimesCalculator::default()->calculate($coords, $date, $custom);
+
+        // Only fajr+isha engage the seasonal path: MSC ships methodAdjustments
+        // {dhuhr: 5, maghrib: 3} while the custom config is empty, so the other
+        // markers intentionally differ.
+        self::assertSame(
+            $msc->timeFor(Prayer::FAJR)->format('Y-m-d H:i'),
+            $alt->timeFor(Prayer::FAJR)->format('Y-m-d H:i'),
+            'low-latitude rule-arm fajr matches MSC fajr',
+        );
+        self::assertSame(
+            $msc->timeFor(Prayer::ISHA)->format('Y-m-d H:i'),
+            $alt->timeFor(Prayer::ISHA)->format('Y-m-d H:i'),
+            'low-latitude rule-arm isha matches MSC isha',
+        );
+    }
 }
