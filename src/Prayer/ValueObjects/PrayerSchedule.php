@@ -41,7 +41,7 @@ final readonly class PrayerSchedule
         public \DateTimeImmutable $maghrib,
         public \DateTimeImmutable $isha,
     ) {
-        foreach (['imsak' => $imsak, 'fajr' => $fajr, 'sunrise' => $sunrise, 'dhuhr' => $dhuhr, 'asr' => $asr, 'maghrib' => $maghrib, 'isha' => $isha] as $name => $dt) {
+        foreach (['imsak' => $imsak, 'fajr' => $fajr, 'sunrise' => $sunrise, 'syuruk' => $syuruk, 'ishraq' => $ishraq, 'dhuha' => $dhuha, 'dhuhr' => $dhuhr, 'asr' => $asr, 'maghrib' => $maghrib, 'isha' => $isha] as $name => $dt) {
             if ($dt->getTimezone()->getName() !== 'UTC') {
                 throw new ValidationException(sprintf('PrayerSchedule::%s must be UTC.', $name));
             }

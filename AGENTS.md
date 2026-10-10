@@ -6,9 +6,11 @@
 stateless, framework-agnostic PHP 8.2+ library for Islamic astronomy: prayer
 times, Qibla, Sunnah markers, crescent visibility, Hijri conversion.
 `Technical-PRD.md` is the build contract (code wins on contradiction;
-Appendices A–C normative). Status: **M0 skeleton** — `SharedKernel` value
-objects + exception hierarchy landed; calculators throw `LogicException`
-until their milestone. Public surface is `src/{SharedKernel,Prayer,Qibla,
+Appendices A–C normative). Status: **M1 landed** — `SharedKernel` value
+objects, exception hierarchy, prayer pipeline (`PrayerTimesCalculator`),
+monthly timetable (`TimetableService`), and next-prayer resolver
+(`NextPrayerResolver`) shipped (Appendix A frozen, 18 methods; Qibla/Hijri
+calculators still throw `LogicException` until their milestone). Public surface is `src/{SharedKernel,Prayer,Qibla,
 Moon,Hijri}/`; `src/Astro/` is `@internal`.
 
 ## Setup Commands
@@ -32,8 +34,8 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 
 - Plain PHPUnit 11, no ecosystem runner. Bootstrap `tests/bootstrap.php`
   fixes UTC; `Sweep/` seeds `mt_srand(1234)` inline per test.
-- Layout mirrors `src/` as contexts land (M0: `SharedKernel`, `Sweep`,
-  `Wiring`); `tests/Goldens/` holds pinned-Python parity vectors +
+- Layout mirrors `src/` as contexts land (M1: `SharedKernel`, `Sweep`,
+  `Wiring`, `Prayer`, `Astro`, `Goldens`); `tests/Goldens/` holds pinned-Python parity vectors +
   `Comparator.php` (dual tolerances); `tests/ArchTest.php` enforces layering
   via reflection (`#[Group('arch')]`).
 - Coverage floor is a ratchet (`tools/coverage_gate.php --min=N`): M0

@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Contracts;
 
 /**
- * Seasonal twilight angles for the Moon-Sighting-Committee method (M1).
+ * Seasonal twilight offsets for the Moon-Sighting-Committee method.
  *
- * Polynomial from Technical-PRD.md Appendix B; active only at abs(lat) ≥ 55.
+ * Second-precision offsets from sunrise/sunset (pin Twilight.py verbatim:
+ * `timedelta(seconds=±int(round(adjustment * 60.0)))`); the calculator
+ * applies them as safe caps on every MSC row and as seventh-of-night
+ * temps at high latitude.
  */
 interface TwilightModel
 {
     /**
-     * Seasonal Fajr/Isha angles for a day-of-year and latitude.
+     * Seasonal second offsets for a day-of-year, year and latitude.
      *
      * @param int $dayOfYear 1–366.
+     * @param int $year Gregorian year (leap-year solstice shift).
      * @param float $latitude Observer latitude in degrees.
-     * @return array{morning: float, evening: float} Angles in degrees.
+     * @return array{morning: int, evening: int} Seconds before sunrise / after sunset (rounded like the pin).
      */
-    public function adjustedAngles(int $dayOfYear, float $latitude): array;
+    public function seasonalSeconds(int $dayOfYear, int $year, float $latitude): array;
 }

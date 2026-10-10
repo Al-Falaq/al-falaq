@@ -19,10 +19,12 @@ final class MiddleOfNightCorrection implements HighLatitudeCorrection
      *
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date to correct.
-     * @return NightPortions Fajr and Isha instants (UTC).
+     * @param float $fajrAngle Method fajr angle (for TWILIGHT_ANGLE rule).
+     * @param float|null $ishaAngle Method isha angle, null when interval-based.
+     * @return NightPortions Fajr and Isha night fractions.
      */
-    public function portions(Coordinates $coordinates, CivilDate $date): NightPortions
+    public function portions(Coordinates $coordinates, CivilDate $date, float $fajrAngle, ?float $ishaAngle): NightPortions
     {
-        throw new \LogicException('not implemented: M1 high-latitude pending');
+        return new NightPortions(0.5, 0.5);
     }
 }

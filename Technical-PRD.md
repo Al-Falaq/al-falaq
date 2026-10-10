@@ -71,6 +71,7 @@ All use cases must work **offline on shared hosting** (no extensions beyond `dat
 - `Prayer` enum: `IMSAK, FAJR, SUNRISE, SYURUK, ISHRAQ, DHUHA, DHUHR, ASR, MAGHRIB, ISHA`. String values are lowercase (`'fajr'`, …) and are the canonical keys for `PrayerSchedule::all()/toArray()` per §5.2.1.
 - `CalculationMethod` enum: `NONE, MUSLIM_WORLD_LEAGUE, EGYPTIAN, KARACHI, UMM_AL_QURA, DUBAI, MOON_SIGHTING_COMMITTEE, NORTH_AMERICA, KUWAIT, QATAR, SINGAPORE, TURKEY, TEHRAN, MOROCCO, JAKIM, KEMENAG, MUIS, BRUNEI`. Frozen parameter table is **Appendix A (normative)**. `NONE` means "no defaults — caller MUST supply every angle/offset via `with*()` else `ConfigurationException`". Each case exposes `defaultParameters(): CalculationParameters`. M1 is blocked until Appendix A is dual-entered from `PYTHON_PIN` and checksummed.
 - `CalculationParameters`: `final readonly`, private ctor, construction only via `CalculationMethod::…->defaultParameters()->with*(…)`. Fields:
+  - `method: CalculationMethod` (owning method, set by `defaultParameters()`, preserved by every `with*()`; drives the UQU-Ramadan guard and the MSC seasonal gating),
   - `madhab: Madhab`, `highLatitudeRule: HighLatitudeRule`, `polarCircleRule: PolarCircleRule` (enum, NOT string "handler name"),
   - `fajrAngle: float`, `ishaRule: IshaRule` (polymorphic: `AngleIsha(float $angle)` | `IntervalIsha(int $minutes)` — no parallel `ishaAngle`+`ishaInterval` nullable pair),
   - `maghribRule: MaghribRule` (`AngleMaghrib(float)` | `MinutesAfterSunsetMaghrib(int)`; TEHRAN uses angle 4.5°, UQU uses 0°/sunset),
@@ -81,8 +82,8 @@ All use cases must work **offline on shared hosting** (no extensions beyond `dat
 - `PrayerAdjustments`: `final readonly` DTO, per-prayer minute offsets `array<string,int>` keyed by `Prayer::value`, `empty()` + `with(Prayer,int)` (range `-60..+60`).
 - `Madhab`: `SHAFI|HANAFI` with `shadowLength(): float` (1|2). Consumed via `AsrRule` strategy (`ShafiAsr`, `HanafiAsr`).
 - `PrayerSchedule`: `final readonly`, stores **UTC only**. Props `imsak…isha: DateTimeImmutable` (all `UTC`). Methods `timeFor(Prayer): DateTimeImmutable` (UTC), `forZone(DateTimeZone): DisplaySchedule` (leaf conversion, math never rerun), `all(): array<string,DateTimeImmutable>` (UTC, keys per Prayer values), `toArray(): array<string,string>` (ISO8601 `Y-m-d\TH:i:sP` in UTC — frozen schema in Appendix C), `nightLength(): DateInterval`. Documented invariant on non-polar days with zero adjustments: `fajr ≤ sunrise ≤ dhuhr ≤ asr ≤ maghrib ≤ isha`; user `adjustments` MAY break ordering — calculator MUST NOT silently reorder; `Sweep/` test asserts ordering only when adjustments are empty. Polar-boundary saturation: `asr` clamped to `[dhuhr,maghrib]` (only documented clamping allowed).
-- `PrayerTimesCalculator`: `final`, `__construct(HighLatitudeCorrection $hl, PolarCircleHandler $polar, TwilightModel $twilight)` with `default(): self` and `defaultFor(CalculationParameters): self` (MSC + `lat ≥ 55` wiring). Single command `calculate(Coordinates, CivilDate, CalculationParameters): PrayerSchedule` — **no `$display` param** (display is `forZone()` post-step). Constructor does no computation. Throws `AstronomicalException` (polar undefined, never NaN/null), `ConfigurationException` (method-vs-params misuse, e.g. `isRamadan=true` with non-UQU), `ValidationException` (bad inputs), never bare `\ValueError`/`\LogicException` after M0.
-- High-latitude rules (`MIDDLE_OF_NIGHT, SEVENTH_OF_NIGHT, TWILIGHT_ANGLE`) → `HighLatitudeCorrection` strategy returning `NightPortions(fajr,isha)`. Moonsighting-Committee seasonal twilight (`SeasonAdjustedTwilight: seasonAdjustedMorning/Evening(DayOfYear, lat)`) is an injectable `TwilightModel`, default-on only when `method===MOON_SIGHTING_COMMITTEE && abs(lat) >= 55`. Formula pinned in Appendix B.
+- `PrayerTimesCalculator`: `final`, `__construct(HighLatitudeCorrection $hl, PolarCircleHandler $polar, TwilightModel $twilight)` with `default(): self` and `defaultFor(CalculationParameters): self` (rule-driven wiring). Single command `calculate(Coordinates, CivilDate, CalculationParameters): PrayerSchedule` — **no `$display` param** (display is `forZone()` post-step). Constructor does no computation. Throws `AstronomicalException` (polar undefined, never NaN/null), `ConfigurationException` (method-vs-params misuse, e.g. `isRamadan=true` with non-UQU), `ValidationException` (bad inputs), never bare `\ValueError`/`\LogicException` after M0.
+- High-latitude rules (`MIDDLE_OF_NIGHT, SEVENTH_OF_NIGHT, TWILIGHT_ANGLE`) → `HighLatitudeCorrection` strategy returning `NightPortions(fajr,isha)`. Moonsighting-Committee seasonal twilight (`SeasonAdjustedTwilight: seasonalSeconds(dayOfYear, year, latitude): {morning, evening}` in whole SECONDS, `int(round(adj·60))` per pin) is an injectable `TwilightModel`. Seasonal SAFE caps engage whenever the MSC method or the `SEASONAL_TWILIGHT` rule is in play, at ALL latitudes; the seventh-of-night temp replaces the angle temp only at signed latitude ≥ 55 (pin `_set_fajr`/`_set_isha` gate). Formula pinned in Appendix B.
 - Polar-circle handlers (`NEAREST_LATITUDE default, NEAREST_DAY, MAKKAH, NONE`) → `PolarCircleHandler` strategies selected by `PolarCircleRule` enum. `NearestLatitude` bisects toward equator (max 60 iterations, stop when sunrise/sunset solvable, then 0.5° backoff toward equator per Python `_nearest_latitude_with_sunrise_sunset`); if still unsolvable → `AstronomicalException`. `NearestDay` searches ±366d day-by-day, nearest first; if none → `AstronomicalException`. `Makkah` substitutes Makkah coords `(21.4225, 39.8262)` keeping input date; `None/Throw` lets `AstronomicalException` propagate. `UndefinedScheduleException extends AstronomicalException` carries `coordinates/civilDate/rule` typed props.
 - Elevation: dip-of-horizon `h0 = -0.833 - 0.0293 * sqrt(h_m)` degrees (code form, `sqrt()` on meters), plumbed through internal `SolarTime`, default `0`. Negative elevation rejected.
 - Umm al-Qura Ramadan mode (normative): `method===UMM_AL_QURA && isRamadan===true` → `isha = maghrib + 120min`; `method===UMM_AL_QURA && isRamadan===false` → `isha = maghrib + 90min`. The old prose "+30" was a typo and is removed. `isRamadan` with any other method → `ConfigurationException`.
@@ -368,7 +369,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 
 | Risk | Mitigation |
 |---|---|
-| Float divergence vs Python (deg→rad, `atan2`, `fmod`) | Port formula-for-formula, keep `clamp/min/max` guards; dual-tolerance comparator (§6); golden diff job Python-vs-PHP on shared vectors from `PYTHON_PIN` |
+| Float divergence vs Python (deg→rad, `atan2`, `fmod`) | Clean re-derive against pin `a7baa8b` with per-formula Meeus citations + differential golden log: `tools/export_goldens.py` vectors vs PHP in `tests/Goldens/` (minute-equality gate, dual-tolerance `Comparator.php`); divergences fixed in code (signed-lat seventh gate, second-precision seasonal offsets) or logged as emptied CSV cells with per-file reasons (`adee976`) |
 | `DateTimeImmutable` vs `ZoneInfo` DST edge (spring-forward) | UTC-math-then-`forZone()` invariant + dedicated DST test (`America/New_York` 2015-03-08 + 2015-11-01) + `NextPrayerResolver` DST vectors |
 | Umm al-Qura table transcription errors | Dual-entry review + checksummed `UmmAlQuraData_1356_1500` + range-boundary tests + provenance file |
 | Scope creep (adhan CLI parity, new calendars pre-1.0) | CLI explicitly out; new calendars land as minor `HijriCalendar` impls with goldens |
@@ -402,31 +403,37 @@ Dual-enter from `PYTHON_PIN:CalculationMethod.py`. Columns: `fajrAngle | ishaRul
 | Method | fajr | isha | maghrib | imsak | ishraq | dhuha | dhuhr+ | madhab | HL | polar |
 |---|---|---|---|---|---|---|---|---|---|---|
 | NONE | — | — | — | — | — | — | 0 | SHAFI | NONE* | NONE |
-| MUSLIM_WORLD_LEAGUE | 18.0 | Angle 17.0 | Sunset | 10 | 0 | 15 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
-| EGYPTIAN | 19.5 | Angle 17.5 | Sunset | 10 | 0 | 15 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
-| KARACHI | 18.0 | Angle 18.0 | Sunset | 10 | 0 | 15 | 0 | HANAFI | MIDDLE | NEAREST_LAT |
-| UMM_AL_QURA | 18.5 | Interval 90/120 Ramadan | Sunset | 10 | 0 | 15 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
-| DUBAI | 18.2 | Angle 18.2 | Sunset | 10 | 0 | 15 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
-| MOON_SIGHTING_COMMITTEE | 18.0 | Angle 18.0 | Sunset | 10 | 0 | 15 | 0 | SHAFI | SEASONAL** | NEAREST_LAT |
-| NORTH_AMERICA | 15.0 | Angle 15.0 | Sunset | 10 | 0 | 15 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
-| KUWAIT | 18.0 | Angle 17.5 | Sunset | 10 | 0 | 15 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
-| QATAR | 18.0 | Interval 90 | Sunset | 10 | 0 | 15 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
-| SINGAPORE | 20.0 | Angle 18.0 | Sunset | 10 | 0 | 15 | 1 | SHAFI | MIDDLE | NEAREST_LAT |
-| TURKEY | 18.0 | Angle 17.0 | Sunset | 10 | 0 | 15 | 0 | HANAFI | MIDDLE | NEAREST_LAT |
-| TEHRAN | 17.7 | Angle 14.0 | Angle 4.5 | 10 | 0 | 15 | 1 | SHAFI | MIDDLE | NEAREST_LAT |
-| MOROCCO | 19.0 | Angle 17.0 | Sunset | 10 | 0 | 15 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
-| JAKIM | 20.0 | Angle 18.0 | Sunset | 10 | 0 | 15 | 1 | SHAFI | MIDDLE | NEAREST_LAT |
-| KEMENAG | 20.0 | Angle 18.0 | Sunset | 10 | 0 | 15 | 2 | SHAFI | MIDDLE | NEAREST_LAT |
-| MUIS | 20.0 | Angle 18.0 | Sunset | 10 | 0 | 15 | 1 | SHAFI | MIDDLE | NEAREST_LAT |
-| BRUNEI | 20.0 | Angle 18.0 | Sunset | 10 | 0 | 15 | 1 | SHAFI | MIDDLE | NEAREST_LAT |
+| MUSLIM_WORLD_LEAGUE | 18.0 | Angle 17.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| EGYPTIAN | 19.5 | Angle 17.5 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| KARACHI | 18.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| UMM_AL_QURA | 18.5 | Interval 90/120 Ramadan | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| DUBAI | 18.2 | Angle 18.2 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| MOON_SIGHTING_COMMITTEE | 18.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE** | NEAREST_LAT |
+| NORTH_AMERICA | 15.0 | Angle 15.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| KUWAIT | 18.0 | Angle 17.5 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| QATAR | 18.0 | Interval 90 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| SINGAPORE | 20.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| TURKEY | 18.0 | Angle 17.0 | Sunset | 0*** | 15 | 28 | 0 | SHAFI*** | MIDDLE | NEAREST_LAT |
+| TEHRAN | 17.7† | Angle 14.0† | Angle 4.5† | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| MOROCCO | 19.0† | Angle 17.0† | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| JAKIM | 20.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| KEMENAG | 20.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI*** | MIDDLE | NEAREST_LAT |
+| MUIS | 20.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
+| BRUNEI | 20.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
 
-`*` NONE requires caller-supplied rules. `**` MSC uses `SeasonAdjustedTwilight` when `abs(lat)>=55`, else `MIDDLE_OF_NIGHT`. Every row needs a `tests/Goldens/prayer_{method}.csv` vector before M1 sign-off.
+`*` NONE requires caller-supplied rules (`defaultParameters()` throws `ConfigurationException`). `**` The MSC preset ships `MIDDLE_OF_NIGHT` (code wins); seasonal behavior engages via the method gate, not the portions gate: seasonal safe caps apply on every MSC row at ALL latitudes; the seventh-of-night temp replaces the angle temp only at signed latitude ≥ 55 (pin `_set_fajr`/`_set_isha` gate). `SEASONAL_TWILIGHT` rule mirrors MSC at all latitudes (same gating arm).
+Corrections vs the transcription aid (pin wins, freeze `c151828`): ishraq 15 / dhuha 28 are the pin ctor defaults (aid said 0/15); `dhuhr+` is 0 everywhere — the aid column conflated `methodAdjustments.dhuhr` with the offset; KARACHI is SHAFI per pin (aid said HANAFI).
+`methodAdjustments` exactly per pin: MWL/EGYPTIAN/KARACHI/NA/SINGAPORE/JAKIM `{dhuhr:+1}`; DUBAI `{sunrise:−3,dhuhr:+3,asr:+3,maghrib:+3}`; MSC `{dhuhr:+5,maghrib:+3}`; all other rows empty.
+`***` TURKEY/KEMENAG/MUIS/BRUNEI were provisional at freeze, then confirmed against official tables (`28ff5ce`): TURKEY Diyanet temkin `{sunrise:−7,dhuhr:+5,asr:+4,maghrib:+7}` + imsak 0 (Imsak IS fajr) + SHAFI (Imamayn factor-1 ikindi); KEMENAG ihtiyat `{fajr:+2,sunrise:−2,dhuhr:+4,asr:+2,maghrib:+2,isha:+2}`; MUIS/BRUNEI `{dhuhr:+1}` zohor convention. Residual ±1 min cells emptied per file with reasons (`adee976`).
+`†` TEHRAN/MOROCCO still PENDING (no obtainable official tables — NO preset change, no golden CSVs).
+UOIF gap: pin-only method with no PHP preset (keeps the 18-freeze); lands as a future minor with an Appendix A amendment.
+Every row needs a `tests/Goldens/prayer_{method}.csv` vector before M1 sign-off (15 present: 11 pin + turkey/kemenag/muis/brunei official-table; tehran + morocco pending).
 
 ## Appendix B — Formulas & constants (normative)
 
 - Dip: `h0_deg = -0.833 - 0.0293 * sqrt(h_m)`.
 - IUGG mean radius: `6371.0088 km`. WGS84: `a=6378.137 km, f=1/298.257223563`. Karney (2013) inverse, tol `1e-12`, max 100 iters.
-- MSC seasonal twilight: `seasonAdjustedMorning/Evening(dayOfYear, lat)` polynomial from Python `Twilight.py` — transcribe verbatim + cite; active only per §5.2.
+- MSC seasonal twilight: `seasonalSeconds(dayOfYear, year, latitude): {morning, evening}` whole-second offsets (`int(round(adj·60))`) from Python `Twilight.py` — transcribe verbatim + cite; safe caps ungated, seventh-temp lat-gated, per §5.2.
 - Crescent: `CrescentGeometry{sunAltitude, moonAltitude, elongationDeg, moonAgeHours, lagMinutes, deltaAzimuthDeg, illuminatedFraction}` at local sunset; Yallop `q = f(ARCV, DAZ, W)` + zones; Odeh `V = f(ARCV, W)` + classes; MABIMS-1992 `(alt>=2 && elong>=3 && age>=8h)`, Neo-2021 `(alt>=3 && elong>=6.4)`. Full polynomials + citations in `docs/moon.md`, vectors in `tests/Goldens/moon_*.csv`.
 - Hijri Tabular epoch + leap set per §5.6; UQ range `1356–1500 AH` + checksum; DeltaT polynomial source + year range in `docs/hijri.md`.
 

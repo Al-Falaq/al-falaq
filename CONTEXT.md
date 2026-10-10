@@ -15,14 +15,15 @@ One offline library any PHP app can drop in — no extensions beyond `date`,
 no network, no framework — with behavioral parity to the pinned Python
 implementation, proven by golden vectors.
 
-## Current status (M0 skeleton)
+## Current status (M1 landed)
 
 Landed: composer scaffold, `SharedKernel` value objects (`Coordinates`,
 `CivilDate`, `Angle`, `Minutes`, `JulianDay`), exception hierarchy,
-namespace shells + throwing stubs for all contexts, PHPUnit suite (22
-tests), ArchTest layering rules, coverage-ratchet gate (floor 20 → 95 at
-M5), CI matrix. Next: M1 prayer pipeline (blocked on Appendix A freeze +
-`PYTHON_PIN`).
+namespace shells + throwing stubs for remaining contexts, prayer pipeline
+(`PrayerTimesCalculator`, `TimetableService`, `NextPrayerResolver`), Appendix A
+freeze (18 methods), parity goldens (`tests/Goldens/`, 15 files), ArchTest
+layering rules, coverage-ratchet gate (floor 75 → 95 at M5), CI matrix. Next:
+M2 qibla+sunnah.
 
 ## Stack & tooling
 
