@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Services;
+namespace AlFalaq\AlFalaq\Prayer\Services;
 
-use AlFalaq\AlFalak\Prayer\Traits\NormalizesCoordinatesInput;
-use AlFalaq\AlFalak\Prayer\Contracts\HighLatitudeCorrection;
-use AlFalaq\AlFalak\Prayer\Contracts\PolarCircleHandler;
-use AlFalaq\AlFalak\Prayer\Contracts\PrayerTimesCalculatorInterface;
-use AlFalaq\AlFalak\Prayer\Contracts\TwilightModel;
-use AlFalaq\AlFalak\Prayer\ValueObjects\CalculationParameters;
-use AlFalaq\AlFalak\Prayer\ValueObjects\PrayerSchedule;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\Prayer\Traits\NormalizesCoordinatesInput;
+use AlFalaq\AlFalaq\Prayer\Contracts\HighLatitudeCorrection;
+use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
+use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
+use AlFalaq\AlFalaq\Prayer\Contracts\TwilightModel;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Single-day prayer-time pipeline; strategies injected, no computation in ctor.
@@ -74,17 +74,19 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     public static function default(): self
     {
         return new self(
-            new \AlFalaq\AlFalak\Prayer\Strategies\MiddleOfNightCorrection(),
-            new \AlFalaq\AlFalak\Prayer\Strategies\NearestLatitudeHandler(),
-            new \AlFalaq\AlFalak\Prayer\Strategies\SeasonAdjustedTwilight(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight(),
         );
     }
 
     /**
-     * Method-aware wiring (MSC + high latitude picks seasonal twilight).
+     * Method-aware wiring entry point (M0 stub: currently returns default()).
      *
-     * @param CalculationParameters $parameters Resolved method parameters.
-     * @return self Calculator tuned for the method.
+     * M1 will select strategies from $parameters; the argument is reserved and intentionally unused until then.
+     *
+     * @param CalculationParameters $parameters Resolved method parameters (reserved for M1, currently ignored).
+     * @return self Default calculator.
      */
     public static function defaultFor(CalculationParameters $parameters): self
     {

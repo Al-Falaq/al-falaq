@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Services;
+namespace AlFalaq\AlFalaq\Prayer\Services;
 
-use AlFalaq\AlFalak\Prayer\Contracts\TimetableServiceInterface;
-use AlFalaq\AlFalak\Prayer\ValueObjects\CalculationParameters;
-use AlFalaq\AlFalak\Prayer\ValueObjects\PrayerSchedule;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\Prayer\Contracts\TimetableServiceInterface;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Monthly timetable orchestration over the single-day calculator (M1).

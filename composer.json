@@ -20,7 +20,7 @@
     },
     "autoload": {
         "psr-4": {
-            "AlFalaq\\AlFalak\\": "src/"
+            "AlFalaq\\AlFalaq\\": "src/"
         },
         "exclude-from-classmap": [
             "tests/",
@@ -29,7 +29,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "AlFalaq\\AlFalak\\Tests\\": "tests/"
+            "AlFalaq\\AlFalaq\\Tests\\": "tests/"
         }
     },
     "config": {
@@ -44,7 +44,7 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "scripts": {
-        "lint": "find src examples tools tests -name '*.php' -exec php -l {} \\; > /dev/null",
+        "lint": "find src examples tools tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null",
         "cs": "php-cs-fixer fix --dry-run --diff",
         "cs-fix": "php-cs-fixer fix",
         "stan": "phpstan analyse --memory-limit=1G",

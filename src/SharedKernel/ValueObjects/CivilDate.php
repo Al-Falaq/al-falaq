@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\ValueObjects;
+namespace AlFalaq\AlFalaq\SharedKernel\ValueObjects;
 
-use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * A validated Gregorian civil date (years 1900–2100, the golden-tested range).

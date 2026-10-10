@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Contracts;
+namespace AlFalaq\AlFalaq\Prayer\Contracts;
 
-use AlFalaq\AlFalak\Prayer\ValueObjects\CalculationParameters;
-use AlFalaq\AlFalak\Prayer\ValueObjects\PrayerSchedule;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Single-day prayer-time pipeline (M1; M0 throws — see Appendix A freeze).

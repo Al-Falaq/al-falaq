@@ -11,7 +11,7 @@ $budget = in_array('--budget', $argv ?? [], true);
 
 $start = hrtime(true);
 // M0: single instantiation cost only (no astronomy yet).
-$coords = AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates::fromDegrees(3.1390, 101.6869);
+$coords = AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates::fromDegrees(3.1390, 101.6869);
 $elapsedMs = (hrtime(true) - $start) / 1e6;
 
 printf("bench M0: instantiate %.3f ms (budget: single-day p50 < 2ms from M5)\n", $elapsedMs);

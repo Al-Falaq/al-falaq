@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\ValueObjects;
+namespace AlFalaq\AlFalaq\Prayer\ValueObjects;
 
-use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * Sunnah night markers in UTC (middle, thirds, tahajjud window).

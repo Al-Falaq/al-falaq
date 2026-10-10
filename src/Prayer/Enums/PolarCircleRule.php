@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Enums;
+namespace AlFalaq\AlFalaq\Prayer\Enums;
 
 /**
  * Polar-circle fallback strategy selector (NONE lets it throw).

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Moon\Strategies;
+namespace AlFalaq\AlFalaq\Moon\Strategies;
 
-use AlFalaq\AlFalak\Moon\Contracts\CrescentEvaluator;
-use AlFalaq\AlFalak\Moon\ValueObjects\CrescentGeometry;
-use AlFalaq\AlFalak\Moon\ValueObjects\CrescentVerdict;
+use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
 
 /**
  * Neo-MABIMS-2021 criterion: alt ≥ 3°, elongation ≥ 6.4° (no age gate).

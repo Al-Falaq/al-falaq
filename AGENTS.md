@@ -54,7 +54,7 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   return needs `@return`. Engine-provided enum methods (`cases/from/tryFrom`)
   and `tests/` are exempt. Docblock types must resolve (PHPStan validates
   them) — use FQCN where the file has no import.
-- `src/{Context}/{Role}/`, one class per file, PSR-4 `AlFalaq\AlFalak\`.
+- `src/{Context}/{Role}/`, one class per file, PSR-4 `AlFalaq\AlFalaq\`.
 - `Contracts/`: interfaces only — driving ports (service API,
   `*Interface` suffix) and driven ports (strategy SPIs, short names).
   Never add an `Interface` suffix outside service contracts; never strip one.
@@ -62,7 +62,7 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   command method. `Strategies/`: `final`, one `Contracts/` interface each.
   `ValueObjects/`: `final readonly`, validated ctor, UTC math only.
   `Traits/` (named `Traits/`, not `Concerns/`): stateless, `private` helpers.
-  `Exceptions/`: `*Exception` suffix, extend `AlFalakException`; `*Error`
+  `Exceptions/`: `*Exception` suffix, extend `AlFalaqException`; `*Error`
   names forbidden.
 - Pure domain: SPL + `\DateTimeImmutable` only (mutable `DateTime` and
   `DateTimeInterface` unions banned by ArchTest); no I/O, no network

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Qibla\Strategies;
+namespace AlFalaq\AlFalaq\Qibla\Strategies;
 
-use AlFalaq\AlFalak\Qibla\Contracts\GeodesyCalculator;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Spherical-earth geodesy: Todhunter initial bearing + haversine (default, M2).

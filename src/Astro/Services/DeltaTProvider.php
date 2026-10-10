@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Astro\Services;
+namespace AlFalaq\AlFalaq\Astro\Services;
 
 /**
  * ΔT (TT − UT1) provider isolating polynomial-vs-table updates (M1).

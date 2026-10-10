@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Contracts;
+namespace AlFalaq\AlFalaq\Prayer\Contracts;
 
-use AlFalaq\AlFalak\Prayer\ValueObjects\NextPrayer;
-use AlFalaq\AlFalak\Prayer\ValueObjects\PrayerSchedule;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\NextPrayer;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 
 /**
  * "What is next prayer?" badge logic over two adjacent schedules.

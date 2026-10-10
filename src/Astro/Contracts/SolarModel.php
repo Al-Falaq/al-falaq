@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Astro\Contracts;
+namespace AlFalaq\AlFalaq\Astro\Contracts;
 
 /**
  * Solar model port: declination + equation of time per Julian Day.

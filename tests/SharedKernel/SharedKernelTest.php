@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Tests\SharedKernel;
+namespace AlFalaq\AlFalaq\Tests\SharedKernel;
 
-use AlFalaq\AlFalak\SharedKernel\Exceptions\InvalidCoordinatesException;
-use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Angle;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\JulianDay;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Minutes;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\InvalidCoordinatesException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Angle;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
 use PHPUnit\Framework\TestCase;
 
 final class SharedKernelTest extends TestCase

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Strategies;
+namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
-use AlFalaq\AlFalak\Prayer\Contracts\TwilightModel;
+use AlFalaq\AlFalaq\Prayer\Contracts\TwilightModel;
 
 /**
  * Moon-Sighting-Committee seasonal twilight (Appendix B polynomial, M1).

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Strategies;
+namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
-use AlFalaq\AlFalak\Prayer\Contracts\AsrRule;
+use AlFalaq\AlFalaq\Prayer\Contracts\AsrRule;
 
 /**
  * Shafi'i (majority) Asr: shadow reaches one object height (+ noon shadow).

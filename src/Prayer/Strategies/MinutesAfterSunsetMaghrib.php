@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Strategies;
+namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
-use AlFalaq\AlFalak\Prayer\Contracts\MaghribRule;
+use AlFalaq\AlFalaq\Prayer\Contracts\MaghribRule;
 
 /**
  * Maghrib as fixed minutes after sunset (0 = at sunset, most methods).

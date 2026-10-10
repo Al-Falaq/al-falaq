@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\ValueObjects;
+namespace AlFalaq\AlFalaq\Prayer\ValueObjects;
 
-use AlFalaq\AlFalak\Prayer\Enums\Prayer;
-use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * One day of prayer instants, stored UTC-only (display via forZone()).

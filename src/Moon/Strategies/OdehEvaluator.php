@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Moon\Strategies;
+namespace AlFalaq\AlFalaq\Moon\Strategies;
 
-use AlFalaq\AlFalak\Moon\Contracts\CrescentEvaluator;
-use AlFalaq\AlFalak\Moon\ValueObjects\CrescentGeometry;
-use AlFalaq\AlFalak\Moon\ValueObjects\CrescentVerdict;
+use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
 
 /**
  * Odeh (2006) V-criterion with visibility classes A/B/C/D (M3).

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Tests;
+namespace AlFalaq\AlFalaq\Tests;
 
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
@@ -25,28 +25,35 @@ final class ArchTest extends TestCase
             return $classes;
         }
 
+        // PSR-4 file path → FQCN, resolved through the composer autoloader.
+        // No manual require_once: that depends on filesystem iteration order
+        // for parent-before-child, while the autoloader resolves parents on demand.
         $root = dirname(__DIR__);
+        $prefix = 'AlFalaq\\AlFalaq\\';
+        $classes = [];
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($root . '/src', \FilesystemIterator::SKIP_DOTS),
         );
 
         /** @var \SplFileInfo $file */
         foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                require_once $file->getPathname();
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = substr($file->getPathname(), strlen($root . '/src/'), -4);
+            $fqcn = $prefix . str_replace('/', '\\', $relative);
+
+            if (str_starts_with($fqcn, $prefix . 'Tests\\')) {
+                continue;
+            }
+
+            if (class_exists($fqcn) || interface_exists($fqcn) || trait_exists($fqcn) || enum_exists($fqcn)) {
+                $classes[] = $fqcn;
             }
         }
 
-        $names = array_merge(
-            get_declared_classes(),
-            get_declared_interfaces(),
-            get_declared_traits(),
-        );
-        $classes = array_values(array_filter(
-            $names,
-            static fn(string $class): bool => str_starts_with($class, 'AlFalaq\\AlFalak\\')
-                && ! str_starts_with($class, 'AlFalaq\\AlFalak\\Tests\\'),
-        ));
+        $classes = array_values(array_unique($classes));
 
         return $classes;
     }
@@ -56,7 +63,7 @@ final class ArchTest extends TestCase
         $checked = [];
 
         foreach (self::srcClasses() as $class) {
-            if (str_contains($class, '\\SharedKernel\\ValueObjects\\')) {
+            if (str_contains($class, '\\ValueObjects\\')) {
                 $checked[] = $class;
                 self::assertTrue(
                     (new \ReflectionClass($class))->isFinal(),
@@ -65,16 +72,16 @@ final class ArchTest extends TestCase
             }
         }
 
-        self::assertNotEmpty($checked, 'Expected SharedKernel value objects to exist.');
+        self::assertNotEmpty($checked, 'Expected value objects to exist.');
     }
 
     public function testServicesAreFinal(): void
     {
-        $found = false;
+        $checked = [];
 
         foreach (self::srcClasses() as $class) {
-            if (str_contains($class, '\\Prayer\\Services\\')) {
-                $found = true;
+            if (str_contains($class, '\\Services\\')) {
+                $checked[] = $class;
                 self::assertTrue(
                     (new \ReflectionClass($class))->isFinal(),
                     sprintf('Service %s must be final.', $class),
@@ -82,29 +89,20 @@ final class ArchTest extends TestCase
             }
         }
 
-        self::assertTrue($found, 'Expected Prayer services to exist.');
+        self::assertNotEmpty($checked, 'Expected services to exist.');
     }
 
     public function testNoUtilNamespaceRegrowth(): void
     {
-        $root = dirname(__DIR__);
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($root . '/src', \FilesystemIterator::SKIP_DOTS),
-        );
         $checked = 0;
 
-        /** @var \SplFileInfo $file */
-        foreach ($iterator as $file) {
-            if (! $file->isFile() || $file->getExtension() !== 'php') {
-                continue;
-            }
-
+        foreach (self::srcPhpFiles() as $path) {
             $checked++;
-            $contents = (string) file_get_contents($file->getPathname());
+            $code = self::codeWithoutComments($path);
             self::assertDoesNotMatchRegularExpression(
-                '/\bUtil\b/',
-                $contents,
-                sprintf('Framework-style Util/ reference in %s.', $file->getPathname()),
+                '/\bUtils?\b/i',
+                $code,
+                sprintf('Framework-style Util/ reference in %s.', $path),
             );
         }
 
@@ -113,12 +111,12 @@ final class ArchTest extends TestCase
 
     public function testExceptionsExtendBase(): void
     {
-        $base = 'AlFalaq\\AlFalak\\SharedKernel\\Exceptions\\AlFalakException';
-        $found = false;
+        $base = 'AlFalaq\\AlFalaq\\SharedKernel\\Exceptions\\AlFalaqException';
+        $checked = [];
 
         foreach (self::srcClasses() as $class) {
-            if (str_contains($class, '\\SharedKernel\\Exceptions\\') && $class !== $base) {
-                $found = true;
+            if (str_contains($class, '\\Exceptions\\') && $class !== $base) {
+                $checked[] = $class;
                 self::assertTrue(
                     is_subclass_of($class, $base),
                     sprintf('Exception %s must extend %s.', $class, $base),
@@ -126,7 +124,7 @@ final class ArchTest extends TestCase
             }
         }
 
-        self::assertTrue($found, 'Expected SharedKernel exceptions to exist.');
+        self::assertNotEmpty($checked, 'Expected exceptions to exist.');
     }
 
     /** @return list<string> */
@@ -148,6 +146,37 @@ final class ArchTest extends TestCase
         return $files;
     }
 
+    /**
+     * Code with comments stripped (strings kept).
+     *
+     * Scans must ignore doc prose (e.g. a doc link or a "not DateTimeInterface"
+     * sentence) but still catch runtime strings such as 'https://…'.
+     *
+     * @param string $path PHP file to read.
+     * @return string Code with comment tokens replaced by newlines.
+     */
+    private static function codeWithoutComments(string $path): string
+    {
+        $code = (string) file_get_contents($path);
+        $out = '';
+
+        foreach (token_get_all($code) as $token) {
+            if (is_array($token)) {
+                if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
+                    $out .= str_repeat("\n", substr_count($token[1], "\n"));
+
+                    continue;
+                }
+
+                $out .= $token[1];
+            } else {
+                $out .= $token;
+            }
+        }
+
+        return $out;
+    }
+
     public function testNoErrorSuffixedFiles(): void
     {
         $violations = [];
@@ -155,6 +184,14 @@ final class ArchTest extends TestCase
         foreach (self::srcPhpFiles() as $path) {
             if (str_ends_with($path, 'Error.php')) {
                 $violations[] = $path;
+            }
+        }
+
+        foreach (self::srcClasses() as $class) {
+            $short = (new \ReflectionClass($class))->getShortName();
+
+            if (str_ends_with($short, 'Error')) {
+                $violations[] = $class . ': class name must use *Exception suffix, never *Error.';
             }
         }
 
@@ -166,13 +203,13 @@ final class ArchTest extends TestCase
         $violations = [];
 
         foreach (self::srcPhpFiles() as $path) {
-            $contents = (string) file_get_contents($path);
+            $code = self::codeWithoutComments($path);
 
-            if (str_contains($contents, 'DateTimeInterface')) {
+            if (str_contains($code, 'DateTimeInterface')) {
                 $violations[] = $path . ': DateTimeInterface union forbidden, use DateTimeImmutable';
             }
 
-            if (preg_match('/new\s+\\\\?DateTime\s*\(/', $contents) === 1) {
+            if (preg_match('/new\s+\\\\?DateTime\s*\(/', $code) === 1) {
                 $violations[] = $path . ': mutable DateTime forbidden, use DateTimeImmutable';
             }
         }
@@ -191,10 +228,10 @@ final class ArchTest extends TestCase
         $violations = [];
 
         foreach (self::srcPhpFiles() as $path) {
-            $contents = (string) file_get_contents($path);
+            $code = self::codeWithoutComments($path);
 
             foreach ($patterns as $pattern => $label) {
-                if (preg_match($pattern, $contents) === 1) {
+                if (preg_match($pattern, $code) === 1) {
                     $violations[] = $path . ': offline invariant violated (' . $label . ')';
                 }
             }

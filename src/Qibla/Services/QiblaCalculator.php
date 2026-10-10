@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Qibla\Services;
+namespace AlFalaq\AlFalaq\Qibla\Services;
 
-use AlFalaq\AlFalak\Qibla\Contracts\GeodesyCalculator;
-use AlFalaq\AlFalak\Qibla\Strategies\SphericalCalculator;
-use AlFalaq\AlFalak\Qibla\Strategies\Wgs84KarneyCalculator;
-use AlFalaq\AlFalak\Qibla\ValueObjects\QiblaResult;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
+use AlFalaq\AlFalaq\Qibla\Strategies\SphericalCalculator;
+use AlFalaq\AlFalaq\Qibla\Strategies\Wgs84KarneyCalculator;
+use AlFalaq\AlFalaq\Qibla\ValueObjects\QiblaResult;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Qibla entry point; geodesy injected, default = spherical (M2).

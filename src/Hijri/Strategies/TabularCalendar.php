@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Hijri\Strategies;
+namespace AlFalaq\AlFalaq\Hijri\Strategies;
 
-use AlFalaq\AlFalak\Hijri\Contracts\HijriCalendar;
-use AlFalaq\AlFalak\Hijri\ValueObjects\HijriDate;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
+use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 
 /**
  * Tabular (Kuwaiti algorithm) calendar: 30-year leap cycle, no table (M4).

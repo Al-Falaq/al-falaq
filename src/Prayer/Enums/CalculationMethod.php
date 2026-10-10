@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Enums;
+namespace AlFalaq\AlFalaq\Prayer\Enums;
 
-use AlFalaq\AlFalak\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 
 /**
  * The 18 frozen calculation methods (Appendix A normative, M1 freeze).

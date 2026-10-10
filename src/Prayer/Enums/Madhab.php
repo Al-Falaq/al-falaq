@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Enums;
+namespace AlFalaq\AlFalaq\Prayer\Enums;
 
 /**
  * Asr juristic school (drives the AsrRule shadow factor).

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require __DIR__ . "/../vendor/autoload.php";
 
-use AlFalaq\AlFalak\Qibla\Services\QiblaCalculator;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 $coords = Coordinates::fromDegrees(3.1390, 101.6869);
 

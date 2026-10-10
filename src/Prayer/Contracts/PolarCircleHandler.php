@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Contracts;
+namespace AlFalaq\AlFalaq\Prayer\Contracts;
 
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Polar-circle fallback: remap unsolvable coordinates to solvable ones.

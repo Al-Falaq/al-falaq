@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Strategies;
+namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
-use AlFalaq\AlFalak\Prayer\Contracts\IshaRule;
+use AlFalaq\AlFalaq\Prayer\Contracts\IshaRule;
 
 /**
  * Isha as a solar-depression angle below the horizon (most methods).

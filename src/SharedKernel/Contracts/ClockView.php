@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\Contracts;
+namespace AlFalaq\AlFalaq\SharedKernel\Contracts;
 
 /**
  * Minimal clock view for edges that need "now".

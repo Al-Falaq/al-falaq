@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Strategies;
+namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
-use AlFalaq\AlFalak\Prayer\Contracts\HighLatitudeCorrection;
-use AlFalaq\AlFalak\Prayer\ValueObjects\NightPortions;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\Prayer\Contracts\HighLatitudeCorrection;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\NightPortions;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Middle-of-night high-latitude correction (default rule, M1).

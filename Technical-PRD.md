@@ -164,14 +164,14 @@ Python → PHP concept map:
 
 ## 8. Directory Structure (normative)
 
-`src/{Context}/{Role}/`. Namespace `AlFalaq\AlFalak\…`. One class per file.
+`src/{Context}/{Role}/`. Namespace `AlFalaq\AlFalaq\…`. One class per file.
 
 ```
 src/
 ├── SharedKernel/
 │   ├── Contracts/      # DomainException (interface); ClockView (small, no psr dep)
 │   ├── ValueObjects/   # Coordinates, CivilDate, Angle, Minutes, JulianDay
-│   ├── Exceptions/     # AlFalakException (base, extends RuntimeException),
+│   ├── Exceptions/     # AlFalaqException (base, extends RuntimeException),
 │   │                    # AstronomicalException, ConfigurationException, ValidationException,
 │   │                    # InvalidCoordinatesException extends ValidationException
 │   └── Traits/         # traits only: ValidatesFinite, HasWithersGuard
@@ -215,7 +215,7 @@ tests/
 ├── Sweep/              # deterministic property sweeps (seeded mt_srand inline per test)
 ├── Wiring/             # plain-new constructibility smoke test (no container)
 ├── Goldens/            # CSV + Comparator.php + vectors citing Meeus page/ed., Takwim URL+date; generated from PYTHON_PIN
-└── ArchTest.php        # layer + final + no-Util-namespace + exception-hierarchy + no-Error-suffix + DateTimeImmutable-only + offline-IO + docblock rules
+└── ArchTest.php        # layer + all-VOs/Services-final + no-Util-namespace + all-Exceptions-hierarchy + no-Error-file/class + DateTimeImmutable-only + offline-IO + docblock rules (comment-aware scans, autoloader discovery)
 examples/
 ├── basic.php, methods.php, qibla.php, sunnah.php, hijri.php, polar.php, timetable.php, bench.php
 ```
@@ -227,7 +227,7 @@ Role rules:
 - `ValueObjects/`: `final readonly`, validated in ctor, `equals/compareTo/toArray/isoformat/forZone` behavior allowed, no service calls, no trig.
 - `Services/`: `final`, constructor-promoted strategy deps with defaults via `default()` named ctor, single command method (plus `defaultFor()` where method-dependent). No statics holding state. Qibla injection is ctor-only.
 - `Strategies/`: `final`, implement one `Contracts/` interface, no branching on sibling type.
-- `Exceptions/`: one per file, `*Exception` suffix, hierarchy `AlFalakException ← {AstronomicalException, ConfigurationException, ValidationException} ← context-specific`. Static ctors (`::outOfRange(...)`) preferred. `*Error` names are forbidden by ArchTest (regex `Error\.php$`).
+- `Exceptions/`: one per file, `*Exception` suffix, hierarchy `AlFalaqException ← {AstronomicalException, ConfigurationException, ValidationException} ← context-specific`. Static ctors (`::outOfRange(...)`) preferred. `*Error` names are forbidden by ArchTest (filename `Error.php` + class short-name `*Error` banned).
 - `Traits/`: traits only, stateless, `private` helpers. Any trait needing state is rejected in review — convert to collaborator.
 
 ---
@@ -237,14 +237,14 @@ Role rules:
 ```php
 declare(strict_types=1);
 
-use AlFalaq\AlFalak\Prayer\Enums\CalculationMethod;
-use AlFalaq\AlFalak\Prayer\Enums\Prayer;
-use AlFalaq\AlFalak\Prayer\Services\PrayerTimesCalculator;
-use AlFalaq\AlFalak\Qibla\Services\QiblaCalculator;
-use AlFalaq\AlFalak\Hijri\Strategies\TabularCalendar;
-use AlFalaq\AlFalak\Hijri\Services\GregorianToHijriConverter;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
+use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
+use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
+use AlFalaq\AlFalaq\Hijri\Strategies\TabularCalendar;
+use AlFalaq\AlFalaq\Hijri\Services\GregorianToHijriConverter;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 
 $coords = Coordinates::fromDegrees(35.7750, -78.6336);
 $date   = CivilDate::fromDateTime(new DateTimeImmutable('2015-07-12', new DateTimeZone('UTC')));
@@ -348,13 +348,13 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 }
 ```
 
-- **Tests**: plain PHPUnit 11 (no ecosystem runner); layout mirrors `src/` as contexts land (M0: `SharedKernel` + `Sweep` + `Wiring`); `tests/bootstrap.php` fixes UTC; `tests/Goldens/` (pinned-Python parity vectors + `Comparator.php` with dual tolerances + primary-source citations), `tests/Sweep/` (seeded `mt_srand(1234)` property: ordering invariant only when adjustments empty, round-trip `CivilDate`, unwind idempotence), `tests/ArchTest.php` (reflection-based layer bans per §7, `final` rules, `Util`-namespace ban, exception-hierarchy check, `Error`-suffix ban, `DateTimeImmutable`-only check, offline-IO bans, docblock rules: every class-like and public/protected method needs a summary, every `@param $name`, every non-void `@return`), `tests/Wiring/` (plain-`new` constructibility smoke test). Coverage floor enforced by `tools/coverage_gate.php` via pcov on CI as a ratchet: M0 baseline `--min=20`, raised per milestone as contexts land, 95 at M5. Without a local driver the gate runs the suite and passes on green tests with a notice.
+- **Tests**: plain PHPUnit 11 (no ecosystem runner); layout mirrors `src/` as contexts land (M0: `SharedKernel` + `Sweep` + `Wiring`); `tests/bootstrap.php` fixes UTC; `tests/Goldens/` (pinned-Python parity vectors + `Comparator.php` with dual tolerances + primary-source citations), `tests/Sweep/` (seeded `mt_srand(1234)` property: ordering invariant only when adjustments empty, round-trip `CivilDate`, unwind idempotence), `tests/ArchTest.php` (reflection-based layer bans per §7 via composer autoloader, all `ValueObjects/` + all `Services/` final, all `Exceptions/` extend the base, `Util`/`Utils` ban, `Error` filename + class-name ban, comment-aware `DateTimeImmutable`-only + offline-IO scans, docblock rules: every class-like and public/protected method needs a summary, every `@param $name`, every non-void `@return`), `tests/Wiring/` (plain-`new` constructibility smoke test). Coverage floor enforced by `tools/coverage_gate.php` (single `phpunit --coverage-text` run, validated `--min=0-100`) via pcov on CI as a ratchet: M0 baseline `--min=20`, raised per milestone as contexts land, 95 at M5. Without a local driver the gate passes on green tests with a notice (failures still fail).
 - **Mutation** (nightly, not gate until M5, then gate): Infection MSI ≥ 85% on `Prayer/ + Hijri/ + Qibla/ + Astro/ + Moon/` (all math paths — previous Prayer+Hijri-only scope removed).
 - **CI** (`.github/workflows/test.yml`, push): `lint → cs → stan → test → bench` on PHP `8.2, 8.3, 8.4` × `ubuntu/windows` × `TZ=UTC / TZ=America/New_York`. Windows leg asserts UTC goldens (documents that PHP bundles its own tzdata; no OS tzdata requirement). Docs + release workflows mirror upstream.
 
 ## 16. Packaging & Release
 
-- Composer `type: library`, `license: MIT`, PSR-4 `AlFalaq\AlFalak\ → src/`, `exclude-from-classmap: tests/, examples/`.
+- Composer `type: library`, `license: MIT`, PSR-4 `AlFalaq\AlFalaq\ → src/`, `exclude-from-classmap: tests/, examples/`.
 - Ship `README.md`, `LICENSE`, `CHANGELOG.md`, `UQ_PROVENANCE.md` (see §20 Q4).
 - Versioning SemVer; tags `vX.Y.Z`; GitHub release notes from changelog; docs snapshots frozen per minor (`docs/vX.Y/`) with `versions.json` if docs site exists.
 

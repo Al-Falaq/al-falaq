@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\ValueObjects;
+namespace AlFalaq\AlFalaq\Prayer\ValueObjects;
 
 /**
  * High-latitude correction result: Fajr/Isha night fractions (M1).

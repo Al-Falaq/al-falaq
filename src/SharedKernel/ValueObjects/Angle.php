@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\ValueObjects;
+namespace AlFalaq\AlFalaq\SharedKernel\ValueObjects;
 
-use AlFalaq\AlFalak\SharedKernel\Traits\ValidatesFinite;
+use AlFalaq\AlFalaq\SharedKernel\Traits\ValidatesFinite;
 
 /**
  * A validated angle in degrees (any input range; normalize when needed).

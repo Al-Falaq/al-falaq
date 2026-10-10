@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Moon\ValueObjects;
+namespace AlFalaq\AlFalaq\Moon\ValueObjects;
 
 /**
  * Crescent geometry at local sunset: everything evaluators need, nothing else.

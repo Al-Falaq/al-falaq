@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Moon\Strategies;
+namespace AlFalaq\AlFalaq\Moon\Strategies;
 
-use AlFalaq\AlFalak\Moon\Contracts\CrescentEvaluator;
-use AlFalaq\AlFalak\Moon\ValueObjects\CrescentGeometry;
-use AlFalaq\AlFalak\Moon\ValueObjects\CrescentVerdict;
+use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
 
 /**
  * MABIMS-1992 criterion: alt ≥ 2°, elongation ≥ 3°, age ≥ 8 h.

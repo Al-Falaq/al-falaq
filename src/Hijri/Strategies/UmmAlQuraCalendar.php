@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Hijri\Strategies;
+namespace AlFalaq\AlFalaq\Hijri\Strategies;
 
-use AlFalaq\AlFalak\Hijri\Contracts\HijriCalendar;
-use AlFalaq\AlFalak\Hijri\ValueObjects\HijriDate;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
+use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 
 /**
  * Umm al-Qura calendar: shipped 1356–1500 AH table, binary search (M4).

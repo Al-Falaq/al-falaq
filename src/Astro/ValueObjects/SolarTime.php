@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Astro\ValueObjects;
+namespace AlFalaq\AlFalaq\Astro\ValueObjects;
 
 /**
  * Core solar day: transit, sunrise, sunset (UTC) driving prayer math (M1).

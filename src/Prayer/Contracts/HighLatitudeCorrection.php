@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Contracts;
+namespace AlFalaq\AlFalaq\Prayer\Contracts;
 
-use AlFalaq\AlFalak\Prayer\ValueObjects\NightPortions;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\NightPortions;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * High-latitude night splitting (Middle/Seventh of night, twilight angle).

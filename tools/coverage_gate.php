@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-// Coverage gate without test-runner plugins: runs PHPUnit with a coverage
-// driver, parses the "Lines:" summary, and enforces --min.
+// Coverage gate without test-runner plugins: runs PHPUnit once with coverage,
+// parses the "Lines:" summary, and enforces --min.
 //
 // Ratchet policy (Technical-PRD.md §15): the floor starts at the M0 baseline
 // (20) and is raised per milestone as contexts land; M5 restores 95.
-// Without a coverage driver (pcov/xdebug) the gate still runs the suite and
-// passes on green tests with a notice — CI always provides pcov, so the
-// floor is enforced there.
+// Without a coverage driver (pcov/xdebug) the gate passes on green tests
+// with a notice — CI always provides pcov, so the floor is enforced there.
 // Usage: php tools/coverage_gate.php [--min=20]
 $root = dirname(__DIR__);
 chdir($root);
@@ -18,7 +17,19 @@ $min = 20.0;
 
 foreach ($argv ?? [] as $arg) {
     if (is_string($arg) && str_starts_with($arg, '--min=')) {
-        $min = (float) substr($arg, strlen('--min='));
+        $raw = substr($arg, strlen('--min='));
+
+        if (! is_numeric($raw)) {
+            fwrite(STDERR, "coverage_gate: --min must be numeric 0-100, got '{$raw}'.\n");
+            exit(1);
+        }
+
+        $min = (float) $raw;
+
+        if ($min < 0.0 || $min > 100.0) {
+            fwrite(STDERR, "coverage_gate: --min must be within 0-100, got {$min}.\n");
+            exit(1);
+        }
     }
 }
 
@@ -29,20 +40,20 @@ if (! is_file($phpunit)) {
     exit(1);
 }
 
-exec(PHP_BINARY . ' ' . escapeshellarg($phpunit) . ' --no-coverage --colors=never 2>&1', $unitLines, $unitExit);
-
-if ($unitExit !== 0) {
-    echo implode("\n", $unitLines), "\n";
-    fwrite(STDERR, "coverage_gate: test run failed.\n");
-    exit($unitExit);
-}
-
+// Single run: with a driver this yields coverage; without one it still runs
+// the suite (PHPUnit prints "No code coverage driver available").
 exec(PHP_BINARY . ' ' . escapeshellarg($phpunit) . ' --coverage-text --colors=never 2>&1', $lines, $exit);
 
 $output = implode("\n", $lines);
 
 if (str_contains($output, 'No code coverage driver available')) {
     echo $output, "\n";
+
+    if ($exit !== 0) {
+        fwrite(STDERR, "coverage_gate: test run failed.\n");
+        exit($exit);
+    }
+
     fwrite(STDERR, "coverage_gate: no coverage driver (pcov/xdebug); threshold unchecked, tests green.\n");
     exit(0);
 }

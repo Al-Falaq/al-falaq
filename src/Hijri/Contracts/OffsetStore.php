@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Hijri\Contracts;
+namespace AlFalaq\AlFalaq\Hijri\Contracts;
 
-use AlFalaq\AlFalak\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 
 /**
  * Official day corrections injected by callers (e.g. -1…+2 moon-sighting offsets).

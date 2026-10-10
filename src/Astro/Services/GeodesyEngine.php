@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Astro\Services;
+namespace AlFalaq\AlFalaq\Astro\Services;
 
 /**
  * Low-level geodesic engine shared by Qibla strategies (M2).

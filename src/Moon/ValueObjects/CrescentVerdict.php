@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Moon\ValueObjects;
+namespace AlFalaq\AlFalaq\Moon\ValueObjects;
 
 /**
  * One criterion's answer: visible or not, with score and zone/class.

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Traits;
+namespace AlFalaq\AlFalaq\Prayer\Traits;
 
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Coerce Coordinates|[lat, lon] inputs at service boundaries (single place).

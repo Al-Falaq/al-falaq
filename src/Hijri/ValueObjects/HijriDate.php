@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Hijri\ValueObjects;
+namespace AlFalaq\AlFalaq\Hijri\ValueObjects;
 
-use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * A validated Hijri date (month 1–12, day 1–30 universal bound).

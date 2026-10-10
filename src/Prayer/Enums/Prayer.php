@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Enums;
+namespace AlFalaq\AlFalaq\Prayer\Enums;
 
 /**
  * The ten prayer/day markers in schedule order (lowercase values are keys).

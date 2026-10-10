@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Tests\Wiring;
+namespace AlFalaq\AlFalaq\Tests\Wiring;
 
-use AlFalaq\AlFalak\Prayer\Contracts\NextPrayerResolverInterface;
-use AlFalaq\AlFalak\Prayer\Contracts\PrayerTimesCalculatorInterface;
-use AlFalaq\AlFalak\Prayer\Contracts\TimetableServiceInterface;
-use AlFalaq\AlFalak\Prayer\Services\NextPrayerResolver;
-use AlFalaq\AlFalak\Prayer\Services\PrayerTimesCalculator;
-use AlFalaq\AlFalak\Prayer\Services\TimetableService;
-use AlFalaq\AlFalak\Qibla\Services\QiblaCalculator;
-use AlFalaq\AlFalak\Qibla\Strategies\SphericalCalculator;
-use AlFalaq\AlFalak\Qibla\Strategies\Wgs84KarneyCalculator;
+use AlFalaq\AlFalaq\Prayer\Contracts\NextPrayerResolverInterface;
+use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
+use AlFalaq\AlFalaq\Prayer\Contracts\TimetableServiceInterface;
+use AlFalaq\AlFalaq\Prayer\Services\NextPrayerResolver;
+use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
+use AlFalaq\AlFalaq\Prayer\Services\TimetableService;
+use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
+use AlFalaq\AlFalaq\Qibla\Strategies\SphericalCalculator;
+use AlFalaq\AlFalaq\Qibla\Strategies\Wgs84KarneyCalculator;
 use PHPUnit\Framework\TestCase;
 
 /**

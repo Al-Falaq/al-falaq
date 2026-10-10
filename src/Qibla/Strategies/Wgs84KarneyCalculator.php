@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Qibla\Strategies;
+namespace AlFalaq\AlFalaq\Qibla\Strategies;
 
-use AlFalaq\AlFalak\Qibla\Contracts\GeodesyCalculator;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * WGS84-ellipsoid geodesy via Karney (2013) inverse (precise opt-in, M2).

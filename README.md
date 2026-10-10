@@ -15,8 +15,8 @@ Requires PHP `>=8.2` (64-bit), no runtime dependencies.
 ## Quickstart (M0)
 
 ```php
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 
 $coords = Coordinates::fromDegrees(3.1390, 101.6869);
 $date = CivilDate::fromDateTime(new DateTimeImmutable('now', new DateTimeZone('UTC')));

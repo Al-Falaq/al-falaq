@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\Contracts;
+namespace AlFalaq\AlFalaq\SharedKernel\Contracts;
 
 /**
  * Marker for every domain exception in this library.

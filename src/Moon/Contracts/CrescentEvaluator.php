@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Moon\Contracts;
+namespace AlFalaq\AlFalaq\Moon\Contracts;
 
-use AlFalaq\AlFalak\Moon\ValueObjects\CrescentGeometry;
-use AlFalaq\AlFalak\Moon\ValueObjects\CrescentVerdict;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
 
 /**
  * One visibility criterion over sunset crescent geometry (pure function).

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\Exceptions;
+namespace AlFalaq\AlFalaq\SharedKernel\Exceptions;
 
 /**
  * Thrown for out-of-range or misshapen coordinates; messages teach the fix.
  */
-class ValidationException extends AlFalakException {}
+class ValidationException extends AlFalaqException {}

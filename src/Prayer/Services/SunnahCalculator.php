@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Services;
+namespace AlFalaq\AlFalaq\Prayer\Services;
 
-use AlFalaq\AlFalak\Prayer\ValueObjects\CalculationParameters;
-use AlFalaq\AlFalak\Prayer\ValueObjects\PrayerSchedule;
-use AlFalaq\AlFalak\Prayer\ValueObjects\SunnahTimes;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Minutes;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\SunnahTimes;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
 
 /**
  * Sunnah night markers (middle of night, thirds) from two UTC schedules (M2).
@@ -61,7 +61,7 @@ final class SunnahCalculator
         $fajr = $this->tomorrow->fajr;
 
         if ($fajr <= $maghrib) {
-            throw new \AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException('Degenerate Sunnah night: fajr must be after maghrib.');
+            throw new \AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException('Degenerate Sunnah night: fajr must be after maghrib.');
         }
 
         $nightSeconds = $fajr->getTimestamp() - $maghrib->getTimestamp();
@@ -70,7 +70,7 @@ final class SunnahCalculator
             $moved = $maghrib->modify(sprintf('+%d seconds', (int) round($nightSeconds * $fraction)));
 
             if ($moved === false) {
-                throw new \AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException('Unable to compute Sunnah fraction.');
+                throw new \AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException('Unable to compute Sunnah fraction.');
             }
 
             return Minutes::roundedHalfUp($moved);

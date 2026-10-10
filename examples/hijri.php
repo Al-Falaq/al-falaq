@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require __DIR__ . "/../vendor/autoload.php";
 
-use AlFalaq\AlFalak\Hijri\Strategies\TabularCalendar;
-use AlFalaq\AlFalak\Hijri\Services\GregorianToHijriConverter;
+use AlFalaq\AlFalaq\Hijri\Strategies\TabularCalendar;
+use AlFalaq\AlFalaq\Hijri\Services\GregorianToHijriConverter;
 
 try {
     $hijri = (new GregorianToHijriConverter())->convert(

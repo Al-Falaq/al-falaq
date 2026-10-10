@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Qibla\ValueObjects;
+namespace AlFalaq\AlFalaq\Qibla\ValueObjects;
 
-use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * Qibla answer: initial bearing + great-circle/ellipsoid distance.

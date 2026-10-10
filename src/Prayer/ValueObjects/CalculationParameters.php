@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\ValueObjects;
+namespace AlFalaq\AlFalaq\Prayer\ValueObjects;
 
-use AlFalaq\AlFalak\Prayer\Contracts\IshaRule;
-use AlFalaq\AlFalak\Prayer\Contracts\MaghribRule;
-use AlFalaq\AlFalak\Prayer\Enums\HighLatitudeRule;
-use AlFalaq\AlFalak\Prayer\Enums\Madhab;
-use AlFalaq\AlFalak\Prayer\Enums\PolarCircleRule;
-use AlFalaq\AlFalak\SharedKernel\Traits\HasWithersGuard;
-use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\Prayer\Contracts\IshaRule;
+use AlFalaq\AlFalaq\Prayer\Contracts\MaghribRule;
+use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
+use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
+use AlFalaq\AlFalaq\SharedKernel\Traits\HasWithersGuard;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * Immutable prayer configuration: method defaults plus caller overrides.

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\Traits;
+namespace AlFalaq\AlFalaq\SharedKernel\Traits;
 
-use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * Shared finite-float guard: bools and NaN/INF never reach the trig.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Astro\ValueObjects;
+namespace AlFalaq\AlFalaq\Astro\ValueObjects;
 
 /**
  * Solar position bundle feeding SolarTime (transit/sunrise/sunset).

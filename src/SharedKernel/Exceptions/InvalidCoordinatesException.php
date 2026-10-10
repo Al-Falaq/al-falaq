@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\Exceptions;
+namespace AlFalaq\AlFalaq\SharedKernel\Exceptions;
 
 /**
  * Coordinates failed validation; the message states the valid range, the

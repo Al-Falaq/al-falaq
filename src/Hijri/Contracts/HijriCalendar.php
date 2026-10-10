@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Hijri\Contracts;
+namespace AlFalaq\AlFalaq\Hijri\Contracts;
 
-use AlFalaq\AlFalak\Hijri\ValueObjects\HijriDate;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 
 /**
  * One Hijri calendar system: conversion both ways + metadata (driven port).

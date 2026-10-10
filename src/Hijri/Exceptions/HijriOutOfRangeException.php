@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Hijri\Exceptions;
+namespace AlFalaq\AlFalaq\Hijri\Exceptions;
 
-use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * Date outside a calendar's supported range (e.g. past the UQ table edge).

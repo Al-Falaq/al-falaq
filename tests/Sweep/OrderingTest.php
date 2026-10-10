@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Tests\Sweep;
+namespace AlFalaq\AlFalaq\Tests\Sweep;
 
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Angle;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Angle;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 

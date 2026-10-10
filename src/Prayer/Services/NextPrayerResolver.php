@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\Services;
+namespace AlFalaq\AlFalaq\Prayer\Services;
 
-use AlFalaq\AlFalak\Prayer\Contracts\NextPrayerResolverInterface;
-use AlFalaq\AlFalak\Prayer\ValueObjects\NextPrayer;
-use AlFalaq\AlFalak\Prayer\ValueObjects\PrayerSchedule;
+use AlFalaq\AlFalaq\Prayer\Contracts\NextPrayerResolverInterface;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\NextPrayer;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 
 /**
  * Next-prayer badge logic; pure function of two schedules + explicit now (M1).

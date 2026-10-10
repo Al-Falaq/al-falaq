@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Astro\Services;
+namespace AlFalaq\AlFalaq\Astro\Services;
 
-use AlFalaq\AlFalak\Astro\Contracts\SolarModel;
-use AlFalaq\AlFalak\Astro\ValueObjects\SolarPosition;
+use AlFalaq\AlFalaq\Astro\Contracts\SolarModel;
+use AlFalaq\AlFalaq\Astro\ValueObjects\SolarPosition;
 
 /**
  * Mean-sun solar calculator (Meeus transcription, M1).

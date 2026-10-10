@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Qibla\Contracts;
+namespace AlFalaq\AlFalaq\Qibla\Contracts;
 
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Geodesic inverse from an observer toward Makkah (driven port).

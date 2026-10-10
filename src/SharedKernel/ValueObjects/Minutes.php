@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\ValueObjects;
+namespace AlFalaq\AlFalaq\SharedKernel\ValueObjects;
 
-use AlFalaq\AlFalak\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * UTC-only minute math (rounding and shifting prayer instants).

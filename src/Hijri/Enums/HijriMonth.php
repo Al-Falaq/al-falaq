@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Hijri\Enums;
+namespace AlFalaq\AlFalaq\Hijri\Enums;
 
 /**
  * The twelve Hijri months with en/ar display labels (no intl needed).

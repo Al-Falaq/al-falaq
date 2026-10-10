@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Tests\Goldens;
+namespace AlFalaq\AlFalaq\Tests\Goldens;
 
 final class Comparator
 {

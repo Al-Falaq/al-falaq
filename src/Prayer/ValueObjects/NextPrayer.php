@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Prayer\ValueObjects;
+namespace AlFalaq\AlFalaq\Prayer\ValueObjects;
 
-use AlFalaq\AlFalak\Prayer\Enums\Prayer;
+use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 
 /**
  * Resolver answer: which prayer, at what instant, in how many seconds.

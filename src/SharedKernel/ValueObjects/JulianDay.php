@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\ValueObjects;
+namespace AlFalaq\AlFalaq\SharedKernel\ValueObjects;
 
 /**
  * Julian Day number (astronomical day count; 2000-01-01 00:00 UTC = 2451544.5).

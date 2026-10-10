@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\Hijri\Services;
+namespace AlFalaq\AlFalaq\Hijri\Services;
 
-use AlFalaq\AlFalak\Hijri\Contracts\HijriCalendar;
-use AlFalaq\AlFalak\Hijri\Contracts\OffsetStore;
-use AlFalaq\AlFalak\Hijri\ValueObjects\HijriDate;
-use AlFalaq\AlFalak\Prayer\ValueObjects\CalculationParameters;
-use AlFalaq\AlFalak\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
+use AlFalaq\AlFalaq\Hijri\Contracts\OffsetStore;
+use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Gregorian→Hijri orchestration: convert, sunset-rollover, offsets (M4).

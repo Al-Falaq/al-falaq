@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlFalaq\AlFalak\SharedKernel\ValueObjects;
+namespace AlFalaq\AlFalaq\SharedKernel\ValueObjects;
 
-use AlFalaq\AlFalak\SharedKernel\Traits\ValidatesFinite;
-use AlFalaq\AlFalak\SharedKernel\Exceptions\InvalidCoordinatesException;
+use AlFalaq\AlFalaq\SharedKernel\Traits\ValidatesFinite;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\InvalidCoordinatesException;
 
 /**
  * Validated geographic coordinates (lat −90…90, lon −180…180, WGS84 degrees).
