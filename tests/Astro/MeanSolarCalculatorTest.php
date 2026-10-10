@@ -6,6 +6,7 @@ namespace AlFalaq\AlFalaq\Tests\Astro;
 
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use PHPUnit\Framework\TestCase;
@@ -71,5 +72,67 @@ final class MeanSolarCalculatorTest extends TestCase
         self::assertFalse($calc->isSolarDefined($tromsoe, $polarDate, 0.0));
         $this->expectException(AstronomicalException::class);
         $calc->solarTime($tromsoe, $polarDate, 0.0);
+    }
+
+    public function testAfternoonMatchesPin(): void
+    {
+        // Oracle: pin SolarTime.afternoon (author-verified 2026-10-10).
+        $calc = new MeanSolarCalculator();
+        $coords = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 1, 15);
+
+        $shafi = $calc->afternoon($coords, $date, 0.0, 1.0);
+        self::assertNotNull($shafi);
+        self::assertSame('2025-01-15 08:46:29', $shafi->format('Y-m-d H:i:s'));
+
+        $hanafi = $calc->afternoon($coords, $date, 0.0, 2.0);
+        self::assertNotNull($hanafi);
+        self::assertSame('2025-01-15 09:41:44', $hanafi->format('Y-m-d H:i:s'));
+    }
+
+    public function testElevationShiftsRiseSet(): void
+    {
+        // Oracle: pin SolarTime(elevation_m=100) (author-verified 2026-10-10).
+        $calc = new MeanSolarCalculator();
+        $triple = $calc->solarTime(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            100.0,
+        );
+
+        self::assertSame('2025-01-14 23:22:34', $triple->sunrise->format('Y-m-d H:i:s'));
+        self::assertSame('2025-01-15 11:22:44', $triple->sunset->format('Y-m-d H:i:s'));
+    }
+
+    public function testElevationValidationRejectsBadInput(): void
+    {
+        $calc = new MeanSolarCalculator();
+        $coords = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 1, 15);
+
+        foreach ([true, '100', NAN, INF, -1.0, null] as $bad) {
+            try {
+                $calc->hourAngle($coords, $date, $bad, -18.0, false);
+                self::fail('Expected ValidationException for elevation ' . var_export($bad, true));
+            } catch (ValidationException $e) {
+                self::assertNotSame('', $e->getMessage());
+            }
+        }
+    }
+
+    public function testShadowValidationRejectsBadInput(): void
+    {
+        $calc = new MeanSolarCalculator();
+        $coords = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 1, 15);
+
+        foreach ([0.0, -1.0, NAN, INF, true, '1'] as $bad) {
+            try {
+                $calc->afternoon($coords, $date, 0.0, $bad);
+                self::fail('Expected ValidationException for shadow ' . var_export($bad, true));
+            } catch (ValidationException $e) {
+                self::assertNotSame('', $e->getMessage());
+            }
+        }
     }
 }
