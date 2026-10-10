@@ -10,6 +10,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Meeus engine: physical bands (the golden gate lands in Task 7).
+ *
+ * Structural bands only; transcription correctness is gated by the Task 7
+ * moon goldens plus the Example 47.a distance pin below.
  */
 final class CrescentEphemerisTest extends TestCase
 {
@@ -25,7 +28,7 @@ final class CrescentEphemerisTest extends TestCase
         self::assertLessThanOrEqual(410000.0, $geo['distanceKm']);
     }
 
-    public function testTopocentricStaysNearGeocentric(): void
+    public function testTopocentricStaysInPhysicalBands(): void
     {
         $engine = new CrescentEphemeris();
         $geo = $engine->lunarGeocentric(2460734.977337402);
@@ -41,6 +44,13 @@ final class CrescentEphemerisTest extends TestCase
         self::assertLessThanOrEqual(90.0, $topo['altitudeDeg']);
         self::assertGreaterThanOrEqual(0.0, $topo['azimuthDeg']);
         self::assertLessThan(360.0, $topo['azimuthDeg']);
+    }
+
+    public function testLunarDistanceMatchesMeeusExample47a(): void
+    {
+        $geo = (new CrescentEphemeris())->lunarGeocentric(2448724.5);
+
+        self::assertTrue(abs($geo['distanceKm'] - 368409.7) <= 1.0);
     }
 
     public function testSiderealTimeUnwinds(): void

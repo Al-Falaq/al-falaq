@@ -26,13 +26,9 @@ final class CrescentEphemeris
     public const PARALLAX_RADIUS_KM = 6378.137;
 
     /**
-     * Mean solar distance in km (IAU 2012 exact AU).
-     *
-     * The pin SolarCoordinates carries no distance (the pin applies no
-     * parallax correction to the sun); at 1 AU the parallax term peaks at
-     * ~0.0024 deg, far below the 0.01 deg golden gate.
+     * Mean solar distance in km (IAU 2012 exact AU; the pin SolarCoordinates carries none).
      */
-    private const SOLAR_DISTANCE_KM = 149597870.7;
+    public const SOLAR_DISTANCE_KM = 149597870.7;
 
     /**
      * Meeus 2nd ed. Tables 47.A + 47.B merged (pin LunarCoordinates.py:28-151).
@@ -206,12 +202,14 @@ final class CrescentEphemeris
     public function lunarGeocentric(float $julianDayTT): array
     {
         $century = $this->julianCentury($julianDayTT);
+        // Mean elements Lp/D/M/Mp/F; pin LunarCoordinates.py:167-171.
         $lonMean = $this->unwindAngle(218.3164477 + 481267.88123421 * $century - 0.0015786 * $century * $century);
         $elongation = $this->unwindAngle(297.8501921 + 445267.1114034 * $century - 0.0018819 * $century * $century);
         $anomaly = $this->unwindAngle(357.5291092 + 35999.0502909 * $century - 0.0001536 * $century * $century);
         $lunarAnomaly = $this->unwindAngle(134.9633964 + 477198.8675055 * $century + 0.0087414 * $century * $century);
         $argument = $this->unwindAngle(93.2720950 + 483202.0175233 * $century - 0.0036539 * $century * $century);
 
+        // Meeus eq. 47.6; pin LunarCoordinates.py:173-174.
         $eBase = 1.0 - 0.002516 * $century - 0.0000074 * $century * $century;
         $eSquared = $eBase * $eBase;
 
@@ -222,7 +220,7 @@ final class CrescentEphemeris
         foreach (self::TABLE_47_TERMS as [$dCoef, $mCoef, $mpCoef, $fCoef, $lonCoef, $latCoef, $radiusCoef]) {
             $term = deg2rad($dCoef * $elongation + $mCoef * $anomaly + $mpCoef * $lunarAnomaly + $fCoef * $argument);
             $mAbs = abs($mCoef);
-            $eFactor = $mAbs === 1 ? $eBase : ($mAbs === 2 ? $eSquared : 1.0);
+            $eFactor = $mAbs === 1 ? $eBase : ($mAbs === 2 ? $eSquared : 1.0); // eq. 47.6: E^|m|; table holds only |m| <= 2
             $lonSum += $eFactor * $lonCoef * sin($term);
             $latSum += $eFactor * $latCoef * sin($term);
             $radiusSum += $eFactor * $radiusCoef * cos($term);
@@ -234,6 +232,7 @@ final class CrescentEphemeris
         $lonRad = deg2rad($lonMean);
         $argRad = deg2rad($argument);
         $mpRad = deg2rad($lunarAnomaly);
+        // Additive Venus/Jupiter/Earth-figure corrections (p. 338); pin LunarCoordinates.py:194-206.
         $lonSum += 3958.0 * sin($a1) + 1962.0 * sin($lonRad - $argRad) + 318.0 * sin($a2);
         $latSum += -2235.0 * sin($lonRad) + 382.0 * sin($a3)
             + 175.0 * sin($a1 - $argRad) + 175.0 * sin($a1 + $argRad)
@@ -241,6 +240,7 @@ final class CrescentEphemeris
 
         $longitude = $this->unwindAngle($lonMean + $lonSum / 1e6);
         $latitude = $latSum / 1e6;
+        // Base radius 385000.56 km; pin LunarCoordinates.py:209.
         $distanceKm = 385000.56 + $radiusSum / 1000.0;
 
         $obliquity = deg2rad($this->apparentObliquity($century));
@@ -274,6 +274,10 @@ final class CrescentEphemeris
      */
     public function topocentric(float $raDeg, float $decDeg, float $distanceKm, Coordinates $observer, float $lstHours): array
     {
+        if (! is_finite($distanceKm) || $distanceKm <= 0.0) {
+            throw new AstronomicalException(sprintf('CrescentEphemeris::topocentric expected a finite positive distanceKm, got %s.', var_export($distanceKm, true)));
+        }
+
         $hourAngle = deg2rad($lstHours * 15.0 - $raDeg);
         $latitude = deg2rad($observer->latitude);
         $declination = deg2rad($decDeg);
@@ -286,11 +290,7 @@ final class CrescentEphemeris
             cos($hourAngle) * sin($latitude) - tan($declination) * cos($latitude),
         )) + 180.0);
 
-        // Pin-verbatim max() intent (CrescentGeometry.py:237), written
-        // NaN-safe: a non-finite distance falls back to 1.0 km and the
-        // finite-output guard below still raises on bad angles.
-        $safeDistance = $distanceKm > 1.0 ? $distanceKm : 1.0;
-        $parallax = rad2deg(asin($this->clamp(self::PARALLAX_RADIUS_KM / $safeDistance)));
+        $parallax = rad2deg(asin($this->clamp(self::PARALLAX_RADIUS_KM / $distanceKm)));
         $altitude = $altGeo - $parallax * cos(deg2rad($altGeo));
 
         foreach (['altitudeDeg' => $altitude, 'azimuthDeg' => $azimuth] as $name => $value) {
