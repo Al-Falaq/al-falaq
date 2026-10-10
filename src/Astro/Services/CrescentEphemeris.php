@@ -303,7 +303,7 @@ final class CrescentEphemeris
     }
 
     /**
-     * Local sidereal time in hours (Meeus Ch.12; confirm formula via pin refs).
+     * Local sidereal time in hours (Meeus Ch.12; pin-verbatim from SolarCoordinates.apparent_sidereal_time at a7baa8b).
      *
      * Pin a7baa8b SolarCoordinates.apparent_sidereal_time (mean sidereal
      * time plus the nutation term, p. 88) shifted by east-positive
@@ -565,7 +565,7 @@ final class CrescentEphemeris
     /**
      * Mean sidereal time at Greenwich in degrees.
      *
-     * Meeus 2nd ed. p. 165; pin a7baa8b Astronomical.mean_sidereal_time.
+     * Meeus 2nd ed. Ch.12 pp. 87-88; pin a7baa8b Astronomical.mean_sidereal_time.
      *
      * @param float $century Julian centuries since J2000.0.
      * @return float Sidereal angle unwound to [0, 360).
