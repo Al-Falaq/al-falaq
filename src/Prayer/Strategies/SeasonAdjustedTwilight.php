@@ -11,7 +11,8 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
  * Moon-Sighting-Committee seasonal twilight offsets (pin Twilight.py, M1).
  *
  * Polynomial second offsets from sunrise/sunset; the calculator applies
- * them as safe caps on every MSC row (seventh-of-night temps at |lat| >= 55).
+ * them as safe caps on every MSC row (seventh-of-night temps at signed
+ * lat >= 55, pin `_set_fajr`/`_set_isha` gate).
  */
 final class SeasonAdjustedTwilight implements TwilightModel
 {

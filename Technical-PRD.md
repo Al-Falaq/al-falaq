@@ -408,7 +408,7 @@ Dual-enter from `PYTHON_PIN:CalculationMethod.py`. Columns: `fajrAngle | ishaRul
 | KARACHI | 18.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
 | UMM_AL_QURA | 18.5 | Interval 90/120 Ramadan | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
 | DUBAI | 18.2 | Angle 18.2 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
-| MOON_SIGHTING_COMMITTEE | 18.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | SEASONAL** | NEAREST_LAT |
+| MOON_SIGHTING_COMMITTEE | 18.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE** | NEAREST_LAT |
 | NORTH_AMERICA | 15.0 | Angle 15.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
 | KUWAIT | 18.0 | Angle 17.5 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
 | QATAR | 18.0 | Interval 90 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
@@ -421,7 +421,7 @@ Dual-enter from `PYTHON_PIN:CalculationMethod.py`. Columns: `fajrAngle | ishaRul
 | MUIS | 20.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
 | BRUNEI | 20.0 | Angle 18.0 | Sunset | 10 | 15 | 28 | 0 | SHAFI | MIDDLE | NEAREST_LAT |
 
-`*` NONE requires caller-supplied rules (`defaultParameters()` throws `ConfigurationException`). `**` MSC seasonal handling is method-gated, not portions-gated: seasonal safe caps apply on every MSC row at ALL latitudes; the seventh-of-night temp replaces the angle temp only at signed latitude ≥ 55 (pin `_set_fajr`/`_set_isha` gate). `SEASONAL_TWILIGHT` rule mirrors MSC at all latitudes (same gating arm).
+`*` NONE requires caller-supplied rules (`defaultParameters()` throws `ConfigurationException`). `**` The MSC preset ships `MIDDLE_OF_NIGHT` (code wins); seasonal behavior engages via the method gate, not the portions gate: seasonal safe caps apply on every MSC row at ALL latitudes; the seventh-of-night temp replaces the angle temp only at signed latitude ≥ 55 (pin `_set_fajr`/`_set_isha` gate). `SEASONAL_TWILIGHT` rule mirrors MSC at all latitudes (same gating arm).
 Corrections vs the transcription aid (pin wins, freeze `c151828`): ishraq 15 / dhuha 28 are the pin ctor defaults (aid said 0/15); `dhuhr+` is 0 everywhere — the aid column conflated `methodAdjustments.dhuhr` with the offset; KARACHI is SHAFI per pin (aid said HANAFI).
 `methodAdjustments` exactly per pin: MWL/EGYPTIAN/KARACHI/NA/SINGAPORE/JAKIM `{dhuhr:+1}`; DUBAI `{sunrise:−3,dhuhr:+3,asr:+3,maghrib:+3}`; MSC `{dhuhr:+5,maghrib:+3}`; all other rows empty.
 `***` TURKEY/KEMENAG/MUIS/BRUNEI were provisional at freeze, then confirmed against official tables (`28ff5ce`): TURKEY Diyanet temkin `{sunrise:−7,dhuhr:+5,asr:+4,maghrib:+7}` + imsak 0 (Imsak IS fajr) + SHAFI (Imamayn factor-1 ikindi); KEMENAG ihtiyat `{fajr:+2,sunrise:−2,dhuhr:+4,asr:+2,maghrib:+2,isha:+2}`; MUIS/BRUNEI `{dhuhr:+1}` zohor convention. Residual ±1 min cells emptied per file with reasons (`adee976`).
