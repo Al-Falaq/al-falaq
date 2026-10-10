@@ -50,9 +50,9 @@ final class MoonGoldensTest extends TestCase
                 CivilDate::fromYmd($y, $m, $d),
             );
 
-            self::assertSame(self::field($row, 'yallop_zone', $line, $file), $verdicts['yallop']->zone);
+            self::assertSame(self::field($row, 'yallop_zone', $line, $file), $verdicts['yallop']->zone, 'yallop zone line ' . $line);
             self::assertTrue(abs($verdicts['yallop']->score - (float) self::field($row, 'yallop_q', $line, $file)) <= 0.01, 'q line ' . $line);
-            self::assertSame(self::field($row, 'odeh_class', $line, $file), $verdicts['odeh']->zone);
+            self::assertSame(self::field($row, 'odeh_class', $line, $file), $verdicts['odeh']->zone, 'odeh class line ' . $line);
             self::assertTrue(abs($verdicts['odeh']->score - (float) self::field($row, 'odeh_v', $line, $file)) <= 0.01, 'V line ' . $line);
             self::assertSame(self::field($row, 'neo_mabims_2021', $line, $file), $verdicts['neomabims2021']->visible ? 'true' : 'false', 'neo line ' . $line);
             self::assertSame(self::field($row, 'mabims_1992', $line, $file), $verdicts['mabims1992']->visible ? 'true' : 'false', 'old92 line ' . $line);
@@ -113,7 +113,7 @@ final class MoonGoldensTest extends TestCase
                 Coordinates::fromDegrees($lat, $lon),
                 CivilDate::fromYmd($y, $m, $d),
             );
-            $label = sprintf('(%s,%d-%02d-%02d)', $lat, $y, $m, $d);
+            $label = sprintf('(%s,%s,%d-%02d-%02d)', $lat, $lon, $y, $m, $d);
 
             self::assertSame($zone, $verdicts['yallop']->zone, 'yallop ' . $label);
             self::assertSame($class, $verdicts['odeh']->zone, 'odeh ' . $label);
@@ -147,11 +147,12 @@ final class MoonGoldensTest extends TestCase
                 $coordinates = Coordinates::fromDegrees($lat, $lon);
                 $date = CivilDate::fromYmd($y, $m, $d);
                 $geometry = $calculator->atSunset($coordinates, $date);
+                $label = sprintf('(%s,%s,%d-%02d-%02d)', $lat, $lon, $y, $m, $d);
 
-                self::assertTrue(is_finite($geometry->elongationDeg));
-                self::assertTrue(abs($geometry->elongationDeg - $arcl) <= 0.01, sprintf('arcl (%s,%d-%02d-%02d)', $lat, $y, $m, $d));
-                self::assertNull($geometry->lagMinutes);
-                self::assertNull($geometry->ageAtMoonsetHours);
+                self::assertTrue(is_finite($geometry->elongationDeg), $label);
+                self::assertTrue(abs($geometry->elongationDeg - $arcl) <= 0.01, 'arcl ' . $label);
+                self::assertNull($geometry->lagMinutes, $label);
+                self::assertNull($geometry->ageAtMoonsetHours, $label);
 
                 // Composition-root fallback must not throw on the null window
                 // and must follow the alt/elongation-only branch.
