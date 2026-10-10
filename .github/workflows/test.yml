@@ -5,17 +5,33 @@ on:
   pull_request:
 
 jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: date
+          coverage: none
+      - run: composer install --no-progress
+      - run: composer lint
+      - run: composer cs
+      - run: composer stan
+
   test:
     strategy:
       matrix:
         php: ['8.2', '8.3', '8.4']
-        os: [ubuntu-latest, windows-latest]
-        tz: ['UTC', 'America/New_York']
-    runs-on: ${{ matrix.os }}
+        tz: ['UTC']
+        include:
+          - php: '8.4'
+            tz: America/New_York
+    runs-on: ubuntu-latest
     env:
       TZ: ${{ matrix.tz }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
@@ -24,8 +40,5 @@ jobs:
       - run: composer install --no-progress
       - run: >-
           php -r 'exit(count(json_decode(file_get_contents("composer.lock"), true)["packages"]) === 0 ? 0 : 1);'
-      - run: composer lint
-      - run: composer cs
-      - run: composer stan
       - run: composer test
       - run: composer bench

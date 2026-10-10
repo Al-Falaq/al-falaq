@@ -1,0 +1,36 @@
+name: pre-release
+
+# Windows gate: regular CI is ubuntu-only for speed (see test.yml). Run this
+# manually (Actions → pre-release → Run workflow) before cutting a release,
+# or let it run automatically when a `v*` tag is pushed. It asserts the same
+# UTC goldens on Windows, proving PHP's bundled tzdata needs no OS tzdata.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test-windows:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+        tz: ['UTC']
+        include:
+          - php: '8.4'
+            tz: America/New_York
+    runs-on: windows-latest
+    env:
+      TZ: ${{ matrix.tz }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: date
+          coverage: pcov
+      - run: composer install --no-progress
+      - run: >-
+          php -r 'exit(count(json_decode(file_get_contents("composer.lock"), true)["packages"]) === 0 ? 0 : 1);'
+      - run: composer test
+      - run: composer bench
