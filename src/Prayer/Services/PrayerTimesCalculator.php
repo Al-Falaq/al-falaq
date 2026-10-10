@@ -11,15 +11,18 @@ use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\TwilightModel;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
+use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
+use AlFalaq\AlFalaq\Prayer\Strategies\HanafiAsr;
 use AlFalaq\AlFalaq\Prayer\Strategies\MakkahHandler;
 use AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\NearestDayHandler;
 use AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeventhOfNightCorrection;
+use AlFalaq\AlFalaq\Prayer\Strategies\ShafiAsr;
 use AlFalaq\AlFalaq\Prayer\Strategies\ThrowHandler;
 use AlFalaq\AlFalaq\Prayer\Strategies\TwilightAngleCorrection;
 use AlFalaq\AlFalaq\Prayer\Traits\NormalizesCoordinatesInput;
@@ -264,7 +267,12 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         $dhuha = $this->adjusted(Minutes::add($sunrise, $parameters->dhuhaOffsetMinutes), $eff, Prayer::DHUHA);
         $dhuhr = $this->adjusted(Minutes::add($day->transit, $parameters->dhuhrOffsetMinutes), $eff, Prayer::DHUHR);
 
-        $asrTemp = $this->solar->afternoon($effCoords, $effDate, $elev, $parameters->madhab->shadowLength());
+        $asrRule = match ($parameters->madhab) {
+            Madhab::SHAFI => new ShafiAsr(),
+            Madhab::HANAFI => new HanafiAsr(),
+        };
+
+        $asrTemp = $this->solar->afternoon($effCoords, $effDate, $elev, $asrRule->shadowLength());
 
         if ($asrTemp === null) {
             throw new AstronomicalException(sprintf(

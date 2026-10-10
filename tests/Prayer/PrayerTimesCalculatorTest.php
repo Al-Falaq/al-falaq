@@ -220,4 +220,55 @@ final class PrayerTimesCalculatorTest extends TestCase
             'low-latitude rule-arm isha matches MSC isha',
         );
     }
+
+    public function testHanafiAsrIsLaterThanShafiAsr(): void
+    {
+        $coords = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 1, 15);
+
+        $shafi = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        $hanafi = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::HANAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        $shafiAsr = PrayerTimesCalculator::default()->calculate($coords, $date, $shafi)->timeFor(Prayer::ASR);
+        $hanafiAsr = PrayerTimesCalculator::default()->calculate($coords, $date, $hanafi)->timeFor(Prayer::ASR);
+
+        self::assertGreaterThan(
+            $shafiAsr->getTimestamp(),
+            $hanafiAsr->getTimestamp(),
+            'Hanafi asr must be strictly later than Shafi asr via the AsrRule strategy seam.',
+        );
+    }
 }

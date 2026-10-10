@@ -75,13 +75,11 @@ final class PrayerGoldensTest extends TestCase
 
     public function testAllGoldenRowsMatchPinMinutes(): void
     {
-        $checked = 0;
-
         foreach (self::expectedFiles() as $file) {
-            $checked += $this->checkFile(self::GOLDEN_DIR . '/' . $file);
-        }
+            $rows = $this->checkFile(self::GOLDEN_DIR . '/' . $file);
 
-        self::assertGreaterThan(0, $checked);
+            self::assertGreaterThan(0, $rows, sprintf('Golden file %s contributed 0 rows.', $file));
+        }
     }
 
     /**
@@ -119,6 +117,7 @@ final class PrayerGoldensTest extends TestCase
         $method = CalculationMethod::from(substr(basename($path, '.csv'), 7));
 
         $rows = 0;
+        $line = 1;
 
         while (true) {
             $row = fgetcsv($handle);
@@ -127,8 +126,17 @@ final class PrayerGoldensTest extends TestCase
                 break;
             }
 
+            $line++;
+
             if (count($header) !== count($row)) {
-                continue;
+                fclose($handle);
+                self::fail(sprintf(
+                    'Column-count mismatch in golden file %s line %d: header has %d columns, row has %d.',
+                    $path,
+                    $line,
+                    count($header),
+                    count($row),
+                ));
             }
 
             $data = [];
