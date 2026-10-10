@@ -276,4 +276,312 @@ final readonly class CalculationParameters
             $this->adjustments,
         );
     }
+
+    /**
+     * Override the Fajr solar-depression angle, keeping everything else.
+     *
+     * @param mixed $angle Finite float in [0, 30].
+     * @return self New parameters; this instance is unchanged.
+     */
+    public function withFajrAngle(mixed $angle): self
+    {
+        $value = self::validateAngle($angle, 'fajrAngle');
+
+        return new self(
+            $this->method,
+            $this->madhab,
+            $this->highLatitudeRule,
+            $this->polarCircleRule,
+            $value,
+            $this->ishaRule,
+            $this->maghribRule,
+            $this->dhuhrOffsetMinutes,
+            $this->imsakOffsetMinutes,
+            $this->ishraqOffsetMinutes,
+            $this->dhuhaOffsetMinutes,
+            $this->elevationM,
+            $this->isRamadan,
+            $this->methodAdjustments,
+            $this->adjustments,
+        );
+    }
+
+    /**
+     * Override the Isha rule, keeping everything else.
+     *
+     * @param IshaRule $ishaRule Angle (angle in [0, 30]) or interval (minutes >= 1).
+     * @return self New parameters; this instance is unchanged.
+     */
+    public function withIshaRule(IshaRule $ishaRule): self
+    {
+        if ($ishaRule instanceof AngleIsha) {
+            self::validateAngle($ishaRule->angle, 'ishaAngle');
+        } elseif ($ishaRule->minutesAfterMaghrib() === null || $ishaRule->minutesAfterMaghrib() < 1) {
+            throw new ValidationException('Invalid ishaRule: interval minutes must be >= 1.');
+        }
+
+        return new self(
+            $this->method,
+            $this->madhab,
+            $this->highLatitudeRule,
+            $this->polarCircleRule,
+            $this->fajrAngle,
+            $ishaRule,
+            $this->maghribRule,
+            $this->dhuhrOffsetMinutes,
+            $this->imsakOffsetMinutes,
+            $this->ishraqOffsetMinutes,
+            $this->dhuhaOffsetMinutes,
+            $this->elevationM,
+            $this->isRamadan,
+            $this->methodAdjustments,
+            $this->adjustments,
+        );
+    }
+
+    /**
+     * Override the Maghrib rule, keeping everything else.
+     *
+     * @param MaghribRule $maghribRule Angle (in [0, 30]) or minutes after sunset (>= 0).
+     * @return self New parameters; this instance is unchanged.
+     */
+    public function withMaghribRule(MaghribRule $maghribRule): self
+    {
+        if ($maghribRule instanceof AngleMaghrib) {
+            self::validateAngle($maghribRule->angle, 'maghribAngle');
+        } elseif ($maghribRule->minutesAfterSunset() === null || $maghribRule->minutesAfterSunset() < 0) {
+            throw new ValidationException('Invalid maghribRule: minutes after sunset must be >= 0.');
+        }
+
+        return new self(
+            $this->method,
+            $this->madhab,
+            $this->highLatitudeRule,
+            $this->polarCircleRule,
+            $this->fajrAngle,
+            $this->ishaRule,
+            $maghribRule,
+            $this->dhuhrOffsetMinutes,
+            $this->imsakOffsetMinutes,
+            $this->ishraqOffsetMinutes,
+            $this->dhuhaOffsetMinutes,
+            $this->elevationM,
+            $this->isRamadan,
+            $this->methodAdjustments,
+            $this->adjustments,
+        );
+    }
+
+    /**
+     * Override the high-latitude night-splitting rule, keeping everything else.
+     *
+     * @param HighLatitudeRule $highLatitudeRule Replacement rule.
+     * @return self New parameters; this instance is unchanged.
+     */
+    public function withHighLatitudeRule(HighLatitudeRule $highLatitudeRule): self
+    {
+        return new self(
+            $this->method,
+            $this->madhab,
+            $highLatitudeRule,
+            $this->polarCircleRule,
+            $this->fajrAngle,
+            $this->ishaRule,
+            $this->maghribRule,
+            $this->dhuhrOffsetMinutes,
+            $this->imsakOffsetMinutes,
+            $this->ishraqOffsetMinutes,
+            $this->dhuhaOffsetMinutes,
+            $this->elevationM,
+            $this->isRamadan,
+            $this->methodAdjustments,
+            $this->adjustments,
+        );
+    }
+
+    /**
+     * Override the polar-circle fallback selector, keeping everything else.
+     *
+     * @param PolarCircleRule $polarCircleRule Replacement selector.
+     * @return self New parameters; this instance is unchanged.
+     */
+    public function withPolarCircleRule(PolarCircleRule $polarCircleRule): self
+    {
+        return new self(
+            $this->method,
+            $this->madhab,
+            $this->highLatitudeRule,
+            $polarCircleRule,
+            $this->fajrAngle,
+            $this->ishaRule,
+            $this->maghribRule,
+            $this->dhuhrOffsetMinutes,
+            $this->imsakOffsetMinutes,
+            $this->ishraqOffsetMinutes,
+            $this->dhuhaOffsetMinutes,
+            $this->elevationM,
+            $this->isRamadan,
+            $this->methodAdjustments,
+            $this->adjustments,
+        );
+    }
+
+    /**
+     * Override the Imsak offset minutes, keeping everything else.
+     *
+     * @param mixed $minutes Int in [0, 60]; bools reject.
+     * @return self New parameters; this instance is unchanged.
+     */
+    public function withImsakOffset(mixed $minutes): self
+    {
+        $value = self::guardOffsetMinutes($minutes, 'imsakOffsetMinutes');
+
+        return new self(
+            $this->method,
+            $this->madhab,
+            $this->highLatitudeRule,
+            $this->polarCircleRule,
+            $this->fajrAngle,
+            $this->ishaRule,
+            $this->maghribRule,
+            $this->dhuhrOffsetMinutes,
+            $value,
+            $this->ishraqOffsetMinutes,
+            $this->dhuhaOffsetMinutes,
+            $this->elevationM,
+            $this->isRamadan,
+            $this->methodAdjustments,
+            $this->adjustments,
+        );
+    }
+
+    /**
+     * Override the Ishraq offset minutes, keeping everything else.
+     *
+     * @param mixed $minutes Int in [0, 60]; bools reject; dhuha must stay >= new value.
+     * @return self New parameters; this instance is unchanged.
+     */
+    public function withIshraqOffset(mixed $minutes): self
+    {
+        $value = self::guardOffsetMinutes($minutes, 'ishraqOffsetMinutes');
+
+        if ($this->dhuhaOffsetMinutes < $value) {
+            throw new ValidationException(sprintf(
+                'Invalid dhuhaOffsetMinutes %d: must be >= ishraqOffsetMinutes %d.',
+                $this->dhuhaOffsetMinutes,
+                $value,
+            ));
+        }
+
+        return new self(
+            $this->method,
+            $this->madhab,
+            $this->highLatitudeRule,
+            $this->polarCircleRule,
+            $this->fajrAngle,
+            $this->ishaRule,
+            $this->maghribRule,
+            $this->dhuhrOffsetMinutes,
+            $this->imsakOffsetMinutes,
+            $value,
+            $this->dhuhaOffsetMinutes,
+            $this->elevationM,
+            $this->isRamadan,
+            $this->methodAdjustments,
+            $this->adjustments,
+        );
+    }
+
+    /**
+     * Override the Dhuha offset minutes, keeping everything else.
+     *
+     * @param mixed $minutes Int in [0, 60], >= ishraq; bools reject.
+     * @return self New parameters; this instance is unchanged.
+     */
+    public function withDhuhaOffset(mixed $minutes): self
+    {
+        $value = self::guardOffsetMinutes($minutes, 'dhuhaOffsetMinutes');
+
+        if ($value < $this->ishraqOffsetMinutes) {
+            throw new ValidationException(sprintf(
+                'Invalid dhuhaOffsetMinutes %d: must be >= ishraqOffsetMinutes %d.',
+                $value,
+                $this->ishraqOffsetMinutes,
+            ));
+        }
+
+        return new self(
+            $this->method,
+            $this->madhab,
+            $this->highLatitudeRule,
+            $this->polarCircleRule,
+            $this->fajrAngle,
+            $this->ishaRule,
+            $this->maghribRule,
+            $this->dhuhrOffsetMinutes,
+            $this->imsakOffsetMinutes,
+            $this->ishraqOffsetMinutes,
+            $value,
+            $this->elevationM,
+            $this->isRamadan,
+            $this->methodAdjustments,
+            $this->adjustments,
+        );
+    }
+
+    /**
+     * Override the Dhuhr offset minutes, keeping everything else.
+     *
+     * @param mixed $minutes Int in [0, 5]; bools reject.
+     * @return self New parameters; this instance is unchanged.
+     */
+    public function withDhuhrOffset(mixed $minutes): self
+    {
+        $value = self::guardOffsetMinutes($minutes, 'dhuhrOffsetMinutes', 0, 5);
+
+        return new self(
+            $this->method,
+            $this->madhab,
+            $this->highLatitudeRule,
+            $this->polarCircleRule,
+            $this->fajrAngle,
+            $this->ishaRule,
+            $this->maghribRule,
+            $value,
+            $this->imsakOffsetMinutes,
+            $this->ishraqOffsetMinutes,
+            $this->dhuhaOffsetMinutes,
+            $this->elevationM,
+            $this->isRamadan,
+            $this->methodAdjustments,
+            $this->adjustments,
+        );
+    }
+
+    /**
+     * Override the shipped per-method adjustments, keeping everything else.
+     *
+     * @param PrayerAdjustments $methodAdjustments Replacement method offsets.
+     * @return self New parameters; this instance is unchanged.
+     */
+    public function withMethodAdjustments(PrayerAdjustments $methodAdjustments): self
+    {
+        return new self(
+            $this->method,
+            $this->madhab,
+            $this->highLatitudeRule,
+            $this->polarCircleRule,
+            $this->fajrAngle,
+            $this->ishaRule,
+            $this->maghribRule,
+            $this->dhuhrOffsetMinutes,
+            $this->imsakOffsetMinutes,
+            $this->ishraqOffsetMinutes,
+            $this->dhuhaOffsetMinutes,
+            $this->elevationM,
+            $this->isRamadan,
+            $methodAdjustments,
+            $this->adjustments,
+        );
+    }
 }

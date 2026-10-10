@@ -122,4 +122,201 @@ final class CalculationParametersTest extends TestCase
             PrayerAdjustments::empty(),
         );
     }
+
+    public function testWithersPreserveMethodAndValidate(): void
+    {
+        $base = self::qatarBase();
+
+        $changed = $base->withFajrAngle(19.5);
+        self::assertSame(19.5, $changed->fajrAngle);
+        self::assertSame(CalculationMethod::QATAR, $changed->method);
+        self::assertSame(18.0, $base->fajrAngle);
+
+        $moved = $base->withHighLatitudeRule(HighLatitudeRule::SEVENTH_OF_NIGHT);
+        self::assertSame(HighLatitudeRule::SEVENTH_OF_NIGHT, $moved->highLatitudeRule);
+    }
+
+    public function testCreateRejectsZeroIntervalIsha(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new IntervalIsha(0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateRejectsNegativeMaghribMinutes(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(-1),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateRejectsBoolElevation(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            true,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateRejectsInfiniteElevation(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            INF,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateRejectsExcessiveElevation(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            9000,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateRejectsBoolDhuhrOffset(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            true,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateRejectsExcessiveDhuhrOffset(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            6,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateRejectsNonFiniteFajr(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            NAN,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
 }
