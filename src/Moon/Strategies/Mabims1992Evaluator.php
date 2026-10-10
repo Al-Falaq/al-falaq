@@ -32,6 +32,10 @@ final class Mabims1992Evaluator implements CrescentEvaluator
             throw new ValidationException('MABIMS-1992 needs age at moonset; null window must take the composition-root fallback.');
         }
 
+        if (! is_finite($geometry->moonAltitude) || ! is_finite($geometry->elongationDeg) || ! is_finite($age)) {
+            throw new ValidationException('MABIMS-1992 inputs must be finite.');
+        }
+
         $visible = ($geometry->moonAltitude >= 2.0 && $geometry->elongationDeg >= 3.0) || $age >= 8.0;
 
         return new CrescentVerdict('mabims1992', $visible, $geometry->elongationDeg, $visible ? 'visible' : 'not-visible');

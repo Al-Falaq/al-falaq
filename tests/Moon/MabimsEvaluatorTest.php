@@ -93,4 +93,11 @@ final class MabimsEvaluatorTest extends TestCase
         self::assertFalse($evaluator->evaluate($this->geometry(1.9999, 3.0, 5.0))->visible);
         self::assertFalse($evaluator->evaluate($this->geometry(2.0, 2.9999, 5.0))->visible);
     }
+
+    public function test1992AltElongGateHoldsWithoutAge(): void
+    {
+        $verdict = (new Mabims1992Evaluator())->evaluate($this->geometry(2.5, 4.0, 5.0));
+
+        self::assertTrue($verdict->visible);
+    }
 }
