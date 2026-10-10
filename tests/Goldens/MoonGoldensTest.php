@@ -175,24 +175,24 @@ final class MoonGoldensTest extends TestCase
 
         $deltaT = DeltaTProvider::forYear(2025 + ($date->dayOfYear() - 1) / 365.25);
 
-        self::assertTrue(abs($deltaT - 74.56305038786272) <= 0.01, 'used_delta_t_s = 74.56305038786272');
+        self::assertTrue(abs($deltaT - 74.56305038786272) <= 1e-6, 'used_delta_t_s = 74.56305038786272');
 
         $geometry = CrescentCalculator::default()->atSunset(
             Coordinates::fromDegrees(3.1390, 101.6869),
             $date,
         );
 
-        self::assertTrue(abs($geometry->elongationDeg - 6.173972051753964) <= 0.01, 'arcl');
-        self::assertTrue(abs($geometry->arcvGeoDeg - 6.088018222865059) <= 0.01, 'ageo');
-        self::assertTrue(abs(($geometry->moonAltitude - $geometry->sunAltitude) - 5.086970505414731) <= 0.01, 'atopo');
-        self::assertTrue(abs($geometry->sunAltitude - (-0.8325033650264293)) <= 0.01, 'salt');
-        self::assertTrue(abs($geometry->moonAltitude - 4.254467140388302) <= 0.01, 'malt');
-        self::assertTrue(abs($geometry->deltaAzimuthDeg - 1.0278791375318406) <= 0.01, 'daz');
-        self::assertTrue(abs($geometry->widthArcmin - 0.09531389154651401) <= 0.01, 'width');
-        self::assertTrue(abs($geometry->illuminatedFraction - 0.002900038687049744) <= 0.01, 'illum');
-        self::assertTrue(abs(($geometry->lagMinutes ?? NAN) / 60.0 - 0.4120943493906335) <= 0.01, 'lag');
-        self::assertTrue(abs($geometry->moonAgeHours / 24.0 - 0.4166666666666667) <= 0.01, 'age');
-        self::assertTrue(abs(($geometry->ageAtMoonsetHours ?? NAN) / 24.0 - 0.4338372645579431) <= 0.01, 'agem');
+        self::assertTrue(abs($geometry->elongationDeg - 6.173972051753964) <= 1e-6, 'arcl');
+        self::assertTrue(abs($geometry->arcvGeoDeg - 6.088018222865059) <= 1e-6, 'ageo');
+        self::assertTrue(abs(($geometry->moonAltitude - $geometry->sunAltitude) - 5.086970505414731) <= 1e-6, 'atopo');
+        self::assertTrue(abs($geometry->sunAltitude - (-0.8325033650264293)) <= 1e-6, 'salt');
+        self::assertTrue(abs($geometry->moonAltitude - 4.254467140388302) <= 1e-6, 'malt');
+        self::assertTrue(abs($geometry->deltaAzimuthDeg - 1.0278791375318406) <= 1e-6, 'daz');
+        self::assertTrue(abs($geometry->widthArcmin - 0.09531389154651401) <= 1e-6, 'width');
+        self::assertTrue(abs($geometry->illuminatedFraction - 0.002900038687049744) <= 1e-6, 'illum');
+        self::assertTrue(abs(($geometry->lagMinutes ?? NAN) / 60.0 - 0.4120943493906335) <= 1e-6, 'lag');
+        self::assertTrue(abs($geometry->moonAgeHours / 24.0 - 0.4166666666666667) <= 1e-6, 'age');
+        self::assertTrue(abs(($geometry->ageAtMoonsetHours ?? NAN) / 24.0 - 0.4338372645579431) <= 1e-6, 'agem');
     }
 
     /**
