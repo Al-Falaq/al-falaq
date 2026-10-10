@@ -99,16 +99,16 @@ final class MoonGoldensTest extends TestCase
     {
         $calculator = CrescentCalculator::default();
 
-        // [lat, lon, y, m, d, yallop_zone, odeh_class, neo, old].
+        // [lat, lon, y, m, d, yallop_zone, odeh_class, yallop_visible, odeh_visible, neo, old].
         $cases = [
-            [3.1390, 101.6869, 2025, 2, 28, 'F', 'D', false, true],
-            [21.4225, 39.8262, 2025, 2, 28, 'E', 'C', true, true],
-            [3.1390, 101.6869, 2025, 3, 29, 'F', 'D', false, false],
-            [21.4225, 39.8262, 2025, 3, 29, 'F', 'D', false, false],
+            [3.1390, 101.6869, 2025, 2, 28, 'F', 'D', false, false, false, true],
+            [21.4225, 39.8262, 2025, 2, 28, 'E', 'C', false, true, true, true],
+            [3.1390, 101.6869, 2025, 3, 29, 'F', 'D', false, false, false, false],
+            [21.4225, 39.8262, 2025, 3, 29, 'F', 'D', false, false, false, false],
         ];
 
         foreach ($cases as $case) {
-            [$lat, $lon, $y, $m, $d, $zone, $class, $neo, $old] = $case;
+            [$lat, $lon, $y, $m, $d, $zone, $class, $yallopVisible, $odehVisible, $neo, $old] = $case;
             $verdicts = $calculator->evaluate(
                 Coordinates::fromDegrees($lat, $lon),
                 CivilDate::fromYmd($y, $m, $d),
@@ -116,7 +116,9 @@ final class MoonGoldensTest extends TestCase
             $label = sprintf('(%s,%s,%d-%02d-%02d)', $lat, $lon, $y, $m, $d);
 
             self::assertSame($zone, $verdicts['yallop']->zone, 'yallop ' . $label);
+            self::assertSame($yallopVisible, $verdicts['yallop']->visible, 'yallop visible ' . $label);
             self::assertSame($class, $verdicts['odeh']->zone, 'odeh ' . $label);
+            self::assertSame($odehVisible, $verdicts['odeh']->visible, 'odeh visible ' . $label);
             self::assertSame($neo, $verdicts['neomabims2021']->visible, 'neo ' . $label);
             self::assertSame($old, $verdicts['mabims1992']->visible, 'old92 ' . $label);
         }

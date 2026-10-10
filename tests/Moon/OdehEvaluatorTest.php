@@ -63,6 +63,58 @@ final class OdehEvaluatorTest extends TestCase
         self::assertFalse($verdict->visible);
     }
 
+    public function testClassEdgeABIsInclusive(): void
+    {
+        // A/B edge at V == 5.65 (>=): V 5.70 -> A, V 5.60 -> B. malt is
+        // salt + (limit + V); arcl 8.0 keeps the Danjon floor off. Verified
+        // via php -r: V targets land on the intended side.
+        $width = 0.4;
+        $salt = -0.8333;
+        $limit = -0.1018 * $width ** 3 + 0.7319 * $width ** 2 - 6.3226 * $width + 7.1651;
+        $above = (new OdehEvaluator())->evaluate($this->geometry(8.0, $salt + ($limit + 5.70), $width));
+        $below = (new OdehEvaluator())->evaluate($this->geometry(8.0, $salt + ($limit + 5.60), $width));
+
+        self::assertSame('A', $above->zone);
+        self::assertSame('B', $below->zone);
+    }
+
+    public function testClassEdgeBCIsInclusive(): void
+    {
+        // B/C edge at V == 2.0 (>=): V 2.05 -> B, V 1.95 -> C.
+        $width = 0.4;
+        $salt = -0.8333;
+        $limit = -0.1018 * $width ** 3 + 0.7319 * $width ** 2 - 6.3226 * $width + 7.1651;
+        $above = (new OdehEvaluator())->evaluate($this->geometry(8.0, $salt + ($limit + 2.05), $width));
+        $below = (new OdehEvaluator())->evaluate($this->geometry(8.0, $salt + ($limit + 1.95), $width));
+
+        self::assertSame('B', $above->zone);
+        self::assertSame('C', $below->zone);
+    }
+
+    public function testClassEdgeCDIsInclusive(): void
+    {
+        // C/D edge at V == -0.96 (>=): V -0.91 -> C, V -1.01 -> D.
+        $width = 0.4;
+        $salt = -0.8333;
+        $limit = -0.1018 * $width ** 3 + 0.7319 * $width ** 2 - 6.3226 * $width + 7.1651;
+        $above = (new OdehEvaluator())->evaluate($this->geometry(8.0, $salt + ($limit + -0.91), $width));
+        $below = (new OdehEvaluator())->evaluate($this->geometry(8.0, $salt + ($limit + -1.01), $width));
+
+        self::assertSame('C', $above->zone);
+        self::assertSame('D', $below->zone);
+    }
+
+    public function testZeroWidthClampsAndStaysFinite(): void
+    {
+        // Width 0 clamps to 1e-6 arcmin: V ~= 4.17 -> B (same geometry with
+        // width 0.4085 scores V ~= 6.63 -> A). Finite score documents the
+        // clamp path.
+        $verdict = (new OdehEvaluator())->evaluate($this->geometry(12.7862, 10.4995, 0.0));
+
+        self::assertTrue(is_finite($verdict->score));
+        self::assertSame('B', $verdict->zone);
+    }
+
     public function testNegativeWidthIsRejected(): void
     {
         $this->expectException(ValidationException::class);
