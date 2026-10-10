@@ -14,14 +14,14 @@ final readonly class CrescentGeometry
     /**
      * Sunset geometry bundle (spec §5.1 field contract).
      *
-     * @param float $sunAltitude Sun altitude in degrees.
-     * @param float $moonAltitude Moon altitude in degrees.
+     * @param float $sunAltitude Geocentric sun altitude in degrees (the pin applies parallax to the moon only).
+     * @param float $moonAltitude Topocentric moon altitude in degrees.
      * @param float $elongationDeg Sun–moon elongation (ARCL) in degrees.
      * @param float $moonAgeHours Hours since conjunction at sunset.
      * @param float|null $lagMinutes Moonset minus sunset; null = no-moonset window.
      * @param float $deltaAzimuthDeg Azimuth difference (DAZ) in degrees.
      * @param float $illuminatedFraction (1 − cos ARCL)/2; expected 0–1, stored raw.
-     * @param float $arcvGeoDeg Geocentric ARCV in degrees (stored).
+     * @param float $arcvGeoDeg Geocentric ARCV in degrees (geocentric moon minus geocentric sun).
      * @param float $widthArcmin Raw width in arcmin (stored; clamped only in evaluators).
      * @param float|null $ageAtMoonsetHours Age at moonset; null iff lagMinutes null.
      */

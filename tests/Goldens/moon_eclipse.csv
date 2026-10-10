@@ -1,3 +1,3 @@
 city,latitude,longitude,date,arcl_deg,moon_alt_topo_deg,lag_hours,moon_age_days,yallop_q,yallop_zone,odeh_v,odeh_class,neo_mabims_2021,mabims_1992,source
-"Kuala Lumpur, MY",3.1390,101.6869,2025-03-29,1.1101,-2.0068,-0.0226,0.1000,-1.1973,F,-8.3197,D,false,false,"py:alfalak-moon-2026-10-10;eclipse-anchor-2025-03-29"
-"Makkah, SA",21.4225,39.8262,2025-03-29,3.0118,0.8141,0.1776,0.2083,-0.9026,F,-5.3733,D,false,false,"py:alfalak-moon-2026-10-10;eclipse-anchor-2025-03-29"
+"Kuala Lumpur, MY",3.1390,101.6869,2025-03-29,1.1101,-2.0068,-0.0226,0.1000,-1.1973,F,-8.3197,D,false,false,"py:alfalak-a7baa8b-2026-10-10;eclipse-anchor-2025-03-29"
+"Makkah, SA",21.4225,39.8262,2025-03-29,3.0118,0.8141,0.1776,0.2083,-0.9026,F,-5.3733,D,false,false,"py:alfalak-a7baa8b-2026-10-10;eclipse-anchor-2025-03-29"

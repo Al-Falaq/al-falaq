@@ -7,6 +7,7 @@ namespace AlFalaq\AlFalaq\Moon\Services;
 use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
 use AlFalaq\AlFalaq\Astro\Services\DeltaTProvider;
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
+use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\Strategies\Mabims1992Evaluator;
 use AlFalaq\AlFalaq\Moon\Strategies\NeoMabims2021Evaluator;
 use AlFalaq\AlFalaq\Moon\Strategies\OdehEvaluator;
@@ -22,7 +23,7 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
  * Moon-sighting entry point: geometry at local sunset + criterion verdicts (M3).
  *
  * Two-method orchestrator (spec §3.2): atSunset() runs the Meeus pipeline on
- * the Astro engine, evaluate() fans the geometry out to the four pure
+ * the Astro engine, evaluate() fans the geometry out to the four injected
  * criterion strategies. Strategies stay engine-free by construction.
  */
 final class CrescentCalculator
@@ -53,36 +54,58 @@ final class CrescentCalculator
     private const SEMI_DIAMETER_FACTOR = 0.27245;
 
     /**
-     * Wire the solar day engine and the lunar/solar ephemeris explicitly (no container).
+     * Wire the solar day engine, the lunar/solar ephemeris, and the four criterion strategies explicitly (no container).
+     *
+     * Strategies are typed to the shared CrescentEvaluator contract so
+     * doubles can substitute in tests; default() wires the specified
+     * criterion set in map order.
      *
      * @param MeanSolarCalculator $solar Day-level solar geometry (sunset instants).
      * @param CrescentEphemeris $ephemeris Sun/moon ephemeris + sidereal time.
+     * @param CrescentEvaluator $yallop Yallop q-criterion strategy.
+     * @param CrescentEvaluator $odeh Odeh V-criterion strategy.
+     * @param CrescentEvaluator $mabims1992 MABIMS-1992 strategy.
+     * @param CrescentEvaluator $neoMabims2021 Neo-MABIMS-2021 strategy.
      */
     public function __construct(
         private readonly MeanSolarCalculator $solar,
         private readonly CrescentEphemeris $ephemeris,
+        private readonly CrescentEvaluator $yallop,
+        private readonly CrescentEvaluator $odeh,
+        private readonly CrescentEvaluator $mabims1992,
+        private readonly CrescentEvaluator $neoMabims2021,
     ) {}
 
     /**
-     * Recommended wiring: mean-sun days + Meeus ephemeris.
+     * Recommended wiring: mean-sun days + Meeus ephemeris + the four criteria.
      *
      * @return self Ready calculator covering the moon-sighting path.
      */
     public static function default(): self
     {
-        return new self(new MeanSolarCalculator(), new CrescentEphemeris());
+        return new self(
+            new MeanSolarCalculator(),
+            new CrescentEphemeris(),
+            new YallopEvaluator(),
+            new OdehEvaluator(),
+            new Mabims1992Evaluator(),
+            new NeoMabims2021Evaluator(),
+        );
     }
 
     /**
      * Compute sun/moon geometry at sunset for one place and date (M3).
      *
-     * Pin a7baa8b crescent_geometry_at_sunset verbatim: sunset from the
-     * solar day engine (sea level, no refraction beyond the depression),
-     * JD anchored on the UTC sunset instant with TT for the ephemeris and
-     * UT for sidereal time, parallax-corrected topocentric moon, ARCL from
-     * geocentric RA/dec separation, analytic (Meeus Ch.15) moonset, 30-day
-     * hourly ARCL-minimum age search. Topocentric ARCV is NOT stored — consumers
-     * derive it as moonAltitude − sunAltitude.
+     * Pin a7baa8b crescent_geometry_at_sunset verbatim: fractional-hour
+     * sunset from the solar day engine (sea level, no refraction beyond
+     * the depression — sub-second precision, never floored to whole
+     * seconds), JD anchored on the UTC sunset instant with TT for the
+     * ephemeris and UT for sidereal time, parallax-corrected topocentric
+     * moon against the geocentric sun (the pin applies parallax to the
+     * moon only), ARCL from geocentric RA/dec separation, analytic
+     * (Meeus Ch.15) moonset, 30-day hourly ARCL-minimum age search.
+     * Topocentric ARCV is NOT stored — consumers derive it as
+     * moonAltitude − sunAltitude.
      *
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date of the evening observation.
@@ -90,9 +113,9 @@ final class CrescentCalculator
      */
     public function atSunset(Coordinates $coordinates, CivilDate $date): CrescentGeometry
     {
-        $sunset = $this->solar->hourAngle($coordinates, $date, 0.0, self::SUNSET_ALTITUDE_DEG, true);
+        $sunsetHours = $this->solar->hourAngleFloat($coordinates, $date, 0.0, self::SUNSET_ALTITUDE_DEG, true);
 
-        if ($sunset === null) {
+        if ($sunsetHours === null) {
             throw new AstronomicalException(sprintf(
                 'Unable to compute crescent geometry: the sun never sets for these coordinates and date (polar night). '
                 . 'coordinates=%s, date=%s.',
@@ -101,10 +124,9 @@ final class CrescentCalculator
             ));
         }
 
-        $midnight = $date->toUtcMidnight();
-        $sunsetSeconds = (float) ($sunset->getTimestamp() - $midnight->getTimestamp());
+        $sunsetSeconds = $sunsetHours * 3600.0;
         $jdMidnightUt = JulianDay::fromCivilDate($date)->toFloat();
-        $jdSunsetUt = $jdMidnightUt + $sunsetSeconds / 86400.0;
+        $jdSunsetUt = $jdMidnightUt + $sunsetHours / 24.0;
         $decimalYear = (float) $date->year + ($date->dayOfYear() - 1) / 365.25;
         $deltaT = DeltaTProvider::forYear($decimalYear);
         $jdSunsetTt = $jdSunsetUt + $deltaT / 86400.0;
@@ -127,7 +149,12 @@ final class CrescentCalculator
             $lst,
         );
 
-        $sunAltitude = $sunTopo['altitudeDeg'];
+        $sunAltitude = $this->geocentricAltitude(
+            $coordinates->latitude,
+            $lst,
+            $sunGeo['ra'],
+            $sunGeo['dec'],
+        );
         $moonAltitude = $moonTopo['altitudeDeg'];
         $moonGeoAltitude = $this->geocentricAltitude(
             $coordinates->latitude,
@@ -159,7 +186,7 @@ final class CrescentCalculator
         } else {
             // Age is a time difference from a fixed conjunction instant, so
             // the moonset age is exactly the sunset age plus the lag, with
-            // the same 0.1-hour reporting floor as the sunset age (pin).
+            // the same 0.1-day reporting floor as the sunset age (pin).
             $lagMinutes = (($moonsetJdUt - $jdMidnightUt) * 86400.0 - $sunsetSeconds) / 60.0;
             $ageAtMoonsetHours = max(self::MOON_AGE_MIN_DAYS, $ageDays + $lagMinutes / 60.0 / 24.0) * 24.0;
         }
@@ -193,8 +220,8 @@ final class CrescentCalculator
     {
         $geometry = $this->atSunset($coordinates, $date);
 
-        $yallop = (new YallopEvaluator())->evaluate($geometry);
-        $odeh = (new OdehEvaluator())->evaluate($geometry);
+        $yallop = $this->yallop->evaluate($geometry);
+        $odeh = $this->odeh->evaluate($geometry);
 
         if ($geometry->lagMinutes === null || $geometry->ageAtMoonsetHours === null) {
             // Composition-root fallback (spec §3.2): the 1992 age branch is
@@ -209,10 +236,10 @@ final class CrescentCalculator
                 $visible ? 'visible' : 'not-visible',
             );
         } else {
-            $mabims1992 = (new Mabims1992Evaluator())->evaluate($geometry);
+            $mabims1992 = $this->mabims1992->evaluate($geometry);
         }
 
-        $neoMabims2021 = (new NeoMabims2021Evaluator())->evaluate($geometry);
+        $neoMabims2021 = $this->neoMabims2021->evaluate($geometry);
 
         return [
             'yallop' => $yallop,

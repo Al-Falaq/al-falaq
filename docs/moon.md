@@ -7,9 +7,9 @@ No weather, optics, horizon, or religious-ruling content: scores only.
 
 Unlike Qibla (two float orders of one closed form), no independent
 implementation exists: the golden is the committed pipeline recorded live
-(~720 ephemeris evaluations per call). Tautology guards: structural
-identities per row, exact-threshold criterion checks, and the committed
-KL/Makkah agreement matrix — see `tools/gen_moonsighting.py`.
+(~1.4k ephemeris evaluations per call: 721 hourly age samples × Sun+Moon).
+Tautology guards: structural identities per row, exact-threshold criterion
+checks, and the committed KL/Makkah agreement matrix — see `tools/gen_moonsighting.py`.
 
 - `tests/Goldens/moon_crescent.csv` — 24 cities, crescent evening 2025-02-28
   (Ramadan-eve young crescent; mixed verdicts exercise every branch).
@@ -38,10 +38,15 @@ KL/Makkah agreement matrix — see `tools/gen_moonsighting.py`.
 - Yallop takes **geocentric** ARCV, Odeh takes **topocentric** ARCV, MABIMS
   takes **altitude** (never ARCV-minus-sunset), 1992 takes age **at moonset**.
   Swapping any moves boundary calls by arcminutes.
+- Sun altitude is **geocentric**: the pin applies parallax to the moon only,
+  so stored `arcvGeo = moonGeo − sunGeo` and derived topo ARCV =
+  `moonTopo − sunGeo`. Never parallax-correct the sun.
+- Yallop zones A–D count as visible, E/F as invisible (PHP verdict
+  convention; the pin returns only the zone letter).
 - TT/UTC split is load-bearing: sidereal time on the UTC instant, ephemeris
   on TT (~70 s Delta-T; ~0.3° altitude bias if merged). Never simplify to one
   instant.
-- Zero width clamps to `1e-6′`; negative width raises `ValidationException`.
+- Zero width clamps via `max(width, 1e-6)′`; negative width raises `ValidationException`.
 - `illumination = (1 − cos ARCL)/2`, `width = semi_diameter × (1 − cos ARCL)`
   with `semi_diameter = 0.27245 × parallax × 60′` — geometric proxies.
 
@@ -50,8 +55,8 @@ KL/Makkah agreement matrix — see `tools/gen_moonsighting.py`.
 - Polar night with no sunset (Tromsø 2025-01-01): raises
   `AstronomicalException` — no sunset to evaluate at.
 - Sunset with circumpolar/no moonset (Tromsø 2025-01-15 `arcl≈160.86`,
-  Reykjavik 2025-04-02 `arcl≈61.26`): finite geometry, `lag = NaN`,
-  `age_at_moonset = NaN`. Never feed NaN age into the 1992 evaluator —
+  Reykjavik 2025-04-02 `arcl≈61.26`): finite geometry, `lag = null`,
+  `age_at_moonset = null`. Never feed null age into the 1992 evaluator —
   fall back to the altitude/elongation branch.
 - Eclipse-day ages hit the `0.1`-day floor; pre-conjunction evenings read
   ~29 d (previous lunation) and can spuriously pass the 1992 age branch —

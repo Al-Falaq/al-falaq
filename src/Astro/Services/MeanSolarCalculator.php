@@ -161,25 +161,28 @@ final class MeanSolarCalculator implements SolarModel
     }
 
     /**
-     * Instant the sun reaches a depression angle, or null when unreachable.
+     * Fractional hours since midnight UTC for a solar depression angle, or null when unreachable.
      *
-     * Pin a7baa8b SolarTime.hour_angle + Astronomical.corrected_hour_angle;
-     * Meeus 2nd ed. p. 102. Geometry misses return null, never NaN.
+     * Full-precision twin of hourAngle(): the same Meeus Ch.15 corrected
+     * hour angle (pin Astronomical.corrected_hour_angle) without the
+     * whole-second floor that hoursToUtc applies for DateTime consumers.
+     * The crescent pipeline anchors its Julian-day math on this value;
+     * prayer keeps the DateTime path untouched.
      *
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date owning the event.
      * @param mixed $elevationM Observer height in metres; finite and >= 0.
      * @param float $angleDeg Solar altitude in degrees (e.g. -18.0 for fajr).
      * @param bool $afterTransit True for evening, false for morning.
-     * @return \DateTimeImmutable|null Event instant in UTC, or null when the sun never reaches the angle.
+     * @return float|null Fractional hours since midnight UTC, or null when the sun never reaches the angle.
      */
-    public function hourAngle(
+    public function hourAngleFloat(
         Coordinates $coordinates,
         CivilDate $date,
         mixed $elevationM,
         float $angleDeg,
         bool $afterTransit,
-    ): ?\DateTimeImmutable {
+    ): ?float {
         if (! is_finite($angleDeg)) {
             throw new ValidationException(sprintf(
                 'Angle must be a finite number of degrees, got %s.',
@@ -209,6 +212,39 @@ final class MeanSolarCalculator implements SolarModel
             $prev['dec'],
             $next['dec'],
         );
+
+        if (! is_finite($hours)) {
+            return null;
+        }
+
+        return $hours;
+    }
+
+    /**
+     * Instant the sun reaches a depression angle, or null when unreachable.
+     *
+     * Pin a7baa8b SolarTime.hour_angle + Astronomical.corrected_hour_angle;
+     * Meeus 2nd ed. p. 102. Geometry misses return null, never NaN.
+     *
+     * @param Coordinates $coordinates Observer location.
+     * @param CivilDate $date Civil date owning the event.
+     * @param mixed $elevationM Observer height in metres; finite and >= 0.
+     * @param float $angleDeg Solar altitude in degrees (e.g. -18.0 for fajr).
+     * @param bool $afterTransit True for evening, false for morning.
+     * @return \DateTimeImmutable|null Event instant in UTC, or null when the sun never reaches the angle.
+     */
+    public function hourAngle(
+        Coordinates $coordinates,
+        CivilDate $date,
+        mixed $elevationM,
+        float $angleDeg,
+        bool $afterTransit,
+    ): ?\DateTimeImmutable {
+        $hours = $this->hourAngleFloat($coordinates, $date, $elevationM, $angleDeg, $afterTransit);
+
+        if ($hours === null) {
+            return null;
+        }
 
         return $this->hoursToUtc($date, $hours);
     }

@@ -104,6 +104,21 @@ final class OdehEvaluatorTest extends TestCase
         self::assertSame('D', $below->zone);
     }
 
+    public function testExactThresholdHitsUpperClass(): void
+    {
+        // Exact V thresholds are >= edges: V == 5.65 -> A, == 2.0 -> B,
+        // == -0.96 -> C. malt is salt + (limit + V) with arcl 8.0 keeping
+        // the Danjon floor off; the same limit expression runs on both
+        // sides so the edge lands exactly.
+        $width = 0.4;
+        $salt = -0.8333;
+        $limit = -0.1018 * $width ** 3 + 0.7319 * $width ** 2 - 6.3226 * $width + 7.1651;
+
+        self::assertSame('A', (new OdehEvaluator())->evaluate($this->geometry(8.0, $salt + ($limit + 5.65), $width))->zone);
+        self::assertSame('B', (new OdehEvaluator())->evaluate($this->geometry(8.0, $salt + ($limit + 2.0), $width))->zone);
+        self::assertSame('C', (new OdehEvaluator())->evaluate($this->geometry(8.0, $salt + ($limit + -0.96), $width))->zone);
+    }
+
     public function testZeroWidthClampsAndStaysFinite(): void
     {
         // Width 0 clamps to 1e-6 arcmin: V ~= 4.17 -> B (same geometry with

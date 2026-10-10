@@ -4,7 +4,16 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Tests\Moon;
 
+use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
+use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
+use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\Services\CrescentCalculator;
+use AlFalaq\AlFalaq\Moon\Strategies\Mabims1992Evaluator;
+use AlFalaq\AlFalaq\Moon\Strategies\NeoMabims2021Evaluator;
+use AlFalaq\AlFalaq\Moon\Strategies\OdehEvaluator;
+use AlFalaq\AlFalaq\Moon\Strategies\YallopEvaluator;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
@@ -53,5 +62,70 @@ final class CrescentCalculatorTest extends TestCase
             Coordinates::fromDegrees(69.6492, 18.9553),
             CivilDate::fromYmd(2025, 1, 1),
         );
+    }
+
+    public function testEvaluateDelegatesToInjectedStrategies(): void
+    {
+        $calculator = new CrescentCalculator(
+            new MeanSolarCalculator(),
+            new CrescentEphemeris(),
+            self::stub('yallop', 'A'),
+            self::stub('odeh', 'B'),
+            self::stub('mabims1992', 'visible'),
+            self::stub('neomabims2021', 'not-visible'),
+        );
+
+        $verdicts = $calculator->evaluate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 2, 28),
+        );
+
+        self::assertSame(['yallop', 'odeh', 'mabims1992', 'neomabims2021'], array_keys($verdicts));
+        self::assertSame('A', $verdicts['yallop']->zone);
+        self::assertSame('B', $verdicts['odeh']->zone);
+        self::assertSame('visible', $verdicts['mabims1992']->zone);
+        self::assertSame('not-visible', $verdicts['neomabims2021']->zone);
+    }
+
+    public function testExplicitWiringMatchesDefault(): void
+    {
+        $calculator = new CrescentCalculator(
+            new MeanSolarCalculator(),
+            new CrescentEphemeris(),
+            new YallopEvaluator(),
+            new OdehEvaluator(),
+            new Mabims1992Evaluator(),
+            new NeoMabims2021Evaluator(),
+        );
+
+        $verdicts = $calculator->evaluate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 2, 28),
+        );
+
+        self::assertSame('F', $verdicts['yallop']->zone);
+        self::assertSame('D', $verdicts['odeh']->zone);
+    }
+
+    /**
+     * Canned strategy double proving the composition root delegates.
+     *
+     * @param string $criterion Canned criterion name.
+     * @param string $zone Canned zone label.
+     * @return CrescentEvaluator Strategy returning the canned verdict.
+     */
+    private static function stub(string $criterion, string $zone): CrescentEvaluator
+    {
+        return new class ($criterion, $zone) implements CrescentEvaluator {
+            public function __construct(
+                private readonly string $criterion,
+                private readonly string $zone,
+            ) {}
+
+            public function evaluate(CrescentGeometry $geometry): CrescentVerdict
+            {
+                return new CrescentVerdict($this->criterion, true, 0.0, $this->zone);
+            }
+        };
     }
 }

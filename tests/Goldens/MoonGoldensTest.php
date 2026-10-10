@@ -124,45 +124,44 @@ final class MoonGoldensTest extends TestCase
         }
     }
 
-    public function testDegenerateTrio(): void
+    public function testPolarNightRaisesAstronomicalException(): void
     {
-        $calculator = CrescentCalculator::default();
-
-        // Polar night: the sun never sets in Tromso on Jan 1.
         $this->expectException(AstronomicalException::class);
 
-        try {
-            $calculator->atSunset(
-                Coordinates::fromDegrees(69.6492, 18.9553),
-                CivilDate::fromYmd(2025, 1, 1),
-            );
-        } finally {
-            // Null-window rows: finite geometry, no sunset-to-moonset window.
-            // Tromso Jan-15 arcl ≈ 160.86, Reykjavik Apr-02 arcl ≈ 61.26.
-            $nullWindowCases = [
-                [69.6492, 18.9553, 2025, 1, 15, 160.86],
-                [64.1466, -21.9426, 2025, 4, 2, 61.26],
-            ];
+        CrescentCalculator::default()->atSunset(
+            Coordinates::fromDegrees(69.6492, 18.9553),
+            CivilDate::fromYmd(2025, 1, 1),
+        );
+    }
 
-            foreach ($nullWindowCases as $case) {
-                [$lat, $lon, $y, $m, $d, $arcl] = $case;
-                $coordinates = Coordinates::fromDegrees($lat, $lon);
-                $date = CivilDate::fromYmd($y, $m, $d);
-                $geometry = $calculator->atSunset($coordinates, $date);
-                $label = sprintf('(%s,%s,%d-%02d-%02d)', $lat, $lon, $y, $m, $d);
+    public function testNullWindowsReturnFiniteGeometryWithFallback(): void
+    {
+        // Null-window rows: finite geometry, no sunset-to-moonset window.
+        // Tromso Jan-15 arcl ≈ 160.86, Reykjavik Apr-02 arcl ≈ 61.26.
+        $nullWindowCases = [
+            [69.6492, 18.9553, 2025, 1, 15, 160.86],
+            [64.1466, -21.9426, 2025, 4, 2, 61.26],
+        ];
 
-                self::assertTrue(is_finite($geometry->elongationDeg), $label);
-                self::assertTrue(abs($geometry->elongationDeg - $arcl) <= 0.01, 'arcl ' . $label);
-                self::assertNull($geometry->lagMinutes, $label);
-                self::assertNull($geometry->ageAtMoonsetHours, $label);
+        foreach ($nullWindowCases as $case) {
+            [$lat, $lon, $y, $m, $d, $arcl] = $case;
+            $coordinates = Coordinates::fromDegrees($lat, $lon);
+            $date = CivilDate::fromYmd($y, $m, $d);
+            $calculator = CrescentCalculator::default();
+            $geometry = $calculator->atSunset($coordinates, $date);
+            $label = sprintf('(%s,%s,%d-%02d-%02d)', $lat, $lon, $y, $m, $d);
 
-                // Composition-root fallback must not throw on the null window
-                // and must follow the alt/elongation-only branch.
-                $verdicts = $calculator->evaluate($coordinates, $date);
-                $expected = $geometry->moonAltitude >= 2.0 && $geometry->elongationDeg >= 3.0;
+            self::assertTrue(is_finite($geometry->elongationDeg), $label);
+            self::assertTrue(abs($geometry->elongationDeg - $arcl) <= 0.01, 'arcl ' . $label);
+            self::assertNull($geometry->lagMinutes, $label);
+            self::assertNull($geometry->ageAtMoonsetHours, $label);
 
-                self::assertSame($expected, $verdicts['mabims1992']->visible);
-            }
+            // Composition-root fallback must not throw on the null window
+            // and must follow the alt/elongation-only branch.
+            $verdicts = $calculator->evaluate($coordinates, $date);
+            $expected = $geometry->moonAltitude >= 2.0 && $geometry->elongationDeg >= 3.0;
+
+            self::assertSame($expected, $verdicts['mabims1992']->visible);
         }
     }
 

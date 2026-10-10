@@ -18,7 +18,7 @@ final class YallopEvaluator implements CrescentEvaluator
      * Compute q = f(ARCV_geo, W) and map to Yallop zones A–F (M3).
      *
      * Pin Yallop.py (Task 0 refs): limit cubic with +11.8371, q divisor 10,
-     * strict > edges. Width 0 clamps to 1e-6 arcmin.
+     * strict > edges. Widths below 1e-6 arcmin clamp to 1e-6.
      *
      * @param CrescentGeometry $geometry Sun/moon geometry at local sunset.
      * @return CrescentVerdict Yallop verdict, q score, zone.
@@ -36,7 +36,7 @@ final class YallopEvaluator implements CrescentEvaluator
             throw new ValidationException('Yallop width must be >= 0.');
         }
 
-        $w = $width === 0.0 ? 1e-6 : $width;
+        $w = max($width, 1e-6);
         $limit = -0.1018 * $w ** 3 + 0.7319 * $w ** 2 - 6.3226 * $w + 11.8371;
         $q = ($arcv - $limit) / 10.0;
 
