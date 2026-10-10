@@ -50,8 +50,14 @@ final class PrayerGoldensTest extends TestCase
     {
         $found = [];
 
-        foreach (glob(self::GOLDEN_DIR . '/prayer_*.csv') ?: [] as $path) {
-            $base = basename((string) $path);
+        $paths = glob(self::GOLDEN_DIR . '/prayer_*.csv');
+
+        if ($paths === false) {
+            $paths = [];
+        }
+
+        foreach ($paths as $path) {
+            $base = basename($path);
 
             if ($base === 'prayer_placeholder.csv') {
                 continue;
@@ -92,31 +98,58 @@ final class PrayerGoldensTest extends TestCase
             self::fail('Cannot open golden file ' . $path);
         }
 
-        $header = fgetcsv($handle);
+        $headerRow = fgetcsv($handle);
 
-        if ($header === false) {
+        if (! is_array($headerRow)) {
             fclose($handle);
             self::fail('Empty golden file ' . $path);
+        }
+
+        $header = [];
+
+        foreach ($headerRow as $cell) {
+            if (! is_string($cell)) {
+                fclose($handle);
+                self::fail('Empty header cell in golden file ' . $path);
+            }
+
+            $header[] = $cell;
         }
 
         $method = CalculationMethod::from(substr(basename($path, '.csv'), 7));
 
         $rows = 0;
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $data = array_combine($header, $row);
+        while (true) {
+            $row = fgetcsv($handle);
 
-            if ($data === false) {
+            if (! is_array($row)) {
+                break;
+            }
+
+            if (count($header) !== count($row)) {
                 continue;
+            }
+
+            $data = [];
+
+            foreach ($header as $index => $key) {
+                $data[$key] = $row[$index] ?? null;
             }
 
             $params = $method->defaultParameters();
 
-            if ($method === CalculationMethod::UMM_AL_QURA && $data['date'] === '2025-03-02') {
+            $dateRaw = $data['date'] ?? null;
+
+            if (! is_string($dateRaw) || $dateRaw === '') {
+                continue;
+            }
+
+            if ($method === CalculationMethod::UMM_AL_QURA && $dateRaw === '2025-03-02') {
                 $params = $params->withRamadan(true);
             }
 
-            [$y, $m, $d] = array_map('intval', explode('-', $data['date']));
+            [$y, $m, $d] = array_map('intval', explode('-', $dateRaw));
 
             $schedule = PrayerTimesCalculator::default()->calculate(
                 Coordinates::fromDegrees((float) $data['latitude'], (float) $data['longitude']),
@@ -127,7 +160,7 @@ final class PrayerGoldensTest extends TestCase
             foreach (Prayer::cases() as $prayer) {
                 $expected = $data[$prayer->value] ?? '';
 
-                if ($expected === '' || $expected === null) {
+                if ($expected === '') {
                     continue;
                 }
 

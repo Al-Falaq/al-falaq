@@ -227,7 +227,9 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         }
 
         if ($ishaMinutes !== null) {
-            $isha = $this->adjusted(Minutes::add($maghrib, $ishaMinutes), $eff, Prayer::ISHA);
+            // Pin _set_isha: interval from raw sunset, not adjusted maghrib.
+            $ishaBase = Minutes::add($day->sunset, $ishaMinutes);
+            $isha = $this->adjusted($ishaBase, $eff, Prayer::ISHA);
         } else {
             $ishaAngle = $parameters->ishaRule->angle();
 
