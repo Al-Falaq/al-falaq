@@ -10,9 +10,18 @@ use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
 use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\TwilightModel;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
 use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
+use AlFalaq\AlFalaq\Prayer\Strategies\MakkahHandler;
+use AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection;
+use AlFalaq\AlFalaq\Prayer\Strategies\NearestDayHandler;
+use AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler;
+use AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight;
+use AlFalaq\AlFalaq\Prayer\Strategies\SeventhOfNightCorrection;
+use AlFalaq\AlFalaq\Prayer\Strategies\ThrowHandler;
+use AlFalaq\AlFalaq\Prayer\Strategies\TwilightAngleCorrection;
 use AlFalaq\AlFalaq\Prayer\Traits\NormalizesCoordinatesInput;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
@@ -100,16 +109,32 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     }
 
     /**
-     * Method-aware wiring entry point (M0 stub: currently returns default()).
+     * Method-aware wiring: select strategies from the parameter rules.
      *
-     * M1 will select strategies from $parameters; the argument is reserved and intentionally unused until then.
-     *
-     * @param CalculationParameters $parameters Resolved method parameters (reserved for M1, currently ignored).
-     * @return self Default calculator.
+     * @param CalculationParameters $parameters Resolved method parameters selecting the strategies.
+     * @return self Calculator wired for the given rules.
      */
     public static function defaultFor(CalculationParameters $parameters): self
     {
-        return self::default();
+        $hl = match ($parameters->highLatitudeRule) {
+            HighLatitudeRule::MIDDLE_OF_NIGHT => new MiddleOfNightCorrection(),
+            HighLatitudeRule::SEVENTH_OF_NIGHT => new SeventhOfNightCorrection(),
+            HighLatitudeRule::TWILIGHT_ANGLE => new TwilightAngleCorrection(),
+            HighLatitudeRule::SEASONAL_TWILIGHT,
+            HighLatitudeRule::NONE => new MiddleOfNightCorrection(),
+        };
+
+        $polar = match ($parameters->polarCircleRule) {
+            PolarCircleRule::NEAREST_LATITUDE => new NearestLatitudeHandler(),
+            PolarCircleRule::NEAREST_DAY => new NearestDayHandler(),
+            PolarCircleRule::MAKKAH => new MakkahHandler(),
+            PolarCircleRule::NONE => new ThrowHandler(),
+        };
+
+        // Consulted only on the seasonal path (T15).
+        $twilight = new SeasonAdjustedTwilight();
+
+        return new self($hl, $polar, $twilight);
     }
 
     /**
