@@ -410,4 +410,46 @@ final class ArchTest extends TestCase
 
         self::assertSame([], $violations);
     }
+
+    /**
+     * Domain purity + evaluator purity: Contracts/ValueObjects/Enums never
+     * touch the Astro engine, and Moon Strategies stay engine-free (pure
+     * criterion polynomials); only Services and non-Moon Strategies may.
+     */
+    public function testEngineImportsStayOutOfDomainAndMoonStrategies(): void
+    {
+        $root = dirname(__DIR__);
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root . '/src', \FilesystemIterator::SKIP_DOTS),
+        );
+        $violations = [];
+
+        /** @var \SplFileInfo $file */
+        foreach ($iterator as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = substr($file->getPathname(), strlen($root . '/src/'));
+            // Astro's own Contracts/ValueObjects carry the Astro\ namespace by definition; the reverse direction is covered by testAstroDependsOnlyOnDomainValueObjects.
+            if (str_starts_with($relative, 'Astro/')) {
+                continue;
+            }
+
+            $isDomain = (bool) preg_match('#/(Contracts|ValueObjects|Enums)/#', $relative);
+            $isMoonStrategy = str_starts_with($relative, 'Moon/Strategies/');
+
+            if (! $isDomain && ! $isMoonStrategy) {
+                continue;
+            }
+
+            $code = self::codeWithoutComments($file->getPathname());
+
+            if (preg_match('/AlFalaq\\\\AlFalaq\\\\Astro\\\\/', $code) === 1) {
+                $violations[] = $file->getPathname() . ': engine import outside Services/non-Moon Strategies';
+            }
+        }
+
+        self::assertSame([], $violations);
+    }
 }
