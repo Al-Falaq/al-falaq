@@ -234,7 +234,7 @@ enum CalculationMethod: string
             self::TURKEY => CalculationParameters::create(
                 $this,
                 // Diyanet takvim ikindi follows Imamayn (shadow factor 1).
-                // Source: islamveihsan.com/namaz-vakitleri-ile-ilgili-bilgiler.html
+                // Source: https://islamveihsan.com/namaz-vakitleri-ile-ilgili-bilgiler.html
                 // ("takvimlerde ve ezanlarda Imamayn'in gorusu esas alinmaktadir",
                 // accessed 2026-10-10); corroborated by T2 rows (Hanafi factor 2
                 // overshoots +70/+33 min) and adhan-js Turkey() (Shafi base).
@@ -242,7 +242,7 @@ enum CalculationMethod: string
                 HighLatitudeRule::MIDDLE_OF_NIGHT,
                 PolarCircleRule::NEAREST_LATITUDE,
                 // Diyanet fecr-i sadik 18 deg. Source: namazvakitleri.diyanet.gov.tr
-                // methodology; hatirlaislam.com/namaz-vakitleri (accessed 2026-10-10).
+                // methodology; https://hatirlaislam.com/namaz-vakitleri (accessed 2026-10-10).
                 18.0,
                 // Diyanet yatsi 17 deg. Source: same as fajr angle.
                 new AngleIsha(17.0),
@@ -260,7 +260,7 @@ enum CalculationMethod: string
                 // Astronomik Gunes Dogus/Batis vs published Gunes/Aksam, e.g. Dinar
                 // 06:42 vs 06:35 and 19:07 vs 19:14); Ogle +5, ikindi +4 per the
                 // adhan-js Turkey() Diyanet encoding
-                // (github.com/batoulapps/adhan-js src/CalculationMethod.ts,
+                // (https://github.com/batoulapps/adhan-js src/CalculationMethod.ts,
                 // accessed 2026-10-10). PROVISIONAL: Dec-row maghrib overshoots by
                 // 1 min (sub-minute solar-model residual); cell emptied in
                 // prayer_turkey.csv for M1-close follow-up.
@@ -325,13 +325,13 @@ enum CalculationMethod: string
             self::KEMENAG => CalculationParameters::create(
                 $this,
                 Madhab::SHAFI, // Asar factor 1 per Kemenag ketetapan (Syafi'i).
-                // Source: wiki.unissula.id/Waktu_salat (accessed 2026-10-10).
+                // Source: https://wiki.unissula.id/Waktu_salat (accessed 2026-10-10).
                 HighLatitudeRule::MIDDLE_OF_NIGHT,
                 PolarCircleRule::NEAREST_LATITUDE,
-                // Kemenag ketetapan Subuh -20 deg. Source: id.wikipedia.org/wiki/Salat_Subuh
+                // Kemenag ketetapan Subuh -20 deg. Source: https://id.wikipedia.org/wiki/Salat_Subuh
                 // (accessed 2026-10-10); journalversa.com Hisab Awal Waktu Sholat.
                 20.0,
-                // Kemenag ketetapan Isya -18 deg. Source: id.wikipedia.org/wiki/Salat_Isya
+                // Kemenag ketetapan Isya -18 deg. Source: https://id.wikipedia.org/wiki/Salat_Isya
                 // (accessed 2026-10-10).
                 new AngleIsha(18.0),
                 new MinutesAfterSunsetMaghrib(0),
@@ -342,11 +342,11 @@ enum CalculationMethod: string
                 0.0,
                 false,
                 // Kemenag ihtiyat: +2 min every prayer start, -2 min Syuruq, per
-                // ketetapan Kementerian Agama. Source: wiki.unissula.id/Waktu_salat
+                // ketetapan Kementerian Agama. Source: https://wiki.unissula.id/Waktu_salat
                 // ("penambahan waktu Ihtiyat adalah 2 menit untuk setiap awal waktu
                 // salat dan pengurangan 2 menit untuk waktu Syuruq", accessed
                 // 2026-10-10). Zuhur total +4 = +2 zawal transit delay
-                // (T_Zuhur = T_Zenit + 2/60 per id.wikipedia.org/wiki/Salat_Zuhur)
+                // (T_Zuhur = T_Zenit + 2/60 per https://id.wikipedia.org/wiki/Salat_Zuhur)
                 // + 2 ihtiyat. Imsak follows fajr (+2 via fajr base). PROVISIONAL:
                 // official bimasislam tables wobble +/-1 min around this scheme
                 // (their hisab uses -1 deg terbit/terbenam + own Ephemeris tables
@@ -403,7 +403,7 @@ enum CalculationMethod: string
                 0.0,
                 false,
                 // CONFIRMED: KHEU Zohor publishes 1 min after transit on both
-                // T2 rows (source table: mora.gov.bn SitePages/WaktuSembahyang.aspx,
+                // T2 rows (source table: https://mora.gov.bn SitePages/WaktuSembahyang.aspx,
                 // accessed 2026-10-10); same +1 convention as the pin JAKIM and
                 // SINGAPORE arms. PROVISIONAL: KHEU publishes no Doha/dhuha
                 // altitude definition (Doha floats ~22-24 min after Syuruk, so no

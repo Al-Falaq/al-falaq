@@ -2,7 +2,7 @@
 
 Offline, zero-dependency PHP 8.2+ library for Islamic astronomy: prayer times, Qibla, Sunnah markers, crescent visibility, Hijri conversion.
 
-Status: **M0 skeleton**. See `Technical-PRD.md` (build contract, Appendices A–C normative).
+Status: **M1 landed** — prayer pipeline (`PrayerTimesCalculator`), monthly timetable (`TimetableService`), and next-prayer resolver (`NextPrayerResolver`) shipped; Appendix A frozen (18 methods). Goldens green (15 files; tehran/morocco tables pending, UOIF gap). See `Technical-PRD.md` + `docs/prayer.md`.
 
 ## Install
 
@@ -12,17 +12,23 @@ composer require al-falaq/al-falaq
 
 Requires PHP `>=8.2` (64-bit), no runtime dependencies.
 
-## Quickstart (M0)
+## Quickstart (M1)
 
 ```php
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
+use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 
 $coords = Coordinates::fromDegrees(3.1390, 101.6869);
 $date = CivilDate::fromDateTime(new DateTimeImmutable('now', new DateTimeZone('UTC')));
+$params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters();
+$schedule = PrayerTimesCalculator::defaultFor($params)->calculate($coords, $date, $params);
+echo $schedule->forZone(new DateTimeZone('Asia/Kuala_Lumpur'))->timeFor(Prayer::FAJR)->format('H:i');
 ```
 
-Full prayer pipeline lands in M1 after Appendix A freeze (`PYTHON_PIN` + `tools/export_goldens.py`).
+See `docs/prayer.md` for the algorithm appendix + Appendix A freeze state.
 
 ## Scripts
 
