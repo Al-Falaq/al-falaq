@@ -319,4 +319,16 @@ final class CalculationParametersTest extends TestCase
             PrayerAdjustments::empty(),
         );
     }
+
+    public function testWithDhuhaOffsetRejectsBelowIshraq(): void
+    {
+        $this->expectException(ValidationException::class);
+        self::qatarBase()->withDhuhaOffset(10);
+    }
+
+    public function testWithIshaRuleRejectsZeroInterval(): void
+    {
+        $this->expectException(ValidationException::class);
+        self::qatarBase()->withIshaRule(new IntervalIsha(0));
+    }
 }
