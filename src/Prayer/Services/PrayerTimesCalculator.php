@@ -168,10 +168,10 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
                 throw UndefinedScheduleException::polar($effCoords, $effDate, 'none');
             }
 
-            // Current PolarCircleHandler contract is resolve(Coordinates): Coordinates (T17
-            // expands to resolve(Coordinates, CivilDate, callable): array{Coordinates, CivilDate}).
-            // Call with 1 arg so PHPStan max stays clean; polar rows throw LogicException until T17.
-            $effCoords = $this->polarCircleHandler->resolve($effCoords);
+            $probe = fn(Coordinates $c, CivilDate $d): bool => $this->solar->isSolarDefined($c, $d, $elev);
+            $resolved = $this->polarCircleHandler->resolve($coords, $date, $probe);
+            $effCoords = $resolved['coordinates'];
+            $effDate = $resolved['date'];
 
             if (! $this->solar->isSolarDefined($effCoords, $effDate, $elev)) {
                 throw UndefinedScheduleException::polar($effCoords, $effDate, $parameters->polarCircleRule->value);
