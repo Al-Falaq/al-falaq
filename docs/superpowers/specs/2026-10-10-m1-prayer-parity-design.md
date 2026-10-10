@@ -19,7 +19,7 @@ Hexagonal-lite (`ARCHITECTURE.md`): Domain zero inward deps; Application may dep
 
 - Stage 0 Freeze: 18-row Appendix A into `CalculationMethod::defaultParameters()`, SHA256 checksum of the dual-entered table recorded in the freeze commit message + `CHANGELOG.md`; `export_goldens.py` emits `tests/Goldens/prayer_{method}.csv` with Meeus/Takwim cites.
 - Stage 1 Engine: `JulianDay` (done) → `MeanSolarCalculator` (Meeus declination/EoT) → `SolarTime` triple (transit/sunrise/sunset UTC, dip `h0=-0.833-0.0293*sqrt(h_m)`).
-- Stage 2 Core: `PrayerTimesCalculator::calculate()` — fajr/isha angle-vs-interval, maghrib angle-vs-sunset, asr shadow (Shafi=1/Hanafi=2), dhuhr+offset, imsak/ishraq/dhuha offsets, UQU Ramadan override, `method+user` adjustments, `Minutes::roundedHalfUp` UTC.
+- Stage 2 Core: `PrayerTimesCalculator::calculate()` — fajr/isha angle-vs-interval, maghrib angle-vs-sunset, asr shadow (Shafi=1/Hanafi=2), dhuhr+offset, imsak/ishraq/dhuha offsets, UQU Ramadan override (`isha=maghrib+120min` in Ramadan, `+90min` otherwise; `isRamadan` with any other method → `ConfigurationException`), `method+user` adjustments, `Minutes::roundedHalfUp` UTC.
 - Stage 3 Edge: 3 high-latitude corrections + `SeasonAdjustedTwilight` (MSC only, `|lat|>=55`) + 4 polar handlers; `defaultFor()` wiring.
 - Stage 4 Timetable: `TimetableService::monthly()` via `plusDays` loop, `NextPrayerResolver::resolve()` + DST vectors; `bench --budget` informative.
 
@@ -27,9 +27,9 @@ Hexagonal-lite (`ARCHITECTURE.md`): Domain zero inward deps; Application may dep
 
 - `CalculationMethod::defaultParameters()`: 18 frozen rows; `NONE` supplies no defaults (missing → `ConfigurationException`).
 - `CalculationParameters`: validate fajr/isha/maghrib `[0,30]`, offsets `0–60` int (reject bool), `dhuha>=ishraq`, `elevationM [0,8848]` finite, `dhuhrOff 0–5`; add angle/rule `with*()` only as needed for `NONE`.
-- `Astro`: `MeanSolarCalculator::declination/equationOfTime/position`, `DeltaTProvider`, `SolarTime`. No trig in `Prayer/Services`.
-- Strategies (stubs exist): `ShafiAsr/HanafiAsr`, `AngleIsha/IntervalIsha`, `AngleMaghrib/MinutesAfterSunsetMaghrib`, `MiddleOfNight/SeventhOfNight/TwilightAngle + SeasonAdjustedTwilight`, `NearestLatitude/NearestDay/Makkah/Throw`.
-- `PrayerSchedule` (UTC-only, done) + `forZone()` leaf view; `TimetableService`, `NextPrayerResolver → NextPrayer(from,at,inSeconds)`.
+- `Astro`: `MeanSolarCalculator::declination/equationOfTime/position`, `DeltaTProvider` (isolates polynomial-vs-table updates; feeds JD→position), `SolarTime`. No trig in `Prayer/Services`.
+- Strategies (stubs exist): `ShafiAsr/HanafiAsr`, `AngleIsha/IntervalIsha`, `AngleMaghrib/MinutesAfterSunsetMaghrib`, `MiddleOfNight/SeventhOfNight/TwilightAngle + SeasonAdjustedTwilight`, polar handlers with pinned constants — `NearestLatitude` (bisect toward equator, max 60 iters, 0.5° backoff; still unsolvable → `AstronomicalException`), `NearestDay` (±366d day-by-day, nearest first; none → `AstronomicalException`), `Makkah` (substitute `21.4225,39.8262`, keep input date), `Throw` (propagate).
+- `PrayerSchedule` (UTC-only, done) + `forZone()` leaf view; `TimetableService::monthly()` (stateless `plusDays` loop; year helper loops `monthly()`, no separate path), `NextPrayerResolver::resolve(today, tomorrow, nowUtc)` (two schedules + explicit UTC `now`; never reads clock — caller injects `now`, optionally from `psr/clock`) → `NextPrayer(from, at, inSeconds)`.
 
 ## 3. Data flow (UTC-math invariant)
 
@@ -37,7 +37,7 @@ Coordinates + CivilDate(UTC-midnight) + CalculationParameters → `JulianDay::fr
 
 ## 4. Error handling
 
-- `ValidationException`: coords range/non-finite, non-UTC math inputs, year outside `1900–2100`, bad angles/offsets/elevation, `nightFraction f∉(0,1)`.
+- `ValidationException`: coords range/non-finite, non-UTC math inputs, year outside `1900–2100`, bad angles/offsets/elevation. (`SunnahTimes::nightFraction f∉(0,1)` is M2 Sunnah scope — deferred, not built in M1.)
 - `ConfigurationException`: `NONE` incomplete, `isRamadan` with non-UQU, `dhuha<ishraq`.
 - `AstronomicalException` (`UndefinedScheduleException` w/ coords/date/rule props): polar-unsolvable after handler, bisection failure, residual NaN/INF. Propagate through `TimetableService`; never invent times.
 - Ordering invariant asserted only when adjustments empty; user adjustments may break order, never silently reordered.
