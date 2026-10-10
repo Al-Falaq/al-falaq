@@ -16,8 +16,8 @@ use PHPUnit\Framework\TestCase;
  *
  * Skips empty marker fields (unpublished markers in T2 tables). Ramadan rows are exactly
  * the UMM_AL_QURA rows dated 2025-03-02 (exporter sets Ramadan mode
- * only there). Expected file set is explicit: 15 present (11 pin + 4
- * provisional); tehran + morocco pending (no obtainable official tables).
+ * only there). Expected file set is explicit: 17 present (11 pin + 4
+ * provisional + tehran/morocco self-established by tools/gen_self_prayer_goldens.php).
  */
 final class PrayerGoldensTest extends TestCase
 {
@@ -42,6 +42,8 @@ final class PrayerGoldensTest extends TestCase
             'prayer_kemenag.csv',
             'prayer_muis.csv',
             'prayer_brunei.csv',
+            'prayer_tehran.csv',
+            'prayer_morocco.csv',
         ];
     }
 
@@ -136,6 +138,20 @@ final class PrayerGoldensTest extends TestCase
 
             foreach ($header as $index => $key) {
                 $data[$key] = $row[$index] ?? null;
+            }
+
+            $hasExpectation = false;
+
+            foreach (Prayer::cases() as $prayer) {
+                if (($data[$prayer->value] ?? '') !== '') {
+                    $hasExpectation = true;
+
+                    break;
+                }
+            }
+
+            if (! $hasExpectation) {
+                continue;
             }
 
             $params = $method->defaultParameters();
