@@ -181,7 +181,20 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         $day = $this->solar->solarTime($effCoords, $effDate, $elev);
         $tomorrowSunrise = $this->solar->solarTime($effCoords, $effDate->plusDays(1), $elev)->sunrise;
         $nightSec = $tomorrowSunrise->getTimestamp() - $day->sunset->getTimestamp();
-        $portions = $this->highLatitudeCorrection->portions($effCoords, $effDate);
+
+        // NONE skips the portions safe caps (raw angle temps); every other
+        // rule resolves fallback portions eagerly. The SEASONAL_TWILIGHT arm
+        // is wired to MiddleOfNightCorrection via defaultFor and only
+        // consults these portions on the non-seasonal fallback path.
+        $portions = match ($parameters->highLatitudeRule) {
+            HighLatitudeRule::NONE => null,
+            default => $this->highLatitudeCorrection->portions(
+                $effCoords,
+                $effDate,
+                $parameters->fajrAngle,
+                $parameters->ishaRule->angle(),
+            ),
+        };
 
         $eff = $parameters->methodAdjustments->combinedWith($parameters->adjustments);
 
@@ -221,6 +234,17 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
 
             if ($fajrTemp === null || $fajrTemp < $fajrSafe) {
                 $fajrTemp = $fajrSafe;
+            }
+        } elseif ($portions === null) {
+            // NONE rule: raw angle temp, no safe cap.
+            $fajrTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$parameters->fajrAngle, false);
+
+            if ($fajrTemp === null) {
+                throw new AstronomicalException(sprintf(
+                    'Unable to compute Fajr: the sun never reaches the angle for these coordinates and date (coordinates=%s, date=%s).',
+                    (string) $effCoords,
+                    $effDate->isoformat(),
+                ));
             }
         } else {
             $fajrTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$parameters->fajrAngle, false);
@@ -321,6 +345,17 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
 
                 if ($ishaTemp === null || $ishaTemp > $ishaSafe) {
                     $ishaTemp = $ishaSafe;
+                }
+            } elseif ($portions === null) {
+                // NONE rule: raw angle temp, no safe cap.
+                $ishaTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$ishaAngle, true);
+
+                if ($ishaTemp === null) {
+                    throw new AstronomicalException(sprintf(
+                        'Unable to compute Isha: the sun never reaches the angle for these coordinates and date (coordinates=%s, date=%s).',
+                        (string) $effCoords,
+                        $effDate->isoformat(),
+                    ));
                 }
             } else {
                 $ishaTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$ishaAngle, true);
