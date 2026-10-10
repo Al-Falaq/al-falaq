@@ -5,8 +5,15 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Tests\Prayer;
 
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
+use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
+use AlFalaq\AlFalaq\Prayer\Strategies\AngleIsha;
+use AlFalaq\AlFalaq\Prayer\Strategies\MinutesAfterSunsetMaghrib;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\Tests\Goldens\Comparator;
@@ -79,5 +86,86 @@ final class PrayerTimesCalculatorTest extends TestCase
                 "marker {$marker}",
             );
         }
+    }
+
+    public function testOsloMscJanuaryMatchesSeasonalGoldenRow(): void
+    {
+        $schedule = PrayerTimesCalculator::default()->calculate(
+            Coordinates::fromDegrees(59.9139, 10.7522),
+            CivilDate::fromYmd(2025, 1, 15),
+            CalculationMethod::MOON_SIGHTING_COMMITTEE->defaultParameters(),
+        );
+
+        // Row moon_sighting_committee,2025-01-15,59.9139,10.7522 in
+        // tests/Goldens/prayer_moon_sighting_committee.csv (pin a7baa8b).
+        $expected = [
+            'imsak' => '2025-01-15 06:10',
+            'fajr' => '2025-01-15 06:20',
+            'sunrise' => '2025-01-15 08:04',
+            'syuruk' => '2025-01-15 08:04',
+            'ishraq' => '2025-01-15 08:19',
+            'dhuha' => '2025-01-15 08:32',
+            'dhuhr' => '2025-01-15 11:31',
+            'asr' => '2025-01-15 12:38',
+            'maghrib' => '2025-01-15 14:53',
+            'isha' => '2025-01-15 16:26',
+        ];
+
+        foreach ($expected as $marker => $minute) {
+            self::assertSame(
+                $minute,
+                $schedule->timeFor(Prayer::from($marker))->format('Y-m-d H:i'),
+                "marker {$marker}",
+            );
+        }
+    }
+
+    public function testSeasonalTwilightRuleArmMatchesMscPath(): void
+    {
+        $coords = Coordinates::fromDegrees(59.9139, 10.7522);
+        $date = CivilDate::fromYmd(2025, 1, 15);
+
+        $msc = PrayerTimesCalculator::default()->calculate(
+            $coords,
+            $date,
+            CalculationMethod::MOON_SIGHTING_COMMITTEE->defaultParameters(),
+        );
+
+        // Custom NONE-method config mirroring MSC angles (fajr 18, AngleIsha 18,
+        // polar NEAREST_LATITUDE, offsets 10/15/28, no adjustments) with the
+        // SEASONAL_TWILIGHT rule arm instead of the MSC method arm.
+        $custom = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::SEASONAL_TWILIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(18.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        $alt = PrayerTimesCalculator::default()->calculate($coords, $date, $custom);
+
+        // Only fajr+isha engage the seasonal path: MSC ships methodAdjustments
+        // {dhuhr: 5, maghrib: 3} while the custom config is empty, so the other
+        // markers intentionally differ.
+        self::assertSame(
+            $msc->timeFor(Prayer::FAJR)->format('Y-m-d H:i'),
+            $alt->timeFor(Prayer::FAJR)->format('Y-m-d H:i'),
+            'seasonal fajr matches MSC fajr',
+        );
+        self::assertSame(
+            $msc->timeFor(Prayer::ISHA)->format('Y-m-d H:i'),
+            $alt->timeFor(Prayer::ISHA)->format('Y-m-d H:i'),
+            'seasonal isha matches MSC isha',
+        );
     }
 }

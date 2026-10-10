@@ -9,25 +9,26 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Seasonal twilight minutes transcribed from pin Twilight.py.
+ * Seasonal twilight offsets transcribed from pin Twilight.py.
  *
- * Vectors are oracle minute-offsets (author-verified 2026-10-10).
+ * Vectors are oracle second-offsets, verified by executing the pin directly
+ * (season_adjusted_morning/evening_twilight minus/plus the base instant).
  */
 final class SeasonAdjustedTwilightTest extends TestCase
 {
-    public function testSeasonalMinutesMatchPin(): void
+    public function testSeasonalSecondsMatchPin(): void
     {
         $twilight = new SeasonAdjustedTwilight();
 
-        self::assertSame(['morning' => 103, 'evening' => 96], $twilight->seasonalMinutes(15, 2025, 59.9139));
-        self::assertSame(['morning' => 127, 'evening' => 81], $twilight->seasonalMinutes(172, 2025, 59.9139));
-        self::assertSame(['morning' => 99, 'evening' => 74], $twilight->seasonalMinutes(15, 2025, -33.8688));
-        self::assertSame(['morning' => 101, 'evening' => 94], $twilight->seasonalMinutes(15, 2025, 55.0));
+        self::assertSame(['morning' => 6207, 'evening' => 5750], $twilight->seasonalSeconds(15, 2025, 59.9139));
+        self::assertSame(['morning' => 7622, 'evening' => 4880], $twilight->seasonalSeconds(172, 2025, 59.9139));
+        self::assertSame(['morning' => 5969, 'evening' => 4419], $twilight->seasonalSeconds(15, 2025, -33.8688));
+        self::assertSame(['morning' => 6067, 'evening' => 5648], $twilight->seasonalSeconds(15, 2025, 55.0));
     }
 
-    public function testSeasonalMinutesRejectsBadInput(): void
+    public function testSeasonalSecondsRejectsBadInput(): void
     {
         $this->expectException(ValidationException::class);
-        (new SeasonAdjustedTwilight())->seasonalMinutes(0, 2025, 59.9139);
+        (new SeasonAdjustedTwilight())->seasonalSeconds(0, 2025, 59.9139);
     }
 }

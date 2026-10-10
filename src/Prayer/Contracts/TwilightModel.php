@@ -5,20 +5,22 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Contracts;
 
 /**
- * Seasonal twilight minutes for the Moon-Sighting-Committee method.
+ * Seasonal twilight offsets for the Moon-Sighting-Committee method.
  *
- * Minute offsets from sunrise/sunset (pin Twilight.py verbatim);
- * the calculator applies them only for MSC at abs(lat) >= 55.
+ * Second-precision offsets from sunrise/sunset (pin Twilight.py verbatim:
+ * `timedelta(seconds=±int(round(adjustment * 60.0)))`); the calculator
+ * applies them as safe caps on every MSC row and as seventh-of-night
+ * temps at high latitude.
  */
 interface TwilightModel
 {
     /**
-     * Seasonal minute offsets for a day-of-year, year and latitude.
+     * Seasonal second offsets for a day-of-year, year and latitude.
      *
      * @param int $dayOfYear 1–366.
      * @param int $year Gregorian year (leap-year solstice shift).
      * @param float $latitude Observer latitude in degrees.
-     * @return array{morning: int, evening: int} Whole minutes (rounded like the pin).
+     * @return array{morning: int, evening: int} Seconds before sunrise / after sunset (rounded like the pin).
      */
-    public function seasonalMinutes(int $dayOfYear, int $year, float $latitude): array;
+    public function seasonalSeconds(int $dayOfYear, int $year, float $latitude): array;
 }

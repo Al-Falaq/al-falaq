@@ -8,26 +8,27 @@ use AlFalaq\AlFalaq\Prayer\Contracts\TwilightModel;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
- * Moon-Sighting-Committee seasonal twilight minutes (pin Twilight.py, M1).
+ * Moon-Sighting-Committee seasonal twilight offsets (pin Twilight.py, M1).
  *
- * Polynomial minute offsets from sunrise/sunset; the calculator applies
- * them only for MSC at abs(lat) >= 55.
+ * Polynomial second offsets from sunrise/sunset; the calculator applies
+ * them as safe caps on every MSC row (seventh-of-night temps at |lat| >= 55).
  */
 final class SeasonAdjustedTwilight implements TwilightModel
 {
     /**
-     * Seasonal minute offsets for a day-of-year, year and latitude.
+     * Seasonal second offsets for a day-of-year, year and latitude.
      *
      * Transcribed from pin season_adjusted_morning/evening_twilight: the pin
-     * computes int(round(adjustment * 60.0)) seconds, which collapses to whole
-     * rounded minutes here.
+     * applies `timedelta(seconds=±int(round(adjustment * 60.0)))`, so the
+     * offsets keep full second precision (a minutes collapse loses up to 29 s
+     * and flips minute rounding on MSC rows — verified against the pin).
      *
      * @param int $dayOfYear 1–366.
      * @param int $year Gregorian year, 1900–2100 (leap-year solstice shift).
      * @param float $latitude Observer latitude in degrees.
-     * @return array{morning: int, evening: int} Whole minutes.
+     * @return array{morning: int, evening: int} Seconds before sunrise / after sunset.
      */
-    public function seasonalMinutes(int $dayOfYear, int $year, float $latitude): array
+    public function seasonalSeconds(int $dayOfYear, int $year, float $latitude): array
     {
         if ($dayOfYear < 1 || $dayOfYear > 366) {
             throw new ValidationException(sprintf('Invalid day of year %d: supported range is 1–366.', $dayOfYear));
@@ -60,7 +61,7 @@ final class SeasonAdjustedTwilight implements TwilightModel
             75.0 + (6.140 / 55.0) * $absLat,
         );
 
-        return ['morning' => (int) round($morning), 'evening' => (int) round($evening)];
+        return ['morning' => (int) round($morning * 60.0), 'evening' => (int) round($evening * 60.0)];
     }
 
     /**

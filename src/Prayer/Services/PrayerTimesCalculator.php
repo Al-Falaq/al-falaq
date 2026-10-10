@@ -36,7 +36,9 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
 /**
  * Single-day prayer-time pipeline; strategies injected, no computation in ctor.
  *
- * Normal path only (MSC lat≥55 seasonal branch lands in T15).
+ * Normal path plus the MSC seasonal branches (pin PrayerTimes._set_fajr /
+ * _set_isha verbatim): seasonal safe caps on every MSC row, seventh-of-night
+ * temps at high latitude.
  */
 final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
 {
@@ -131,7 +133,7 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
             PolarCircleRule::NONE => new ThrowHandler(),
         };
 
-        // Consulted only on the seasonal path (T15).
+        // Consulted on the MSC seasonal branches in calculate().
         $twilight = new SeasonAdjustedTwilight();
 
         return new self($hl, $polar, $twilight);
@@ -183,11 +185,50 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
 
         $eff = $parameters->methodAdjustments->combinedWith($parameters->adjustments);
 
-        $fajrTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$parameters->fajrAngle, false);
-        $fajrSafe = $this->addSeconds($day->sunrise, - (int) ($portions->fajrPortion * $nightSec));
+        $isMsc = $parameters->method === CalculationMethod::MOON_SIGHTING_COMMITTEE;
 
-        if ($fajrTemp === null || $fajrTemp < $fajrSafe) {
-            $fajrTemp = $fajrSafe;
+        // Pin _set_fajr/_set_isha MSC branches (PrayerTimes.py verbatim): the
+        // seasonal safe caps apply to every MSC row; the seventh-of-night
+        // temp replaces the angle temp at high latitude. The rule arm gives
+        // custom SEASONAL_TWILIGHT configs the identical high-latitude path.
+        // NOTE: the pin gates its temp branch on signed `latitude >= 55`;
+        // abs() is used here instead (symmetric like the model itself) — no
+        // golden row discriminates (southernmost high-lat vector absent).
+        $seasonal = ($isMsc || $parameters->highLatitudeRule === HighLatitudeRule::SEASONAL_TWILIGHT)
+            && abs($effCoords->latitude) >= 55;
+
+        $seasonalSeconds = ['morning' => 0, 'evening' => 0];
+        $seventh = 0;
+
+        if ($isMsc || $seasonal) {
+            $seasonalSeconds = $this->twilightModel->seasonalSeconds(
+                $effDate->dayOfYear(),
+                $effDate->year,
+                $effCoords->latitude,
+            );
+            $seventh = intdiv($nightSec, 7);
+        }
+
+        if ($isMsc || $seasonal) {
+            $fajrSafe = $this->addSeconds($day->sunrise, -$seasonalSeconds['morning']);
+
+            if ($seasonal) {
+                // Angle temp discarded (the pin overwrites it on this path).
+                $fajrTemp = $this->addSeconds($day->sunrise, -$seventh);
+            } else {
+                $fajrTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$parameters->fajrAngle, false);
+            }
+
+            if ($fajrTemp === null || $fajrTemp < $fajrSafe) {
+                $fajrTemp = $fajrSafe;
+            }
+        } else {
+            $fajrTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$parameters->fajrAngle, false);
+            $fajrSafe = $this->addSeconds($day->sunrise, - (int) ($portions->fajrPortion * $nightSec));
+
+            if ($fajrTemp === null || $fajrTemp < $fajrSafe) {
+                $fajrTemp = $fajrSafe;
+            }
         }
 
         $fajr = $this->adjusted($fajrTemp, $eff, Prayer::FAJR);
@@ -266,11 +307,28 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
                 ));
             }
 
-            $ishaTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$ishaAngle, true);
-            $ishaSafe = $this->addSeconds($day->sunset, (int) ($portions->ishaPortion * $nightSec));
+            if ($isMsc || $seasonal) {
+                // Pin _set_isha MSC branch: seasonal evening safe (every MSC
+                // row); seventh-of-night temp on the high-latitude path, the
+                // angle temp discarded like fajr above.
+                $ishaSafe = $this->addSeconds($day->sunset, $seasonalSeconds['evening']);
 
-            if ($ishaTemp === null || $ishaTemp > $ishaSafe) {
-                $ishaTemp = $ishaSafe;
+                if ($seasonal) {
+                    $ishaTemp = $this->addSeconds($day->sunset, $seventh);
+                } else {
+                    $ishaTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$ishaAngle, true);
+                }
+
+                if ($ishaTemp === null || $ishaTemp > $ishaSafe) {
+                    $ishaTemp = $ishaSafe;
+                }
+            } else {
+                $ishaTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$ishaAngle, true);
+                $ishaSafe = $this->addSeconds($day->sunset, (int) ($portions->ishaPortion * $nightSec));
+
+                if ($ishaTemp === null || $ishaTemp > $ishaSafe) {
+                    $ishaTemp = $ishaSafe;
+                }
             }
 
             $isha = $this->adjusted($ishaTemp, $eff, Prayer::ISHA);
