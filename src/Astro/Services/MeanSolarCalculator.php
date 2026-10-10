@@ -35,6 +35,7 @@ final class MeanSolarCalculator implements SolarModel
      * Equation of time in minutes (M1).
      *
      * Pin a7baa8b Astronomical.equation_of_time; Meeus 2nd ed. p. 183.
+     * The 0.0057183 term is the aberration-related constant from Meeus p. 183.
      *
      * @param float $julianDay Julian Day number.
      * @return float Minutes (apparent minus mean solar time).
@@ -186,6 +187,7 @@ final class MeanSolarCalculator implements SolarModel
             $this->meanSolarLongitude($century)
             + $this->equationOfCenter($century)
             - 0.00569
+            // Truncated form is pin-verbatim (Meeus); do NOT replace with ascendingNode().
             - 0.00478 * sin(deg2rad(125.04 - 1934.136 * $century)),
         );
     }
@@ -220,6 +222,7 @@ final class MeanSolarCalculator implements SolarModel
     private function apparentObliquity(float $century): float
     {
         return $this->meanObliquity($century)
+            // Truncated form is pin-verbatim (Meeus); do NOT replace with ascendingNode().
             + 0.00256 * cos(deg2rad(125.04 - 1934.136 * $century));
     }
 
