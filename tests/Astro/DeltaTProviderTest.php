@@ -33,4 +33,16 @@ final class DeltaTProviderTest extends TestCase
         $this->expectException(ValidationException::class);
         DeltaTProvider::forYear(NAN);
     }
+
+    public function testNonNumericYearThrowsValidationException(): void
+    {
+        foreach ([true, false, 'x', null, INF] as $bad) {
+            try {
+                DeltaTProvider::forYear($bad);
+                self::fail('Expected ValidationException for year ' . var_export($bad, true));
+            } catch (ValidationException $e) {
+                self::assertNotSame('', $e->getMessage());
+            }
+        }
+    }
 }

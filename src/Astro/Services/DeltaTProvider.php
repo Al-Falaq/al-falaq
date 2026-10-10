@@ -21,16 +21,22 @@ final class DeltaTProvider
      * return an extrapolated value (no warning convention in PHP). The prayer
      * path never calls this — reserved for the M3 lunar path, same as the pin.
      *
-     * @param float $year Fractional year (e.g. 2025.5).
+     * @param mixed $year Fractional year (e.g. 2025.5); finite int|float, bools rejected.
      * @return float Seconds to add to UT1.
      */
-    public static function forYear(float $year): float
+    public static function forYear(mixed $year): float
     {
-        if (! is_finite($year)) {
-            throw new ValidationException(sprintf('year must be finite, got %s.', var_export($year, true)));
+        if (is_bool($year) || (! is_int($year) && ! is_float($year))) {
+            throw new ValidationException(sprintf('Year must be a finite number, got %s.', var_export($year, true)));
         }
 
-        $t = $year - 2000.0;
+        $yearFloat = (float) $year;
+
+        if (! is_finite($yearFloat)) {
+            throw new ValidationException(sprintf('Year must be a finite number, got %s.', var_export($year, true)));
+        }
+
+        $t = $yearFloat - 2000.0;
 
         return 62.92 + 0.32217 * $t + 0.005589 * $t * $t;
     }

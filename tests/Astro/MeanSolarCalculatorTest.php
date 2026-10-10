@@ -135,4 +135,20 @@ final class MeanSolarCalculatorTest extends TestCase
             }
         }
     }
+
+    public function testHourAngleRejectsNonFiniteAngle(): void
+    {
+        $calc = new MeanSolarCalculator();
+        $coords = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 1, 15);
+
+        foreach ([NAN, INF, -INF] as $bad) {
+            try {
+                $calc->hourAngle($coords, $date, 0.0, $bad, false);
+                self::fail('Expected ValidationException for angle ' . var_export($bad, true));
+            } catch (ValidationException $e) {
+                self::assertNotSame('', $e->getMessage());
+            }
+        }
+    }
 }

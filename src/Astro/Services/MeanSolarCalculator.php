@@ -16,6 +16,9 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
 /**
  * Mean-sun solar calculator (Meeus transcription, M1).
  *
+ * The 4 day-level methods (solarTime/hourAngle/afternoon/isSolarDefined) are
+ * intentionally concrete-@internal: the contract keeps only declination/equationOfTime.
+ *
  * @internal Entry point is SolarTime, not this class.
  */
 final class MeanSolarCalculator implements SolarModel
@@ -177,6 +180,13 @@ final class MeanSolarCalculator implements SolarModel
         float $angleDeg,
         bool $afterTransit,
     ): ?\DateTimeImmutable {
+        if (! is_finite($angleDeg)) {
+            throw new ValidationException(sprintf(
+                'Angle must be a finite number of degrees, got %s.',
+                var_export($angleDeg, true),
+            ));
+        }
+
         $this->assertElevation($elevationM);
         $julianDay = JulianDay::fromCivilDate($date)->toFloat();
 
@@ -841,6 +851,7 @@ final class MeanSolarCalculator implements SolarModel
      * Validate observer elevation in metres.
      *
      * Pin a7baa8b SolarTime.__init__ elevation guard (message style mirrored).
+     * Accepts any finite value >= 0 (no 8848 cap): pin-verbatim, the cap lives in CalculationParameters per PRD.
      *
      * @param mixed $value Candidate elevation.
      * @return float Validated elevation.
