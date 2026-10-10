@@ -192,11 +192,10 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         // SEASONAL_TWILIGHT rule arm is in play (the rule arm is
         // MSC-equivalent by design); the seventh-of-night temp replaces
         // the angle temp only at high latitude.
-        // NOTE: the pin gates its temp branch on signed `latitude >= 55`;
-        // abs() is used here instead (symmetric like the model itself) — no
-        // golden row discriminates (southernmost high-lat vector absent).
+        // NOTE: the pin gates its temp branch on signed `latitude >= 55`
+        // (_set_fajr and _set_isha); keep pin-verbatim here.
         $useSeasonalSafe = $isMsc || $parameters->highLatitudeRule === HighLatitudeRule::SEASONAL_TWILIGHT;
-        $useSeventh = $useSeasonalSafe && abs($effCoords->latitude) >= 55;
+        $useSeventh = $useSeasonalSafe && $effCoords->latitude >= 55;
 
         $seasonalSeconds = ['morning' => 0, 'evening' => 0];
         $seventh = 0;
