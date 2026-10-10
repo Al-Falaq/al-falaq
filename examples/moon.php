@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 require __DIR__ . "/../vendor/autoload.php";
 
+use AlFalaq\AlFalaq\Moon\Services\CrescentCalculator;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
-use AlFalaq\AlFalaq\Moon\Services\CrescentCalculator;
 
 $verdicts = CrescentCalculator::default()->evaluate(
     Coordinates::fromDegrees(3.1390, 101.6869), // Kuala Lumpur
