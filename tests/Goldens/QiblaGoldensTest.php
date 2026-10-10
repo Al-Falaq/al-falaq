@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Tests\Goldens;
 
+use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
 use AlFalaq\AlFalaq\Qibla\ValueObjects\QiblaResult;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -195,6 +197,34 @@ final class QiblaGoldensTest extends TestCase
         fclose($handle);
 
         return ['header' => $header, 'rows' => $rows];
+    }
+
+    /**
+     * Numeric parity: PHP spherical implementation vs committed CSV goldens.
+     *
+     * Gates are fixed (1e-6 bearing / 1e-3 distance) because committed CSV
+     * rounding (6dp/3dp) dominates float noise; see docs/qibla.md lock-in.
+     */
+    public function testEngineParityAgainstPhpSphericalImplementation(): void
+    {
+        $calculator = QiblaCalculator::default();
+
+        foreach (self::loadGolden()['rows'] as $index => $row) {
+            $line = $index + 2;
+            $result = $calculator->calculate(Coordinates::fromDegrees(
+                (float) self::field($row, 'latitude', $line),
+                (float) self::field($row, 'longitude', $line),
+            ));
+
+            self::assertTrue(
+                abs($result->direction - (float) self::field($row, 'bearing_deg', $line)) <= 1e-6,
+                'bearing line ' . $line,
+            );
+            self::assertTrue(
+                abs($result->distanceKm - (float) self::field($row, 'distance_km', $line)) <= 1e-3,
+                'distance line ' . $line,
+            );
+        }
     }
 
     /**
