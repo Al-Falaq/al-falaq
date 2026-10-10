@@ -381,4 +381,33 @@ final class ArchTest extends TestCase
 
         self::assertSame([], $violations);
     }
+
+    /**
+     * Astro engine depends only inward on Domain value objects, never on contexts.
+     */
+    public function testAstroDependsOnlyOnDomainValueObjects(): void
+    {
+        $root = dirname(__DIR__);
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root . '/src/Astro', \FilesystemIterator::SKIP_DOTS),
+        );
+        $violations = [];
+
+        /** @var \SplFileInfo $file */
+        foreach ($iterator as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $code = self::codeWithoutComments($file->getPathname());
+
+            foreach (['Prayer', 'Qibla', 'Moon', 'Hijri'] as $context) {
+                if (preg_match('/AlFalaq\\\\AlFalaq\\\\' . $context . '\\\\/', $code) === 1) {
+                    $violations[] = $file->getPathname() . ': Astro must not reference ' . $context;
+                }
+            }
+        }
+
+        self::assertSame([], $violations);
+    }
 }
