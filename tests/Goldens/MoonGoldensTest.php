@@ -24,8 +24,11 @@ final class MoonGoldensTest extends TestCase
     {
         $calculator = CrescentCalculator::default();
         $file = 'moon_crescent.csv';
+        $loaded = self::loadGolden($file);
 
-        foreach (self::loadGolden($file)['rows'] as $index => $row) {
+        self::assertCount(24, $loaded['rows']);
+
+        foreach ($loaded['rows'] as $index => $row) {
             $line = $index + 2;
             [$y, $m, $d] = array_map('intval', explode('-', '2025-02-28'));
             $geometry = $calculator->atSunset(
