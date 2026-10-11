@@ -3,14 +3,16 @@
 declare(strict_types=1);
 
 /**
- * Generate self-established M2 prayer goldens for TEHRAN + MOROCCO.
+ * Regenerate drift-gated M2 prayer goldens for TEHRAN + MOROCCO.
  *
- * No Python-pin vectors exist for these presets (see the M2 design spec), so
- * goldens are produced by the shipped implementation from the cited angles:
- * Tehran Fajr 17.7 / Isha 14 / Maghrib-angle 4.5 (Institute of Geophysics,
- * University of Tehran); Morocco Fajr 19 / Isha 17 (Ministry of Habous).
- * Grid mirrors tools/export_goldens.py. Regenerate and diff-review with:
- * php tools/gen_self_prayer_goldens.php
+ * Official-table arbitration was inconclusive (see the M2 design spec and
+ * CHANGELOG): Habous Rabat dailies and UT Geophysics times have no
+ * machine-readable 30-day archive, so no angle changes. Tehran values agree
+ * exactly with batoulapps/adhan-js@a2c4bda Tehran() (fajr 17.7, isha 14,
+ * maghrib-angle 4.5); Morocco 19/17 has no batoulapps/adhan-* preset and
+ * stays a labelled Habous convention. These CSVs gate drift, not
+ * correctness. Grid mirrors tools/export_goldens.py. Regenerate and
+ * diff-review with: php tools/gen_self_prayer_goldens.php
  */
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -86,7 +88,11 @@ foreach ($methods as $method) {
                 ));
             }
 
-            $row[] = 'self:m2-2026-10-10;tehran:Geophysics-UT-17.7/14/maghrib-4.5;morocco:Habous-19/17';
+            $source = $method === CalculationMethod::TEHRAN
+                ? 'drift:adhan-js@a2c4bda-Tehran()-17.7/14/maghrib-4.5;src:praytimes.org/docs/methods-2026-10-11;isha14-convention-not-official'
+                : 'drift:no-batoulapps-preset-2026-10-11;src:fm6oa.org-2026-10-11;morocco:Habous-19/17-convention;fajr18-vs-19-undecided';
+
+            $row[] = $source;
             fputcsv($handle, $row);
         }
     }

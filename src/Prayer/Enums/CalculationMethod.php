@@ -44,8 +44,9 @@ enum CalculationMethod: string
      *
      * Pin-known cells trace to MethodsParameters.py @ a7baa8b plus the
      * CalculationParameters.py ctor defaults (imsak 10 / ishraq 15 /
-     * dhuha 28); cells marked PROVISIONAL have no pin source and T2
-     * goldens decide.
+     * dhuha 28); TEHRAN/MOROCCO cells are drift-gated conventions (see
+     * the per-arm citations: official-table arbitration inconclusive,
+     * Tehran cross-checked against batoulapps/adhan-js@a2c4bda).
      *
      * @return CalculationParameters Defaults to customize via with*().
      */
@@ -276,9 +277,17 @@ enum CalculationMethod: string
                 Madhab::SHAFI,
                 HighLatitudeRule::MIDDLE_OF_NIGHT,
                 PolarCircleRule::NEAREST_LATITUDE,
-                17.7, // PROVISIONAL: no pin source.
-                new AngleIsha(14.0), // PROVISIONAL: no pin source.
-                new AngleMaghrib(4.5), // PROVISIONAL: no pin source.
+                // Fajr 17.7 deg, Institute of Geophysics, University of Tehran
+                // convention. Source: https://praytimes.org/docs/methods (accessed
+                // 2026-10-11). Drift-gate: batoulapps/adhan-js@a2c4bda Tehran()
+                // (fajr 17.7, isha 14, maghrib-angle 4.5) agrees exactly; official
+                // tables unobtainable, so values are kept, not arbitrated.
+                17.7,
+                // Isha 14 deg is convention, not official: no Tehran source defines
+                // an isha angle; kept per community consensus (same citations).
+                new AngleIsha(14.0),
+                // Maghrib-angle 4.5 deg, same convention + drift-gate as fajr.
+                new AngleMaghrib(4.5),
                 0,
                 10,
                 15,
@@ -293,8 +302,15 @@ enum CalculationMethod: string
                 Madhab::SHAFI,
                 HighLatitudeRule::MIDDLE_OF_NIGHT,
                 PolarCircleRule::NEAREST_LATITUDE,
-                19.0, // PROVISIONAL: no pin source.
-                new AngleIsha(17.0), // PROVISIONAL: no pin source.
+                // Fajr 19 deg, Ministry of Habous convention (Rabat). Source:
+                // https://www.fm6oa.org/en/prayer-times/ (accessed 2026-10-11);
+                // official-table arbitration inconclusive (no machine-readable
+                // 30-day archive; fajr 18 vs 19 undecided). No batoulapps/adhan-*
+                // preset exists (verified adhan-js@a2c4bda + adhan-java), so this
+                // stays a labelled convention, never claimed as arbitrated.
+                19.0,
+                // Isha 17 deg, same Habous convention + status as fajr.
+                new AngleIsha(17.0),
                 new MinutesAfterSunsetMaghrib(0),
                 0,
                 10,
