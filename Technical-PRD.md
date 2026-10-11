@@ -427,7 +427,7 @@ Corrections vs the transcription aid (pin wins, freeze `c151828`): ishraq 15 / d
 `***` TURKEY/KEMENAG/MUIS/BRUNEI were provisional at freeze, then confirmed against official tables (`28ff5ce`): TURKEY Diyanet temkin `{sunrise:−7,dhuhr:+5,asr:+4,maghrib:+7}` + imsak 0 (Imsak IS fajr) + SHAFI (Imamayn factor-1 ikindi); KEMENAG ihtiyat `{fajr:+2,sunrise:−2,dhuhr:+4,asr:+2,maghrib:+2,isha:+2}`; MUIS/BRUNEI `{dhuhr:+1}` zohor convention. Residual ±1 min cells emptied per file with reasons (`adee976`).
 `†` TEHRAN/MOROCCO arbitration inconclusive (no machine-readable official tables as of 2026-10-11 — NO preset change; drift-gated CSVs via `tools/gen_self_prayer_goldens.php`: Tehran cross-checked against `batoulapps/adhan-js@a2c4bda` `Tehran()`, Morocco 19/17 a labelled Habous convention, Tehran isha 14 convention-not-official).
 UOIF gap: pin-only method with no PHP preset (keeps the 18-freeze); lands as a future minor with an Appendix A amendment.
-Every row needs a `tests/Goldens/prayer_{method}.csv` vector before M1 sign-off (15 present: 11 pin + turkey/kemenag/muis/brunei official-table; tehran + morocco pending).
+Every row needs a `tests/Goldens/prayer_{method}.csv` vector before M1 sign-off (17 present: 11 pin + turkey/kemenag/muis/brunei official-table + tehran/morocco drift-gated, not officially arbitrated).
 
 ## Appendix B — Formulas & constants (normative)
 
