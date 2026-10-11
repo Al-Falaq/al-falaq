@@ -5,61 +5,30 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Hijri\Strategies;
 
 use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
+use AlFalaq\AlFalaq\Hijri\Data\MabimsMonthStarts;
 use AlFalaq\AlFalaq\Hijri\Enums\MabimsCountry;
+use AlFalaq\AlFalaq\Hijri\Traits\LooksUpMonthStarts;
 use AlFalaq\AlFalaq\Hijri\Traits\ShiftsHijriDays;
-use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
-use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 
 /**
- * Neo-MABIMS (MY/ID/SG/BN) calendar. Table slice lands in M4 Task 5.
+ * Neo-MABIMS (MY/ID/SG/BN) calendar, backed by per-country generated tables.
+ *
+ * Coverage is exactly the shipped span (1445-01 … 1500-12 AH) for the bound
+ * member state; dates outside it raise `HijriOutOfRangeException`. The country
+ * picks a precomputed table — the crescent criteria are never re-evaluated at
+ * conversion time. Regenerate with `python3 tools/gen_hijri.py`.
  */
 final class MabimsCalendar implements HijriCalendar
 {
     use ShiftsHijriDays;
+    use LooksUpMonthStarts;
 
     /**
      * Bind the member state whose table this instance resolves.
      *
      * @param MabimsCountry $country Supported member state.
      */
-    public function __construct(public readonly MabimsCountry $country) {}
-
-    /**
-     * Not implemented until the table slice (M4 Task 5).
-     *
-     * @param CivilDate $date Gregorian day.
-     * @return HijriDate Never returns.
-     * @throws \LogicException Always.
-     */
-    public function fromGregorian(CivilDate $date): HijriDate
-    {
-        throw new \LogicException('MabimsCalendar::fromGregorian lands in M4 Task 5.');
-    }
-
-    /**
-     * Not implemented until the table slice (M4 Task 5).
-     *
-     * @param HijriDate $date Hijri date.
-     * @return CivilDate Never returns.
-     * @throws \LogicException Always.
-     */
-    public function toGregorian(HijriDate $date): CivilDate
-    {
-        throw new \LogicException('MabimsCalendar::toGregorian lands in M4 Task 5.');
-    }
-
-    /**
-     * Not implemented until the table slice (M4 Task 5).
-     *
-     * @param int $year Hijri year.
-     * @param int $month Hijri month 1–12.
-     * @return int Never returns.
-     * @throws \LogicException Always.
-     */
-    public function monthLength(int $year, int $month): int
-    {
-        throw new \LogicException('MabimsCalendar::monthLength lands in M4 Task 5.');
-    }
+    public function __construct(private readonly MabimsCountry $country) {}
 
     /**
      * Stable calendar key.
@@ -69,5 +38,26 @@ final class MabimsCalendar implements HijriCalendar
     public function name(): string
     {
         return 'mabims';
+    }
+
+    /**
+     * Generated month-start table for the bound member state.
+     *
+     * @return array{name: string, range: string, firstYear: int, firstMonth: int, starts: non-empty-list<string>}
+     */
+    protected function monthStartTable(): array
+    {
+        return [
+            'name' => 'mabims',
+            'range' => sprintf(
+                '%d–%d AH (%s)',
+                MabimsMonthStarts::FIRST_YEAR,
+                MabimsMonthStarts::LAST_YEAR,
+                $this->country->value,
+            ),
+            'firstYear' => MabimsMonthStarts::FIRST_YEAR,
+            'firstMonth' => MabimsMonthStarts::FIRST_MONTH,
+            'starts' => MabimsMonthStarts::forCountry($this->country),
+        ];
     }
 }
