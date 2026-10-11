@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Karney, pin `a7baa8b`), azimuth unwound from `(-180, 180]` into `[0, 360)`
   with the `>= 360 → 0.0` re-clamp, Makkah-self clamped to `0.0`/`0.0`.
   `QiblaCalculator::wgs84()` is usable; `default()` stays spherical.
+  The spherical engine (`GeodesyEngine::inverse`) gained the same
+  `>= 360 → 0.0` re-clamp: a bearing a few ulps below zero (a point
+  micrometres east of Makkah's meridian, e.g. `39.82618180000001`)
+  previously unwound to exactly `360.0` (ulp(360) ≈ 5.7e-14), which
+  `QiblaResult` rejects with `ValidationException`; pinned by
+  `testSphericalTinyNegativeAzimuthDoesNotWindTo360`.
 - M2 qibla goldens: `tests/Goldens/qibla_wgs84.csv` (23 cities, 6-dp
   bearings / 3-dp distances, gates ≤ 1e-6° / ≤ 1e-3 km) +
   `tools/gen_qibla_wgs84.py` regenerator; near-antipodal convergence

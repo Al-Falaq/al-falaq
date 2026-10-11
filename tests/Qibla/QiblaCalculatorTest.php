@@ -22,6 +22,21 @@ final class QiblaCalculatorTest extends TestCase
         self::assertTrue(abs($result->distanceKm - 10943.598) <= 1e-3);
     }
 
+    public function testSphericalTinyNegativeAzimuthDoesNotWindTo360(): void
+    {
+        // Same hazard as the WGS84 path below: (-30.0, 39.82618180000001) is
+        // one double (ulp 7.1e-15) east of Makkah's meridian, so the raw
+        // Todhunter bearing is ≈ -1.2e-14°, and fmod + 360 rounds to exactly
+        // 360.0 (ulp(360) ≈ 5.7e-14), which QiblaResult rejects. The engine's
+        // re-clamp turns that into 0.0. Without it this throws
+        // ValidationException.
+        $result = QiblaCalculator::default()->calculate(Coordinates::fromDegrees(-30.0, 39.82618180000001));
+
+        self::assertSame(0.0, $result->direction);
+        self::assertTrue(is_finite($result->distanceKm));
+        self::assertGreaterThan(0.0, $result->distanceKm);
+    }
+
     public function testArrayPairInputEqualsVoInput(): void
     {
         $fromVo = QiblaCalculator::default()->calculate(Coordinates::fromDegrees(51.5074, -0.1278));

@@ -84,23 +84,25 @@ final class QiblaGoldensTest extends TestCase
 
     public function testExcludesDegenerateBearingGoldens(): void
     {
-        foreach (self::loadGolden(self::GOLDEN_FILE)['rows'] as $index => $row) {
-            $line = $index + 2;
-            $lat = (float) self::field($row, 'latitude', $line, self::GOLDEN_FILE);
-            $lon = (float) self::field($row, 'longitude', $line, self::GOLDEN_FILE);
-            $distance = (float) self::field($row, 'distance_km', $line, self::GOLDEN_FILE);
+        foreach ([self::GOLDEN_FILE, self::WGS84_GOLDEN_FILE] as $file) {
+            foreach (self::loadGolden($file)['rows'] as $index => $row) {
+                $line = $index + 2;
+                $lat = (float) self::field($row, 'latitude', $line, $file);
+                $lon = (float) self::field($row, 'longitude', $line, $file);
+                $distance = (float) self::field($row, 'distance_km', $line, $file);
 
-            self::assertGreaterThan(1.0, $distance, 'no Makkah-self row line ' . $line);
-            self::assertGreaterThan(
-                0.01,
-                abs($lat - 21.4225241) + abs($lon - 39.8261818),
-                'no Makkah-self coordinates line ' . $line,
-            );
-            self::assertGreaterThan(
-                0.01,
-                abs($lat + 21.4225241) + abs($lon + 140.1738182),
-                'no antipode coordinates line ' . $line,
-            );
+                self::assertGreaterThan(1.0, $distance, sprintf('no Makkah-self row in %s line %d.', $file, $line));
+                self::assertGreaterThan(
+                    0.01,
+                    abs($lat - 21.4225241) + abs($lon - 39.8261818),
+                    sprintf('no Makkah-self coordinates in %s line %d.', $file, $line),
+                );
+                self::assertGreaterThan(
+                    0.01,
+                    abs($lat + 21.4225241) + abs($lon + 140.1738182),
+                    sprintf('no antipode coordinates in %s line %d.', $file, $line),
+                );
+            }
         }
     }
 
@@ -277,6 +279,8 @@ final class QiblaGoldensTest extends TestCase
 
             self::assertStringStartsWith('py:alfalak-a7baa8b;wgs84-karney;', $source, 'source tag line ' . $line);
             self::assertStringContainsString('MAKKAH=21.4225241,39.8261818', $source, 'source pin line ' . $line);
+            self::assertStringContainsString('a=6378137.0', $source, 'source pin line ' . $line);
+            self::assertStringContainsString('f=1/298.257223563', $source, 'source pin line ' . $line);
 
             $key = $latRaw . ',' . $lonRaw;
 

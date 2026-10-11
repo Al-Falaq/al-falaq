@@ -56,6 +56,14 @@ final class GeodesyEngine
             $bearing += 360.0;
         }
 
+        // Not cosmetic: ulp(360) ≈ 5.7e-14, so a bearing a few ulps below
+        // zero (e.g. fmod(-1.2e-14, 360) + 360 for a point micrometres east
+        // of Makkah's meridian) rounds up to exactly 360.0, which
+        // QiblaResult rejects. Re-clamp keeps the documented [0, 360) range.
+        if ($bearing >= 360.0) {
+            $bearing = 0.0;
+        }
+
         $deltaLat = deg2rad($lat2 - $lat1);
         $haversine = sin($deltaLat / 2.0) ** 2
             + cos($fromLat) * cos($toLat) * sin($deltaLon / 2.0) ** 2;
