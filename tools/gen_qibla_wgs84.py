@@ -29,7 +29,7 @@ exactly one turn.
 
 Run from this repo root against the checkout of the alfalak Python pin
 pinned at a7baa8b202790d3bc84c47a610ac763be6c0b7e7:
-    PYTHONPATH=/tmp/opencode/al-falak-pin/src python3 tools/gen_qibla_wgs84.py > /tmp/qibla_wgs84_regen.csv
+    PYTHONPATH=<path-to-alfalak-pin>/src python3 tools/gen_qibla_wgs84.py > /tmp/qibla_wgs84_regen.csv
     diff tests/Goldens/qibla_wgs84.csv /tmp/qibla_wgs84_regen.csv
 """
 
