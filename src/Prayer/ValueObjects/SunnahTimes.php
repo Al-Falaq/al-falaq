@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\ValueObjects;
 
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
 
 /**
- * Sunnah night markers in UTC (middle, thirds, tahajjud window).
+ * Sunnah night markers in UTC (middle, thirds, tahajjud window, maghrib anchor).
  *
  * Anchored at tonight's maghrib and tomorrow's fajr; degenerate intervals
- * (fajr ≤ maghrib) are rejected, never clamped.
+ * (fajr ≤ maghrib, fajr ≤ lastThird) are rejected, never clamped.
  */
 final readonly class SunnahTimes
 {
@@ -21,13 +22,19 @@ final readonly class SunnahTimes
      * @param \DateTimeImmutable $firstThird One-third point (UTC).
      * @param \DateTimeImmutable $lastThird Two-thirds point (UTC).
      * @param \DateTimeImmutable $fajr Anchoring fajr (UTC).
+     * @param \DateTimeImmutable $maghrib Anchoring maghrib (UTC).
      */
     public function __construct(
         public \DateTimeImmutable $middleOfNight,
         public \DateTimeImmutable $firstThird,
         public \DateTimeImmutable $lastThird,
         public \DateTimeImmutable $fajr,
+        public \DateTimeImmutable $maghrib,
     ) {
+        if ($fajr <= $maghrib) {
+            throw new ValidationException('Degenerate Sunnah night: fajr must be after maghrib.');
+        }
+
         if ($fajr <= $lastThird) {
             throw new ValidationException('Degenerate Sunnah night: fajr must be after last third.');
         }
@@ -46,8 +53,10 @@ final readonly class SunnahTimes
     /**
      * Arbitrary night fraction between maghrib and fajr (M2).
      *
+     * UTC-normalized then converted back, so forZone() commutes with it.
+     *
      * @param float $fraction Exclusive (0, 1); 0.5 = middle of night.
-     * @return \DateTimeImmutable Instant at that fraction (UTC).
+     * @return \DateTimeImmutable Instant at that fraction (maghrib zone).
      */
     public function nightFraction(float $fraction): \DateTimeImmutable
     {
@@ -55,7 +64,25 @@ final readonly class SunnahTimes
             throw new ValidationException('nightFraction expects f in (0, 1) exclusive.');
         }
 
-        throw new \LogicException('deferred: nightFraction needs a maghrib anchor (pre-M5 no-throw sweep)');
+        $zone = $this->maghrib->getTimezone();
+
+        if ($zone === false) {
+            $zone = new \DateTimeZone('UTC');
+        }
+
+        $utc = new \DateTimeZone('UTC');
+        $maghribUtc = $this->maghrib->setTimezone($utc);
+        $fajrUtc = $this->fajr->setTimezone($utc);
+
+        $nightSeconds = $fajrUtc->getTimestamp() - $maghribUtc->getTimestamp();
+
+        $moved = $maghribUtc->modify(sprintf('+%d seconds', (int) round($nightSeconds * $fraction)));
+
+        if ($moved === false) {
+            throw new ValidationException('Unable to compute Sunnah fraction.');
+        }
+
+        return Minutes::roundedHalfUp($moved)->setTimezone($zone);
     }
 
     /**
@@ -71,6 +98,7 @@ final readonly class SunnahTimes
             $this->firstThird->setTimezone($zone),
             $this->lastThird->setTimezone($zone),
             $this->fajr->setTimezone($zone),
+            $this->maghrib->setTimezone($zone),
         );
     }
 }

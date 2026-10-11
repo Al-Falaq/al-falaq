@@ -50,7 +50,11 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   `{dhuhr:+5,maghrib:+3}`).
   TURKEY/KEMENAG/MUIS/BRUNEI were provisional at freeze, then confirmed against
   official tables (Diyanet temkin; Kemenag ihtiyat; MUIS/KHEU `+1` zohor
-  convention — `28ff5ce`); TEHRAN/MOROCCO official tables are still pending
-  (NO preset change — cells stay provisional; self-established golden CSVs
-  now exist via `tools/gen_self_prayer_goldens.php`, source-tagged `self:`). UOIF gap: pin-only method,
+  convention — `28ff5ce`); TEHRAN/MOROCCO official-table arbitration was
+  inconclusive (no machine-readable 30-day archive at fm6oa.org / UT
+  Geophysics as of 2026-10-11 — NO preset change; drift-gated golden CSVs
+  now exist via `tools/gen_self_prayer_goldens.php`: Tehran cross-checked
+  against `batoulapps/adhan-js@a2c4bda` `Tehran()`, Morocco 19/17 stays a
+  labelled Habous convention with fajr 18-vs-19 undecided, Tehran isha 14
+  a convention-not-official). UOIF gap: pin-only method,
   no PHP preset (future minor with Appendix A amendment).

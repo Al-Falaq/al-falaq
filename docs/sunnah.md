@@ -12,15 +12,18 @@ pipeline throws first — `SunnahCalculator` never invents a night.
 
 ## Markers
 
-`SunnahTimes{middleOfNight, firstThird, lastThird, fajr}` as calculated are
+`SunnahTimes{middleOfNight, firstThird, lastThird, fajr, maghrib}` as calculated are
 all UTC, with `tahajjudWindow() === [lastThird, fajr)`. `forZone()` returns
 the same value object with every marker converted to the requested display
 zone (instants preserved). Degenerate intervals
-(fajr ≤ maghrib) are rejected with `ValidationException`, never clamped.
+(fajr ≤ maghrib, fajr ≤ lastThird) are rejected with `ValidationException`,
+never clamped.
 
-## Deferred
+## Night fractions
 
-`SunnahTimes::nightFraction()` stays a throwing stub: the VO carries no
-maghrib anchor, so no fraction has a defined base. Retained per the approved
-M2 design; the post-M0 no-`LogicException` rule is enforced at the pre-M5
-sweep (see the M2 design spec).
+`SunnahTimes::nightFraction()` returns the instant at fraction `f ∈ (0, 1)`
+exclusive between maghrib and fajr (`0.5` = middle of night, `1.0/3.0` and
+`2.0/3.0` = thirds). It normalizes maghrib/fajr to UTC, applies the same
+`round(nightSeconds * f)` + `Minutes::roundedHalfUp` arithmetic as
+`SunnahCalculator`, then converts back to the maghrib zone — so `forZone()`
+commutes with it and fraction math never throws on non-UTC markers.

@@ -86,8 +86,10 @@ final class SunnahCalculatorTest extends TestCase
         self::assertSame($night->middleOfNight->getTimestamp(), $display->middleOfNight->getTimestamp());
         self::assertSame($night->firstThird->getTimestamp(), $display->firstThird->getTimestamp());
         self::assertSame($night->lastThird->getTimestamp(), $display->lastThird->getTimestamp());
+        self::assertSame($night->fajr->getTimestamp(), $display->fajr->getTimestamp());
+        self::assertSame($night->maghrib->getTimestamp(), $display->maghrib->getTimestamp());
 
-        foreach ([$display->middleOfNight, $display->firstThird, $display->lastThird, $display->fajr] as $marker) {
+        foreach ([$display->middleOfNight, $display->firstThird, $display->lastThird, $display->fajr, $display->maghrib] as $marker) {
             self::assertSame('America/New_York', $marker->getTimezone()->getName());
         }
     }
@@ -112,6 +114,97 @@ final class SunnahCalculatorTest extends TestCase
 
         $this->expectException(ValidationException::class);
 
-        new SunnahTimes($anchor, $anchor, $anchor, $anchor);
+        new SunnahTimes($anchor, $anchor, $anchor, $anchor, $anchor);
+    }
+
+    public function testDirectDegenerateMaghribAnchorIsRejected(): void
+    {
+        $utc = new \DateTimeZone('UTC');
+        $middle = new \DateTimeImmutable('2025-01-15 12:00:00', $utc);
+        $first = new \DateTimeImmutable('2025-01-15 10:00:00', $utc);
+        $last = new \DateTimeImmutable('2025-01-15 14:00:00', $utc);
+        $fajr = new \DateTimeImmutable('2025-01-15 15:00:00', $utc);
+        $maghrib = new \DateTimeImmutable('2025-01-15 15:00:00', $utc);
+
+        $this->expectException(ValidationException::class);
+
+        new SunnahTimes($middle, $first, $last, $fajr, $maghrib);
+    }
+
+    public function testNightFractionThirdsEquality(): void
+    {
+        $night = $this->nightFor(3.1390, 101.6869, 2025, 1, 15);
+
+        self::assertSame(
+            '2025-01-15T16:46:00+00:00',
+            $night->nightFraction(0.5)->format('Y-m-d\TH:i:sP'),
+        );
+        self::assertSame(
+            '2025-01-15T14:58:00+00:00',
+            $night->nightFraction(1.0 / 3.0)->format('Y-m-d\TH:i:sP'),
+        );
+        self::assertSame(
+            '2025-01-15T18:34:00+00:00',
+            $night->nightFraction(2.0 / 3.0)->format('Y-m-d\TH:i:sP'),
+        );
+        self::assertSame($night->middleOfNight->getTimestamp(), $night->nightFraction(0.5)->getTimestamp());
+        self::assertSame($night->firstThird->getTimestamp(), $night->nightFraction(1.0 / 3.0)->getTimestamp());
+        self::assertSame($night->lastThird->getTimestamp(), $night->nightFraction(2.0 / 3.0)->getTimestamp());
+    }
+
+    public function testNightFractionRejectsInvalid(): void
+    {
+        $night = $this->nightFor(3.1390, 101.6869, 2025, 1, 15);
+
+        foreach ([0.0, 1.0, -0.5, 1.5, NAN, INF, -INF] as $fraction) {
+            try {
+                $night->nightFraction($fraction);
+
+                self::fail(sprintf('nightFraction(%s) must throw ValidationException.', var_export($fraction, true)));
+            } catch (ValidationException $e) {
+                self::assertInstanceOf(ValidationException::class, $e);
+            }
+        }
+    }
+
+    public function testForZonePreservesAllFiveInstants(): void
+    {
+        $night = $this->nightFor(3.1390, 101.6869, 2025, 1, 15);
+        $display = $night->forZone(new \DateTimeZone('Asia/Kuala_Lumpur'));
+
+        foreach (
+            [
+                [$night->middleOfNight, $display->middleOfNight],
+                [$night->firstThird, $display->firstThird],
+                [$night->lastThird, $display->lastThird],
+                [$night->fajr, $display->fajr],
+                [$night->maghrib, $display->maghrib],
+            ] as [$utc, $zoned]
+        ) {
+            self::assertSame($utc->getTimestamp(), $zoned->getTimestamp());
+        }
+
+        foreach ([$display->middleOfNight, $display->firstThird, $display->lastThird, $display->fajr, $display->maghrib] as $marker) {
+            self::assertSame('Asia/Kuala_Lumpur', $marker->getTimezone()->getName());
+        }
+    }
+
+    public function testForZoneThenNightFractionCommutates(): void
+    {
+        $night = $this->nightFor(3.1390, 101.6869, 2025, 1, 15);
+        $zone = new \DateTimeZone('America/New_York');
+        $display = $night->forZone($zone);
+
+        foreach ([0.5, 1.0 / 3.0, 2.0 / 3.0, 0.1, 0.9] as $fraction) {
+            $viaDisplay = $display->nightFraction($fraction);
+            $viaUtc = $night->nightFraction($fraction)->setTimezone($zone);
+
+            self::assertSame(
+                $viaUtc->getTimestamp(),
+                $viaDisplay->getTimestamp(),
+                sprintf('Commutativity failed for fraction %s.', (string) $fraction),
+            );
+            self::assertSame($zone->getName(), $viaDisplay->getTimezone()->getName());
+        }
     }
 }
