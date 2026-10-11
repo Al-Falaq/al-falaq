@@ -35,8 +35,8 @@ $hijri = $converter->convert(
 $calendar = new UmmAlQuraCalendar();
 $calendar->fromGregorian(CivilDate::fromYmd(2025, 3, 1))->isoformat();   // '1446-09-01'
 $calendar->toGregorian(new HijriDate(1446, 9, 1))->isoformat();         // '2025-03-01'
-$calendar->monthLength(1446, 9);                                        // 30
-$calendar->shift(new HijriDate(1446, 9, 30), 1)->isoformat();           // '1446-10-01'
+$calendar->monthLength(1446, 9);                                        // 29
+$calendar->shift(new HijriDate(1446, 9, 29), 1)->isoformat();           // '1446-10-01'
 ```
 
 `HijriDate` deliberately has **no** `plusDays()`: a Hijri date cannot know its
@@ -100,6 +100,8 @@ Nothing saturates and nothing wraps.
 | `changeAtSunset` without coordinates or parameters | `ConfigurationException` |
 | Non-int argument to a typed contract parameter | `TypeError` |
 
+`HijriOutOfRangeException` extends `ValidationException`, so a `catch (ValidationException)` catches both; catch the former first when the distinction matters.
+
 Extend coverage by adding a table, not by widening a guard.
 
 ## Algorithm appendix
@@ -130,7 +132,7 @@ The canonical digest of a table is `sha256("\n".join(starts))` — ASCII LF, no
 trailing newline — and is embedded as a PHP constant. Regeneration:
 
 ```bash
-python3 tools/gen_hijri.py --path /tmp/opencode/al-falak-pin
+python3 tools/gen_hijri.py --path <pinned-checkout>
 php vendor/bin/phpunit --no-coverage tests/Goldens/HijriGoldensTest.php
 ```
 

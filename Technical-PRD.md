@@ -301,7 +301,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 
 ## 12. Scalability
 
-- **Compute**: per-day schedule is O(1) trig + at most one bisection (polar edge only). No per-call table scans; Umm al-Qura data stored as indexed map keyed by absolute day number (binary search, not linear). `TimetableService::monthly()` loops `CivilDate::plusDays` with no retained state → constant memory. Budgets verified by `examples/bench.php --budget` (see §6).
+- **Compute**: per-day schedule is O(1) trig + at most one bisection (polar edge only). No per-call table scans; Observational Hijri month-start arrays (binary search, not linear). `TimetableService::monthly()` loops `CivilDate::plusDays` with no retained state → constant memory. Budgets verified by `examples/bench.php --budget` (see §6).
 - **Concurrency**: stateless services are fiber/request-safe; no static caches. If a host app needs caching, it caches `PrayerSchedule::toArray()` externally (PSR-16 in userland, not here).
 - **Data growth**: Hijri tables are generated data classes (`UmmAlQuraMonthStarts`, `MabimsMonthStarts`) pinned by a canonical SHA256; extending a range = regenerate + re-review the digest diff, no migration. MABIMS countries are table keys (`MabimsCountry`), not subclasses.
 - **Team scale**: bounded contexts + ArchTest let prayer/hijri/qibla/moon evolve in parallel without merge conflicts in a god-object. Public surface review checklist blocks `Util/` regrowth.
@@ -379,7 +379,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 |---|---|
 | Float divergence vs Python (deg→rad, `atan2`, `fmod`) | Clean re-derive against pin `a7baa8b` with per-formula Meeus citations + differential golden log: `tools/export_goldens.py` vectors vs PHP in `tests/Goldens/` (minute-equality gate, dual-tolerance `Comparator.php`); divergences fixed in code (signed-lat seventh gate, second-precision seasonal offsets) or logged as emptied CSV cells with per-file reasons (`adee976`) |
 | `DateTimeImmutable` vs `ZoneInfo` DST edge (spring-forward) | UTC-math-then-`forZone()` invariant + dedicated DST test (`America/New_York` 2015-03-08 + 2015-11-01) + `NextPrayerResolver` DST vectors |
-| Umm al-Qura table transcription errors | Dual-entry review + checksummed `UmmAlQuraData_1356_1500` + range-boundary tests + provenance file |
+| Umm al-Qura table transcription errors | Rule-generated tables (`UmmAlQuraMonthStarts`/`MabimsMonthStarts`, no transcription) + digest-diff review + `testTableDigestsMatch` + range-boundary tests + provenance file |
 | Scope creep (adhan CLI parity, new calendars pre-1.0) | CLI explicitly out; new calendars land as minor `HijriCalendar` impls with goldens |
 | Over-abstraction (too many strategies) | `default()/defaultFor()` covers 95%; strategies only where Python already branches (polar/high-latitude/isha/maghrib/asr/geodesy) |
 | Karney implementation risk | Closed in M2: Karney inverse implemented and shipped, near-antipodal convergence pinned in `tests/Astro/KarneyInverseTest.php`; no fallback required |
