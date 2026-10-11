@@ -7,9 +7,11 @@ namespace AlFalaq\AlFalaq\Hijri\Contracts;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 
 /**
- * Official day corrections injected by callers (e.g. -1…+2 moon-sighting offsets).
+ * Official day corrections injected by callers (e.g. a −1…+2 moon-sighting offset).
  *
- * Caller-supplied driven port; no shipped implementation at M0.
+ * No implementation ships: callers own the correction table. `offsetDaysFor()`
+ * returns 0 for an unknown date, and the converter treats 0 as a no-op shift
+ * (a stored explicit 0 is indistinguishable from a missing entry by design).
  */
 interface OffsetStore
 {

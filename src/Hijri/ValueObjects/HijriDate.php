@@ -7,24 +7,29 @@ namespace AlFalaq\AlFalaq\Hijri\ValueObjects;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
- * A validated Hijri date (month 1–12, day 1–30 universal bound).
+ * A validated Hijri date (universal day bound 1..30; the calendar tightens it).
  *
- * Exact month lengths are enforced by the calendar at conversion time.
+ * Day arithmetic lives on the calendar (`HijriCalendar::shift()`) — a Hijri
+ * date cannot know its own month length without a calendar.
  */
 final readonly class HijriDate
 {
     /**
-     * Validated triple (month/day bounds enforced here).
+     * Bind a validated Hijri triple.
      *
-     * @param int $year Hijri year.
+     * @param int $year Hijri year, >= 1 (Hijri years have no year zero).
      * @param int $month Hijri month 1–12.
-     * @param int $day Day 1–30 (calendar tightens to 29/30 on conversion).
+     * @param int $day Day 1–30 (universal bound; month length enforced at conversion).
      */
     public function __construct(
         public int $year,
         public int $month,
         public int $day,
     ) {
+        if ($year < 1) {
+            throw new ValidationException(sprintf('Invalid Hijri year %d: Hijri years start at 1.', $year));
+        }
+
         if ($month < 1 || $month > 12) {
             throw new ValidationException(sprintf('Invalid Hijri month %d.', $month));
         }
@@ -35,20 +40,9 @@ final readonly class HijriDate
     }
 
     /**
-     * Shift by whole days across month/year boundaries (M4).
+     * Zero-padded ISO 8601 rendering (YYYY-MM-DD).
      *
-     * @param int $days Signed offset.
-     * @return self New date; this instance is unchanged.
-     */
-    public function plusDays(int $days): self
-    {
-        throw new \LogicException('not implemented: M4 Hijri arithmetic pending calendar month lengths');
-    }
-
-    /**
-     * Zero-padded YYYY-MM-DD (stable key for goldens and timetables).
-     *
-     * @return string e.g. '1446-09-01'.
+     * @return string Canonical date string.
      */
     public function isoformat(): string
     {
@@ -56,24 +50,24 @@ final readonly class HijriDate
     }
 
     /**
-     * Total ordering by (year, month, day).
+     * Three-way comparison by year, then month, then day.
      *
-     * @param self $other Date to compare against.
-     * @return bool True when all three fields match.
+     * @param HijriDate $other Date to compare against.
+     * @return int Negative, zero or positive.
      */
-    public function equals(self $other): bool
+    public function compareTo(HijriDate $other): int
     {
-        return $this->compareTo($other) === 0;
+        return [$this->year, $this->month, $this->day] <=> [$other->year, $other->month, $other->day];
     }
 
     /**
-     * Three-way comparison for sorting and range checks.
+     * Value equality.
      *
-     * @param self $other Date to compare against.
-     * @return int Negative, zero, or positive (spaceship on Y-M-D).
+     * @param HijriDate $other Date to compare against.
+     * @return bool True when year, month and day all match.
      */
-    public function compareTo(self $other): int
+    public function equals(HijriDate $other): bool
     {
-        return [$this->year, $this->month, $this->day] <=> [$other->year, $other->month, $other->day];
+        return $this->compareTo($other) === 0;
     }
 }

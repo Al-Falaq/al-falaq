@@ -43,4 +43,4 @@ composer bench
 - `Technical-PRD.md` — build contract
 - `ARCHITECTURE.md` — layering summary
 - `docs/` — per-context guides (M1–M5)
-- `UQ_PROVENANCE.md` — Umm al-Qura source + checksum (M4)
+- `UQ_PROVENANCE.md` — Umm al-Qura + MABIMS table provenance, digests, regeneration

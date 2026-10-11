@@ -5,44 +5,59 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Hijri\Strategies;
 
 use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
-use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
-use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\Hijri\Data\MabimsMonthStarts;
+use AlFalaq\AlFalaq\Hijri\Enums\MabimsCountry;
+use AlFalaq\AlFalaq\Hijri\Traits\LooksUpMonthStarts;
+use AlFalaq\AlFalaq\Hijri\Traits\ShiftsHijriDays;
 
 /**
- * MABIMS (MY/ID/SG/BN) Neo-criteria calendar; new countries = new class (M4).
+ * Neo-MABIMS (MY/ID/SG/BN) calendar, backed by per-country generated tables.
+ *
+ * Coverage is exactly the shipped span (1445-01 … 1500-12 AH) for the bound
+ * member state; dates outside it raise `HijriOutOfRangeException`. The country
+ * picks a precomputed table — the crescent criteria are never re-evaluated at
+ * conversion time. Regenerate with `python3 tools/gen_hijri.py`.
  */
 final class MabimsCalendar implements HijriCalendar
 {
-    /**
-     * Convert via MABIMS country rules (M4).
-     *
-     * @param \DateTimeImmutable|CivilDate $date Source; zone-aware, never naive.
-     * @return HijriDate Converted date.
-     */
-    public function fromGregorian(\DateTimeImmutable|CivilDate $date): HijriDate
-    {
-        throw new \LogicException('not implemented: M4 MABIMS pending');
-    }
+    use ShiftsHijriDays;
+    use LooksUpMonthStarts;
 
     /**
-     * MABIMS month length (M4).
+     * Bind the member state whose table this instance resolves.
      *
-     * @param int $year Hijri year.
-     * @param int $month Hijri month 1–12.
-     * @return int Month length in days.
+     * @param MabimsCountry $country Supported member state.
      */
-    public function monthLength(int $year, int $month): int
-    {
-        throw new \LogicException('not implemented: M4 MABIMS pending');
-    }
+    public function __construct(private readonly MabimsCountry $country) {}
 
     /**
      * Stable calendar key.
      *
-     * @return string Always 'mabims'.
+     * @return string Always 'mabims' (the pin's key).
      */
     public function name(): string
     {
         return 'mabims';
+    }
+
+    /**
+     * Generated month-start table for the bound member state.
+     *
+     * @return array{name: string, range: string, firstYear: int, firstMonth: int, starts: non-empty-list<string>}
+     */
+    protected function monthStartTable(): array
+    {
+        return [
+            'name' => 'mabims',
+            'range' => sprintf(
+                '%d–%d AH (%s)',
+                MabimsMonthStarts::FIRST_YEAR,
+                MabimsMonthStarts::LAST_YEAR,
+                $this->country->value,
+            ),
+            'firstYear' => MabimsMonthStarts::FIRST_YEAR,
+            'firstMonth' => MabimsMonthStarts::FIRST_MONTH,
+            'starts' => MabimsMonthStarts::forCountry($this->country),
+        ];
     }
 }

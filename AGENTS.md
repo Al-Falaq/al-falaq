@@ -93,7 +93,7 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 ## Additional Notes
 
 - `tools/export_goldens.py` regenerates parity vectors from `PYTHON_PIN`;
-  `tools/build_uq.php` builds the Umm al-Qura table (M4).
+  `tools/gen_hijri.py` builds the pin-generated Hijri month-start tables + goldens (M4).
 - Gotcha: same short names in `Contracts/` + `Services/` namespaces cannot
   share one file's imports (PHP fatal) — that is why service contracts keep
   the `Interface` suffix. Do not "simplify" it away.

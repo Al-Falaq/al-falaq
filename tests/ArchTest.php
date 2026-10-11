@@ -452,4 +452,34 @@ final class ArchTest extends TestCase
 
         self::assertSame([], $violations);
     }
+
+    /**
+     * The Hijri context is data + arithmetic: it must never reach for the
+     * astronomy engine or the Moon context. The M4 design composes prayer
+     * times through `PrayerTimesCalculator` when it needs a sunset, so no
+     * Hijri file has any reason to reference Astro or Moon.
+     */
+    public function testHijriStaysFreeOfAstronomyAndMoon(): void
+    {
+        $root = dirname(__DIR__);
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root . '/src/Hijri', \FilesystemIterator::SKIP_DOTS),
+        );
+        $violations = [];
+
+        /** @var \SplFileInfo $file */
+        foreach ($iterator as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $code = self::codeWithoutComments($file->getPathname());
+
+            if (preg_match('/AlFalaq\\\\AlFalaq\\\\(Astro|Moon)\\\\/', $code) === 1) {
+                $violations[] = $file->getPathname() . ': Hijri must not reference Astro or Moon';
+            }
+        }
+
+        self::assertSame([], $violations);
+    }
 }

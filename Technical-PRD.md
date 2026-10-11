@@ -41,7 +41,7 @@ Why a fresh architecture instead of mirroring `calculation/astronomy/data/util/`
 - No HTTP API, no daemon, no caching layer, no database, no telemetry.
 - No magnetic-declination model (hook only: `QiblaResult::magneticHeading(float $declinationEast)` takes caller-supplied declination).
 - No locale/translation of prayer names; keys are `Prayer` enum cases. Hijri month display names (English transliteration + Arabic) are provided as a pure `HijriMonth::label(string $locale): string` helper for `en`/`ar` only; no ICU/intl requirement, no other locales.
-- No historical Hijri observance data beyond shipped tables (Umm al-Qura range 1356-02-01 AH – 1500-12-30 AH per Appendix B, Tabular algorithm, MABIMS rules); callers inject corrections via `OffsetStore`.
+- No historical Hijri observance data beyond shipped tables (Umm al-Qura 1423-01-01 AH – 1500-12-30 AH and MABIMS 1445-01-01 AH – 1500-12-30 AH, both shipped as pin-generated month-start tables; Tabular algorithm; MABIMS rules); callers inject corrections via `OffsetStore`.
 
 ---
 
@@ -115,10 +115,10 @@ All use cases must work **offline on shared hosting** (no extensions beyond `dat
 
 ### 5.6 Hijri context
 
-- `HijriDate`: `final readonly(year,month,day)`, universal bound `day 1..30`, exact month length enforced by calendar at conversion (`ValidationException` if caller constructs impossible date directly); `isoformat(): string` (`YYYY-MM-DD` zero-padded); `compareTo(HijriDate): int`, `equals(HijriDate): bool`.
-- `HijriCalendar` contract: `fromGregorian(DateTimeImmutable|CivilDate $d): HijriDate`, `monthLength(int $y, int $m): int`, `name(): string`. **Mutable `DateTime` is rejected** — signature uses `DateTimeImmutable` only (previous `DateTimeInterface` union removed to match §9 rule). Implementations: `TabularCalendar` (Kuwaiti algorithm, epoch `1937-03-14` civil = `1355-11-25` AH, 30-year leap cycle `{2,5,7,10,13,16,18,21,24,26,29}` — Appendix B), `UmmAlQuraCalendar` (shipped table for `1356-1500 AH`, indexed by absolute day number, binary search, range guard → `HijriOutOfRangeException extends ValidationException`), `MabimsCalendar` (per-country Neo-MABIMS rules for MY/ID/SG/BN; new countries = new class implementing same 3-method interface).
-- `OffsetStore` contract (fixed shape): `offsetDaysFor(HijriDate $date, HijriCalendar $cal): int` (official day corrections, e.g. `-1..+2`). Converter applies `date.plusDays(offset)`; previous `apply(HijriDate, HijriCalendar): HijriDate` overload removed because it hid direction/magnitude.
-- `GregorianToHijriConverter::convert(DateTimeImmutable $dt, HijriCalendar $cal, ?Coordinates $coords=null, ?CalculationParameters $params=null, bool $changeAtSunset=false, ?OffsetStore $offsets=null): HijriDate`. `changeAtSunset=true` requires `$coords` AND `$params` (else `ConfigurationException` — coords alone insufficient because maghrib needs method). Civil date normalized in UTC (`$dt->setTimezone(UTC)` first; wall-clock date in other zones MUST NOT be used). Maghrib probe via `PrayerTimesCalculator` on UTC-midnight civil date. PHP has no naive datetimes — "naive treated as UTC" note removed; all inputs carry a zone, document that callers MUST pass UTC or explicit zone. Polar `AstronomicalException` propagates unwrapped (no catch-and-guess).
+- `HijriDate`: `final readonly(year,month,day)`, universal bound `day 1..30`, exact month length enforced by calendar at conversion (`ValidationException` if caller constructs impossible date directly); `isoformat(): string` (`YYYY-MM-DD` zero-padded); `compareTo(HijriDate): int`, `equals(HijriDate): bool`. Hijri years are `>= 1` (no year zero). `plusDays()` is **removed** — day arithmetic is `HijriCalendar::shift()` because a Hijri date cannot know its month length.
+- `HijriCalendar` contract: `fromGregorian(CivilDate $d): HijriDate` (date-only; the caller picks the frame, so the calendar never guesses a zone), `toGregorian(HijriDate $d): CivilDate`, `monthLength(int $y, int $m): int`, `shift(HijriDate $d, int $days): HijriDate`, `name(): string`. **Mutable `DateTime` is rejected.** Implementations: `TabularCalendar` (Type IIa, JD epoch `1948439.5` = 622-07-19 proleptic; anchors `2025-03-01 → 1446-09-01` and `1937-03-14 → 1356-01-01`; 30-year leap cycle `{2,5,7,10,13,16,18,21,24,26,29}`; `adjustmentDays` in −2…2 — Appendix B), `UmmAlQuraCalendar` (generated table, 1423–1500 AH, binary search over month starts, range guard → `HijriOutOfRangeException extends ValidationException`), `MabimsCalendar` (per-country generated tables for MY/ID/SG/BN; new countries = new table, same interface).
+- `OffsetStore` contract (fixed shape): `offsetDaysFor(HijriDate $date, HijriCalendar $cal): int` (official day corrections, e.g. `-1..+2`). Converter applies the correction as a single `HijriCalendar::shift($date, $offset)`, so it crosses month/year boundaries; a missing entry returns `0` and `0` is a no-op. Previous `apply(HijriDate, HijriCalendar): HijriDate` overload removed because it hid direction/magnitude.
+- `GregorianToHijriConverter::convert(DateTimeImmutable $dt, HijriCalendar $cal, ?Coordinates $coords=null, ?CalculationParameters $params=null, bool $changeAtSunset=false, ?OffsetStore $offsets=null): HijriDate`. `changeAtSunset=true` requires `$coords` AND `$params` (else `ConfigurationException` — coords alone insufficient because maghrib needs method). **Two civil-date frames** (mirrors the pin): by default the civil date is read in the caller's own zone (a local wall-clock date); under `changeAtSunset=true` the UTC date is used and rolled at the observer's maghrib — forward, or backward when the instant precedes the previous local maghrib. `HijriCalendar` itself is date-only. Maghrib probe via `PrayerTimesCalculator` on UTC-midnight civil date. PHP has no naive datetimes — "naive treated as UTC" note removed; all inputs carry a zone, document that callers MUST pass UTC or explicit zone. Polar `AstronomicalException` propagates unwrapped (no catch-and-guess).
 
 ---
 
@@ -131,7 +131,7 @@ All use cases must work **offline on shared hosting** (no extensions beyond `dat
 | Offline | No `curl/file_get_contents(http)`, no `exec`, no GD/ICU requirement. ArchTest bans `curl_, file_get_contents('http', exec, shell_exec`. |
 | Determinism | Minute-rounded goldens identical across PHP 8.2–8.4 × UTC/non-UTC ini. Tests force `date_default_timezone_set('UTC')` in bootstrap + a dedicated non-UTC matrix leg asserting same UTC goldens. No `byte-identical float` claim. |
 | Precision | Prayer goldens match pinned-Python minute-rounded UTC values 100% (hard gate). Float intermediates: absolute tolerance `1e-9` deg on reference `linux/x86_64/PHP8.2` leg, `1e-7` deg on other legs (arm64/Windows/8.3/8.4). Haversine `clamp(a,0,1)` preserved. Tolerance logic lives in `tests/Goldens/Comparator.php`, not inline. |
-| Performance | Budgets enforced by `examples/bench.php --budget` in CI (not ad-hoc): single-day schedule p50 < 2ms on `ubuntu-latest` runner, 1-year `TimetableService` < 1s wall, peak memory < 16MB. Umm al-Qura data indexed by absolute day number (binary search). No memoization with unbounded growth; any cache is caller-owned. Budgets are informative in M1–M2, gates from M5. |
+| Performance | Budgets enforced by `examples/bench.php --budget` in CI (not ad-hoc): single-day schedule p50 < 2ms on `ubuntu-latest` runner, 1-year `TimetableService` < 1s wall, peak memory < 16MB. Observational Hijri tables are month-start arrays searched with a binary search (O(log n)); no rule evaluation and no cache at conversion time. No memoization with unbounded growth; any cache is caller-owned. Budgets are informative in M1–M2, gates from M5. |
 | Compatibility | `php >=8.2`, 64-bit float assumed. 32-bit is explicitly **unsupported** (previous "best-effort" removed — it contradicted determinism; 64-bit requirement documented in `README.md`/docs — Composer has no arch-level constraint to express it). No fibers, no 8.3-only syntax in `src/`. |
 | Security | No unserialize, no eval, no dynamic include. All numeric inputs validated with `is_finite()` before trig; any residual `NaN`/`INF` → `AstronomicalException`, never returned. |
 
@@ -205,11 +205,13 @@ src/
 │   ├── Services/       # CrescentCalculator
 │   └── Strategies/     # YallopEvaluator, OdehEvaluator, Mabims1992Evaluator, NeoMabims2021Evaluator
 ├── Hijri/
-│   ├── Contracts/      # HijriCalendar, OffsetStore
-│   ├── Enums/          # HijriMonth (with label('en'|'ar'))
+│   ├── Contracts/      # HijriCalendar (5 methods), OffsetStore
+│   ├── Data/           # generated month-start tables (@internal)
+│   ├── Enums/          # HijriMonth (with label('en'|'ar')), MabimsCountry
 │   ├── ValueObjects/   # HijriDate
-│   ├── Services/       # GregorianToHijriConverter (orchestration; calendars selected by caller)
-│   ├── Strategies/     # TabularCalendar, UmmAlQuraCalendar, MabimsCalendar (calendar variants)
+│   ├── Traits/         # ShiftsHijriDays, LooksUpMonthStarts (stateless)
+│   ├── Services/       # GregorianToHijriConverter (orchestration)
+│   ├── Strategies/     # TabularCalendar, UmmAlQuraCalendar, MabimsCalendar
 │   └── Exceptions/     # HijriOutOfRangeException extends ValidationException
 └── Astro/              # @internal
     ├── Contracts/      # SolarModel
@@ -224,6 +226,8 @@ tests/
 examples/
 ├── basic.php, methods.php, qibla.php, moon.php, sunnah.php, hijri.php, polar.php, timetable.php, bench.php
 ```
+
+`Hijri/Data/` is generated by `tools/gen_hijri.py` and is `@internal`; `Hijri/Traits/` holds stateless contract-method helpers (the documented exception to the private-helpers rule).
 
 Role rules:
 
@@ -297,16 +301,16 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 
 ## 12. Scalability
 
-- **Compute**: per-day schedule is O(1) trig + at most one bisection (polar edge only). No per-call table scans; Umm al-Qura data stored as indexed map keyed by absolute day number (binary search, not linear). `TimetableService::monthly()` loops `CivilDate::plusDays` with no retained state → constant memory. Budgets verified by `examples/bench.php --budget` (see §6).
+- **Compute**: per-day schedule is O(1) trig + at most one bisection (polar edge only). No per-call table scans; Observational Hijri month-start arrays (binary search, not linear). `TimetableService::monthly()` loops `CivilDate::plusDays` with no retained state → constant memory. Budgets verified by `examples/bench.php --budget` (see §6).
 - **Concurrency**: stateless services are fiber/request-safe; no static caches. If a host app needs caching, it caches `PrayerSchedule::toArray()` externally (PSR-16 in userland, not here).
-- **Data growth**: Hijri tables versioned as data classes (`UmmAlQuraData_1356_1500`); adding a range = new class + composite lookup, no migration. MABIMS country rules behind `HijriCalendar` so new countries plug in.
+- **Data growth**: Hijri tables are generated data classes (`UmmAlQuraMonthStarts`, `MabimsMonthStarts`) pinned by a canonical SHA256; extending a range = regenerate + re-review the digest diff, no migration. MABIMS countries are table keys (`MabimsCountry`), not subclasses.
 - **Team scale**: bounded contexts + ArchTest let prayer/hijri/qibla/moon evolve in parallel without merge conflicts in a god-object. Public surface review checklist blocks `Util/` regrowth.
 
 ## 13. Adaptability
 
 - **New calculation method**: add enum case + `defaultParameters()` entry (Appendix A row), zero calculator changes. Covered by golden test.
 - **New rule variant** (e.g., alternative twilight model): new `Contracts` implementation + wiring in `defaultFor()` behind config flag; old behavior preserved.
-- **New calendar**: implement 3-method `HijriCalendar` interface; sunset-rollover and offsets compose automatically via converter.
+- **New calendar**: implement the 5-method `HijriCalendar` interface; sunset-rollover and offsets compose automatically via converter.
 - **New geodetic model**: implement `GeodesyCalculator`; `QiblaCalculator` ctor accepts it. No string-flag proliferation.
 - **Host-app wiring**: `docs/integrations.md` shows plain-`new` construction (`PrayerTimesCalculator::default()`, explicit strategy injection) — no service providers, no config files, none of it in this repo's `src/`. `tests/Wiring/` smoke-tests that every service is constructible in one expression.
 - **Output shapes**: `PrayerSchedule::all()` + `toArray()` per Appendix C feed JSON APIs, iCal generators, and PDF timetables without library changes.
@@ -375,7 +379,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 |---|---|
 | Float divergence vs Python (deg→rad, `atan2`, `fmod`) | Clean re-derive against pin `a7baa8b` with per-formula Meeus citations + differential golden log: `tools/export_goldens.py` vectors vs PHP in `tests/Goldens/` (minute-equality gate, dual-tolerance `Comparator.php`); divergences fixed in code (signed-lat seventh gate, second-precision seasonal offsets) or logged as emptied CSV cells with per-file reasons (`adee976`) |
 | `DateTimeImmutable` vs `ZoneInfo` DST edge (spring-forward) | UTC-math-then-`forZone()` invariant + dedicated DST test (`America/New_York` 2015-03-08 + 2015-11-01) + `NextPrayerResolver` DST vectors |
-| Umm al-Qura table transcription errors | Dual-entry review + checksummed `UmmAlQuraData_1356_1500` + range-boundary tests + provenance file |
+| Umm al-Qura table transcription errors | Rule-generated tables (`UmmAlQuraMonthStarts`/`MabimsMonthStarts`, no transcription) + digest-diff review + `testTableDigestsMatch` + range-boundary tests + provenance file |
 | Scope creep (adhan CLI parity, new calendars pre-1.0) | CLI explicitly out; new calendars land as minor `HijriCalendar` impls with goldens |
 | Over-abstraction (too many strategies) | `default()/defaultFor()` covers 95%; strategies only where Python already branches (polar/high-latitude/isha/maghrib/asr/geodesy) |
 | Karney implementation risk | Closed in M2: Karney inverse implemented and shipped, near-antipodal convergence pinned in `tests/Astro/KarneyInverseTest.php`; no fallback required |
@@ -386,7 +390,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 - **M1 prayer parity**: Appendix A frozen + checksummed; all methods, polar + high-latitude + adjustments + elevation + Ramadan; `TimetableService` + `NextPrayerResolver`; `tests/Goldens/prayer_*.csv` 100% minute-equality vs pinned Python.
 - **M2 qibla+sunnah**: spherical + WGS84 (Karney accepted and shipped via `Wgs84KarneyCalculator`), magnetic hook, DST-safe sunnah + `forZone()`; goldens green.
 - **M3 moon**: public `Moon/` facade + `CrescentGeometry` fields + Yallop/Odeh/MABIMS evaluators with cited vectors; no userland `Astro` imports.
-- **M4 hijri**: Tabular + UQ (1356–1500 + provenance) + MABIMS + rollover (coords+params required) + `offsetDaysFor()`; bridge-parity tests with explicit-zone cases (naive-doc removed).
+- **M4 hijri**: Tabular + UQ (1423–1500) + MABIMS (1445–1500) generated tables with provenance + digest + rollover (coords+params required) + `offsetDaysFor()`; bridge-parity tests covering both civil-date frames and both rollover directions (naive-doc removed).
 - **M5 hardening**: ArchTest + PHPStan max + php-cs-fixer clean + 95% coverage + Infection MSI≥85% on all math contexts + `bench --budget` gate + docs/examples + 1.0.0 tag.
 
 Done = `composer ci` green on all matrix legs + minute-goldens 100% + float tolerances per §6 + `bench --budget` pass + docs build with relative links intact.
@@ -396,7 +400,7 @@ Done = `composer ci` green on all matrix legs + minute-goldens 100% + float tole
 1. **CalculationMethod freeze:** FROZEN to 18 cases in Appendix A. JAKIM/KEMENAG/MUIS/BRUNEI rows MUST be dual-entered from `PYTHON_PIN:CalculationMethod.py` before M1; M1 blocked until checksum matches. No new method without Appendix A row + golden.
 2. **`functions.php` shim:** REJECTED. Class-only API. Rationale: global `gregorian_to_hijri()` pollutes namespace, breaks static analysis, and duplicates `GregorianToHijriConverter::convert()`. Migration doc shows 3-line equivalent.
 3. **`psr/clock`:** ACCEPT as `suggest` now. Domain never type-hints it; only `NextPrayerResolver::resolve(now)` callers and `examples/` MAY accept `Psr\Clock\ClockInterface` to supply `now`. No hard require.
-4. **Umm al-Qura provenance:** SHIP with `UQ_PROVENANCE.md` header in repo + `UmmAlQuraData_*.php` file docblock: source (Saudi Umm al-Qura calendar, UmmAlQuraData source URL + access date), transformation script (`tools/build_uq.php`), SHA256 checksum, range `1356–1500 AH`, license note (facts not copyrightable; table transcription is independent entry — dual-entry reviewers sign off). If counsel flags redistribution risk, fallback is build-time downloader (still offline at runtime) — decision logged before M4.
+4. **Umm al-Qura provenance:** SHIP rule-generated tables. The shipped data is the pinned implementation's own rule output, so there is no third-party table transcription and no redistribution question; `UQ_PROVENANCE.md` records the pin SHA, the rules, per-table SHA256 digests, and the regeneration gate.
 
 ---
 
@@ -439,7 +443,7 @@ Every row needs a `tests/Goldens/prayer_{method}.csv` vector before M1 sign-off 
 - IUGG mean radius: `6371.0088 km`. WGS84: `a=6378137.0 m, f=1/298.257223563` (both defining, exact; the engine works in metres). Karney (2013) inverse: iteration caps `_MAXIT1 = 20`, `_MAXIT2 = 20 + 53 + 10 = 83`; tolerance ladder `_TOL0 = 2^-52`, `_TOL1 = 200·TOL0`, `_TOL2 = sqrt(TOL0)`, `_TOLB = TOL0`, `_XTHRESH = 1000·TOL2`, `_TINY = sqrt(PHP_FLOAT_MIN)`. Non-convergence → `AstronomicalException`; no Vincenty (documented near-antipodal non-convergence).
 - MSC seasonal twilight: `seasonalSeconds(dayOfYear, year, latitude): {morning, evening}` whole-second offsets (`int(round(adj·60))`) from Python `Twilight.py` — transcribe verbatim + cite; safe caps ungated, seventh-temp lat-gated, per §5.2.
 - Crescent: `CrescentGeometry{sunAltitude, moonAltitude, elongationDeg, moonAgeHours, lagMinutes|null, deltaAzimuthDeg, illuminatedFraction, arcvGeoDeg, widthArcmin, ageAtMoonsetHours|null}` at local sunset (null pair = no-moonset window; sun geocentric per pin with parallax on the moon only; topo ARCV derived, never stored); Yallop `limit = −0.1018w³ + 0.7319w² − 6.3226w + 11.8371`, `q = (arcv_geo − limit)/10`, strict-`>` zones `0.216/−0.014/−0.160/−0.232/−0.293 → A/B/C/D/E`, else `F` (A–D visible, E/F invisible); Odeh `limit = −0.1018w³ + 0.7319w² − 6.3226w + 7.1651`, `V = arcv_topo − limit`, strict `arcl < 6.4 → D`, `V >= 5.65/2.0/−0.96 → A/B/C`, else `D`; MABIMS-1992 `(alt>=2 && elong>=3) || age_at_moonset>=8`, Neo-2021 `(alt>=3 && elong>=6.4)`. Service: `CrescentCalculator::atSunset(Coordinates, CivilDate): CrescentGeometry` + `evaluate(Coordinates, CivilDate): array{yallop, odeh, mabims1992, neomabims2021}`. Full polynomials + citations in `docs/moon.md`, vectors in `tests/Goldens/moon_*.csv`.
-- Hijri Tabular epoch + leap set per §5.6; UQ range `1356–1500 AH` + checksum; DeltaT polynomial source + year range in `docs/hijri.md`.
+- Hijri Tabular epoch `JD 1948439.5` + leap set per §5.6; UQ range 1423–1500 AH and MABIMS range 1445–1500 AH, each a generated month-start table with a `sha256("\n".join(starts))` digest embedded as a PHP constant; regeneration via `tools/gen_hijri.py`; the canonical digest input is LF-joined ISO starts with no trailing newline.
 
 ## Appendix C — Output schemas (normative)
 

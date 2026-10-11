@@ -68,6 +68,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docs/qibla.md` gained the WGS84 section with the measured
   spherical-vs-ellipsoidal divergence (max |Δdirection| `0.252273°` at
   Auckland NZ).
+- **M4 Hijri calendars**: `TabularCalendar`, `UmmAlQuraCalendar` and
+  `MabimsCalendar` implement the widened 5-method `HijriCalendar` contract
+  (`fromGregorian`, `toGregorian`, `monthLength`, `shift`, `name`).
+- `GregorianToHijriConverter` is implemented: own-zone or UTC civil-date frames,
+  optional sunset rollover against the observer's maghrib, and `OffsetStore`
+  corrections applied as a single Hijri shift.
+- `MabimsCountry` (`MY`/`ID`/`SG`/`BN`) as a pure table key.
+- Pin-generated, digest-pinned month-start tables in `src/Hijri/Data/`, with
+  `tools/gen_hijri.py` for reproducible regeneration.
+
+### Changed
+
+- `HijriCalendar::fromGregorian()` now takes `CivilDate` only.
+- Coverage floor raised 80 → 85.
+
+### Removed
+
+- `HijriDate::plusDays()` — use `HijriCalendar::shift()`.
+
+### Fixed
+
+- A forward `shift()` that lands exactly on a table's sentinel month now raises
+  `HijriOutOfRangeException` instead of returning an unsupported date.
 
 ## [1.0.0] - TBD
 
