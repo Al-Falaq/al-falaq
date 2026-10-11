@@ -22,7 +22,10 @@ reproducible — see `UQ_PROVENANCE.md`.
 ```php
 use AlFalaq\AlFalaq\Hijri\Services\GregorianToHijriConverter;
 use AlFalaq\AlFalaq\Hijri\Strategies\UmmAlQuraCalendar;
+use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 $converter = GregorianToHijriConverter::default();
 
@@ -59,6 +62,8 @@ on who is asking. `convert()` exposes exactly two frames:
   raises `ConfigurationException`.
 
 ```php
+$converter = GregorianToHijriConverter::default();
+$instant = new DateTimeImmutable('2025-03-01 12:00:00', new DateTimeZone('UTC'));
 $hijri = $converter->convert(
     $instant,
     new UmmAlQuraCalendar(),

@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import subprocess
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -250,11 +251,24 @@ def main() -> int:
 
     pin_path = Path(args.path).resolve()
     root = Path(args.out).resolve()
-    TabularCalendar, UmmAlQuraCalendar, MabimsCalendar = load_pin(pin_path)
 
-    pin_sha = args.pin or __import__("subprocess").check_output(
+    head_sha = subprocess.check_output(
         ["git", "-C", str(pin_path), "rev-parse", "HEAD"], text=True
     ).strip()
+    dirty = subprocess.check_output(
+        ["git", "-C", str(pin_path), "status", "--porcelain", "--untracked-files=no"],
+        text=True,
+    )
+
+    if dirty:
+        raise SystemExit(f"pin checkout at {pin_path} has tracked modifications; refusing to generate")
+
+    if args.pin is not None and args.pin != head_sha:
+        raise SystemExit(f"--pin {args.pin} does not match checkout HEAD {head_sha}")
+
+    TabularCalendar, UmmAlQuraCalendar, MabimsCalendar = load_pin(pin_path)
+
+    pin_sha = head_sha
 
     # --- observational tables -------------------------------------------------
     uq_first, uq_first_month, uq_last, uq_last_month, uq_anchor = UQ_SPAN
@@ -270,10 +284,11 @@ def main() -> int:
 
     data_dir = root / "src" / "Hijri" / "Data"
     data_dir.mkdir(parents=True, exist_ok=True)
-    (data_dir / "UmmAlQuraMonthStarts.php").write_text(render_uq(pin_sha, uq_starts), encoding="utf-8")
-    (data_dir / "MabimsMonthStarts.php").write_text(
-        render_mabims(pin_sha, mabims_tables), encoding="utf-8"
-    )
+    with (data_dir / "UmmAlQuraMonthStarts.php").open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(render_uq(pin_sha, uq_starts))
+
+    with (data_dir / "MabimsMonthStarts.php").open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(render_mabims(pin_sha, mabims_tables))
 
     # --- goldens --------------------------------------------------------------
     goldens = root / "tests" / "Goldens"

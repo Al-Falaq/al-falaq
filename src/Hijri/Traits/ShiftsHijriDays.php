@@ -27,6 +27,8 @@ trait ShiftsHijriDays
     /**
      * Shift a Hijri date by whole Hijri days.
      *
+     * The starting date must be valid in the using calendar (day within the month's length); results for impossible start dates are undefined.
+     *
      * @param HijriDate $date Starting date.
      * @param int $days Signed day count; zero is the identity with no range probe.
      * @return HijriDate Shifted date.
