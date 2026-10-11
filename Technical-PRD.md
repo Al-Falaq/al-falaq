@@ -6,6 +6,10 @@
 - PHP: `>=8.2`, `declare(strict_types=1)`, PSR-1/4/12 + PER-2.0
 - Status: draft for implementation (M1 blocked until Appendix A frozen and §20 decisions merged)
 
+___
+
+- **Important**: This Technical PRD was established prior to implementation. While it served as the baseline reference, it is not a rigid document meant to be followed blindly. Implementations that have undergone rigorous iteration can become superior to this initial PRD. Consequently, such divergence is permitted—and even encouraged—provided it is thoroughly validated and approved by the owner.
+
 ---
 
 ## 1. Purpose & Background
