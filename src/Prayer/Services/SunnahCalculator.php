@@ -76,6 +76,6 @@ final class SunnahCalculator
             return Minutes::roundedHalfUp($moved);
         };
 
-        return new SunnahTimes($at(0.5), $at(1.0 / 3.0), $at(2.0 / 3.0), $fajr);
+        return new SunnahTimes($at(0.5), $at(1.0 / 3.0), $at(2.0 / 3.0), $fajr, $maghrib);
     }
 }
