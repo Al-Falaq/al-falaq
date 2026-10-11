@@ -5,35 +5,52 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Hijri\Strategies;
 
 use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
+use AlFalaq\AlFalaq\Hijri\Traits\ShiftsHijriDays;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 
 /**
- * Tabular (Kuwaiti algorithm) calendar: 30-year leap cycle, no table (M4).
+ * Tabular (Kuwaiti algorithm) calendar. Arithmetic slice lands in M4 Task 3.
  */
 final class TabularCalendar implements HijriCalendar
 {
+    use ShiftsHijriDays;
+
     /**
-     * Convert via the arithmetic 30-year cycle (M4).
+     * Not implemented until the arithmetic slice (M4 Task 3).
      *
-     * @param \DateTimeImmutable|CivilDate $date Source; zone-aware, never naive.
-     * @return HijriDate Converted date.
+     * @param CivilDate $date Gregorian day.
+     * @return HijriDate Never returns.
+     * @throws \LogicException Always.
      */
-    public function fromGregorian(\DateTimeImmutable|CivilDate $date): HijriDate
+    public function fromGregorian(CivilDate $date): HijriDate
     {
-        throw new \LogicException('not implemented: M4 tabular pending Appendix B');
+        throw new \LogicException('TabularCalendar::fromGregorian lands in M4 Task 3.');
     }
 
     /**
-     * Tabular month length from the leap cycle (M4).
+     * Not implemented until the arithmetic slice (M4 Task 3).
+     *
+     * @param HijriDate $date Hijri date.
+     * @return CivilDate Never returns.
+     * @throws \LogicException Always.
+     */
+    public function toGregorian(HijriDate $date): CivilDate
+    {
+        throw new \LogicException('TabularCalendar::toGregorian lands in M4 Task 3.');
+    }
+
+    /**
+     * Not implemented until the arithmetic slice (M4 Task 3).
      *
      * @param int $year Hijri year.
      * @param int $month Hijri month 1–12.
-     * @return int Month length in days.
+     * @return int Never returns.
+     * @throws \LogicException Always.
      */
     public function monthLength(int $year, int $month): int
     {
-        throw new \LogicException('not implemented: M4 tabular pending');
+        throw new \LogicException('TabularCalendar::monthLength lands in M4 Task 3.');
     }
 
     /**
