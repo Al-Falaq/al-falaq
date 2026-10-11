@@ -41,7 +41,7 @@ M2 qibla+sunnah.
   `@internal` engine.
 - `tests/` — `SharedKernel/`, `Sweep/`, `Wiring/`, `Goldens/`,
   `ArchTest.php`, `bootstrap.php`. `examples/` — runnable snippets +
-  `bench.php`. `tools/` — `coverage_gate.php`, `build_uq.php` (M4),
+  `bench.php`. `tools/` — `coverage_gate.php`, `gen_hijri.py` (M4),
   `export_goldens.py` (goldens from `PYTHON_PIN`).
 - Docs: `Technical-PRD.md` (build contract), `ARCHITECTURE.md` (layering),
   `docs/` per-context guides + `integrations.md` (plain-`new` wiring),
