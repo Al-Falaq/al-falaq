@@ -11,7 +11,7 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
  * Sunnah night markers in UTC (middle, thirds, tahajjud window, maghrib anchor).
  *
  * Anchored at tonight's maghrib and tomorrow's fajr; degenerate intervals
- * (fajr ≤ maghrib) are rejected, never clamped.
+ * (fajr ≤ maghrib, fajr ≤ lastThird) are rejected, never clamped.
  */
 final readonly class SunnahTimes
 {
@@ -31,12 +31,12 @@ final readonly class SunnahTimes
         public \DateTimeImmutable $fajr,
         public \DateTimeImmutable $maghrib,
     ) {
-        if ($fajr <= $lastThird) {
-            throw new ValidationException('Degenerate Sunnah night: fajr must be after last third.');
-        }
-
         if ($fajr <= $maghrib) {
             throw new ValidationException('Degenerate Sunnah night: fajr must be after maghrib.');
+        }
+
+        if ($fajr <= $lastThird) {
+            throw new ValidationException('Degenerate Sunnah night: fajr must be after last third.');
         }
     }
 

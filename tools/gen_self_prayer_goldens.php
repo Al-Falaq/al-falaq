@@ -88,9 +88,11 @@ foreach ($methods as $method) {
                 ));
             }
 
-            $source = $method === CalculationMethod::TEHRAN
-                ? 'drift:adhan-js@a2c4bda-Tehran()-17.7/14/maghrib-4.5;src:praytimes.org/docs/methods-2026-10-11;isha14-convention-not-official'
-                : 'drift:no-batoulapps-preset-2026-10-11;src:fm6oa.org-2026-10-11;morocco:Habous-19/17-convention;fajr18-vs-19-undecided';
+            $source = match ($method) {
+                CalculationMethod::TEHRAN => 'drift:adhan-js@a2c4bda-Tehran()-17.7/14/maghrib-4.5;src:praytimes.org/docs/methods-2026-10-11;isha14-convention-not-official',
+                CalculationMethod::MOROCCO => 'drift:no-batoulapps-preset-2026-10-11;src:fm6oa.org-2026-10-11;morocco:Habous-19/17-convention;fajr18-vs-19-undecided',
+                default => throw new RuntimeException('No drift source tag for method ' . $method->value),
+            };
 
             $row[] = $source;
             fputcsv($handle, $row);
