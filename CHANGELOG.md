@@ -24,6 +24,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   noise; brunei dhuha — no published KHEU Doha definition — + Dec ±1 noise);
   abs-vs-signed seventh-gate resolved to signed `latitude >= 55` (`47facea`).
   `docs/prayer.md` algorithm appendix + PRD §§5.2/18/Appendix A synced to code.
+- M2 qibla WGS84 ellipsoid: `Wgs84KarneyCalculator` (previously a
+  `LogicException` stub) now solves the Qibla on WGS84 via a vendored
+  GeographicLib 2.1 Karney (2013) inverse — `KarneyInverse` engine
+  (`src/Astro/Services/KarneyInverse.php`, `@internal`, MIT/X11 © Charles
+  Karney, pin `a7baa8b`), azimuth unwound from `(-180, 180]` into `[0, 360)`
+  with the `>= 360 → 0.0` re-clamp, Makkah-self clamped to `0.0`/`0.0`.
+  `QiblaCalculator::wgs84()` is usable; `default()` stays spherical.
+  The spherical engine (`GeodesyEngine::inverse`) gained the same
+  `>= 360 → 0.0` re-clamp: a bearing a few ulps below zero (a point
+  micrometres east of Makkah's meridian, e.g. `39.82618180000001`)
+  previously unwound to exactly `360.0` (ulp(360) ≈ 5.7e-14), which
+  `QiblaResult` rejects with `ValidationException`; pinned by
+  `testSphericalTinyNegativeAzimuthDoesNotWindTo360`.
+- M2 qibla goldens: `tests/Goldens/qibla_wgs84.csv` (23 cities, 6-dp
+  bearings / 3-dp distances, gates ≤ 1e-6° / ≤ 1e-3 km) +
+  `tools/gen_qibla_wgs84.py` regenerator; near-antipodal convergence
+  (`(-20.4, -139.2)` → `31.740215702°` / `19862471.480885 m`) and the
+  degenerate invariants pinned in `tests/Astro/KarneyInverseTest.php` /
+  `tests/Qibla/QiblaCalculatorTest.php`. PRD §§5.3/18 + Appendix B synced to
+  the landed iteration caps (`_MAXIT1 = 20`, `_MAXIT2 = 83`, `_TOL0 = 2^-52`
+  ladder) — the Vincenty fallback clause is retired, none remains;
+  `docs/qibla.md` gained the WGS84 section with the measured
+  spherical-vs-ellipsoidal divergence (max |Δdirection| `0.252273°` at
+  Auckland NZ).
 
 ## [1.0.0] - TBD
 
