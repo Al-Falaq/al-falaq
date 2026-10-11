@@ -2,7 +2,7 @@
 
 Offline, zero-dependency PHP 8.2+ library for Islamic astronomy: prayer times, Qibla, Sunnah markers, crescent visibility, Hijri conversion.
 
-Status: **M1 landed** — prayer pipeline (`PrayerTimesCalculator`), monthly timetable (`TimetableService`), and next-prayer resolver (`NextPrayerResolver`) shipped; Appendix A frozen (18 methods). Goldens green (15 files; tehran/morocco tables pending, UOIF gap). See `Technical-PRD.md` + `docs/prayer.md`.
+Status: **M4 landed** — prayer pipeline (`PrayerTimesCalculator`), monthly timetable (`TimetableService`), next-prayer resolver (`NextPrayerResolver`), Qibla (spherical + WGS84/Karney), Sunnah markers, crescent visibility, and Hijri calendars (tabular, Umm al-Qura, MABIMS + bridge) shipped; Appendix A frozen + milestone amendments. Goldens green (24 CSVs incl. drift-gated tehran/morocco; UOIF gap open, see issues). See `Technical-PRD.md` + `docs/`.
 
 ## Install
 

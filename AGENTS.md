@@ -6,11 +6,15 @@
 stateless, framework-agnostic PHP 8.2+ library for Islamic astronomy: prayer
 times, Qibla, Sunnah markers, crescent visibility, Hijri conversion.
 `Technical-PRD.md` is the build contract (code wins on contradiction;
-Appendices A–C normative). Status: **M1 landed** — `SharedKernel` value
+Appendices A–C normative). Status: **M4 landed** — `SharedKernel` value
 objects, exception hierarchy, prayer pipeline (`PrayerTimesCalculator`),
-monthly timetable (`TimetableService`), and next-prayer resolver
-(`NextPrayerResolver`) shipped (Appendix A frozen, 18 methods; Qibla/Hijri
-calculators still throw `LogicException` until their milestone). Public surface is `src/{SharedKernel,Prayer,Qibla,
+monthly timetable (`TimetableService`), next-prayer resolver
+(`NextPrayerResolver`), Qibla (spherical + WGS84/Karney), Sunnah markers
+(incl. `nightFraction`), crescent visibility evaluators, and Hijri calendars
+(tabular, Umm al-Qura, per-country MABIMS + Gregorian bridge) shipped
+(Appendix A frozen + milestone amendments; no deferred-context
+`LogicException` markers remain in `src/` — the final no-throw sweep is an
+M5 gate). Public surface is `src/{SharedKernel,Prayer,Qibla,
 Moon,Hijri}/`; `src/Astro/` is `@internal`.
 
 ## Setup Commands
