@@ -76,7 +76,12 @@ $hijri = $converter->convert(
 The maghrib instant comes from `PrayerTimesCalculator`, so high-latitude and
 polar behaviour is exactly the prayer pipeline's: an undefined maghrib (e.g.
 `PolarCircleRule::NONE` above the Arctic Circle in June) propagates
-`AstronomicalException` unchanged rather than guessing.
+`AstronomicalException` unchanged rather than guessing. When the full schedule
+is undefined but maghrib itself is defined (e.g. `PolarCircleRule::NONE` on a
+polar-transition day, where today's sunset exists but tomorrow's sunrise does
+not), the bridge resolves maghrib alone via the pipeline's maghrib-only
+computation; only a truly undefined maghrib (e.g. polar night) still
+propagates.
 
 ## Official day corrections
 
@@ -103,6 +108,7 @@ Nothing saturates and nothing wraps.
 | A Hijri date whose Gregorian result falls outside `CivilDate` (1900–2100) | `HijriOutOfRangeException` |
 | Impossible day for a real month (e.g. day 30 of a 29-day month) | `ValidationException` |
 | `changeAtSunset` without coordinates or parameters | `ConfigurationException` |
+| `changeAtSunset` where the full schedule is undefined but maghrib is defined | converts using the maghrib-only fallback |
 | `changeAtSunset` on 2100-12-31 (last supported civil day) | `ValidationException` from the pipeline's tomorrow-probe stepping outside `CivilDate` 1900–2100 (pre-existing M1 boundary; pipeline follow-up) |
 | Non-int argument to a typed contract parameter | `TypeError` |
 

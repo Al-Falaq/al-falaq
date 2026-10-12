@@ -476,4 +476,53 @@ final class PrayerTimesCalculatorTest extends TestCase
         self::assertTrue($schedule->timeFor(Prayer::FAJR) < $schedule->timeFor(Prayer::SUNRISE));
         self::assertTrue($schedule->timeFor(Prayer::SUNRISE) < $schedule->timeFor(Prayer::ISHA));
     }
+
+    public function testMaghribAtEqualsScheduleMaghrib(): void
+    {
+        $calculator = PrayerTimesCalculator::default();
+        $coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 6, 21);
+        $params = CalculationMethod::SINGAPORE->defaultParameters();
+
+        self::assertEquals(
+            $calculator->calculate($coordinates, $date, $params)->timeFor(Prayer::MAGHRIB),
+            $calculator->maghribAt($coordinates, $date, $params),
+        );
+    }
+
+    public function testMaghribAtResolvesTransitionDayMaghrib(): void
+    {
+        // Tromsø 2025-11-27: today's sunset is defined but tomorrow's
+        // sunrise is not, so the full schedule is undefined while maghrib
+        // itself exists (#15). Discovered maghrib 10:36 UTC (MWL rule).
+        $coordinates = Coordinates::fromDegrees(69.6496, 18.9553);
+        $date = CivilDate::fromYmd(2025, 11, 27);
+        $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
+            ->withPolarCircleRule(PolarCircleRule::NONE);
+
+        try {
+            PrayerTimesCalculator::default()->calculate($coordinates, $date, $params);
+            self::fail('full schedule unexpectedly defined on the transition day');
+        } catch (UndefinedScheduleException) {
+            // expected: the fallback path is under test
+        }
+
+        $maghrib = PrayerTimesCalculator::default()->maghribAt($coordinates, $date, $params);
+
+        self::assertSame('2025-11-27 10:36', $maghrib->format('Y-m-d H:i'));
+    }
+
+    public function testMaghribAtThrowsUndefinedWhenMaghribItselfIsUndefined(): void
+    {
+        // Tromsø 2025-11-28 is inside polar night: no sunset, so the
+        // maghrib-only probe raises the same UndefinedScheduleException (#15).
+        $this->expectException(UndefinedScheduleException::class);
+
+        PrayerTimesCalculator::default()->maghribAt(
+            Coordinates::fromDegrees(69.6496, 18.9553),
+            CivilDate::fromYmd(2025, 11, 28),
+            CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
+                ->withPolarCircleRule(PolarCircleRule::NONE),
+        );
+    }
 }

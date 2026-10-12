@@ -14,6 +14,7 @@ use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
+use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
@@ -394,5 +395,39 @@ final class GregorianToHijriConverterTest extends TestCase
             '1446-10-01',
             $converter->convert($lastOfMonth->toUtcMidnight(), $calendar, offsets: $this->offsets(1))->isoformat(),
         );
+    }
+
+    public function testSunsetRolloverFallsBackToMaghribOnly(): void
+    {
+        // Tromsø 2025-11-27 (#15): today's sunset is defined but
+        // tomorrow's sunrise is not, so the full schedule is undefined
+        // under PolarCircleRule::NONE while maghrib itself exists. The
+        // bridge must resolve maghrib alone instead of failing.
+        // (White-nights latitudes stay fully defined or fail with a plain
+        // AstronomicalException, which still propagates by design.)
+        $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
+            ->withPolarCircleRule(PolarCircleRule::NONE);
+        $coordinates = Coordinates::fromDegrees(69.6496, 18.9553);
+        $date = CivilDate::fromYmd(2025, 11, 27);
+
+        try {
+            PrayerTimesCalculator::default()->calculate($coordinates, $date, $params);
+            self::markTestSkipped('full schedule defined here; pick a stricter triple');
+        } catch (UndefinedScheduleException) {
+            // expected: the fallback path is under test
+        }
+
+        $converter = GregorianToHijriConverter::default();
+        $hijri = $converter->convert(
+            new DateTimeImmutable('2025-11-27T20:00:00+00:00'),
+            new TabularCalendar(),
+            $coordinates,
+            $params,
+            true,
+        );
+
+        // 20:00 UTC is past the ~10:36 UTC maghrib, so the UTC civil day
+        // 2025-11-27 rolls to 2025-11-28 -> 1447-06-07 (tabular).
+        self::assertSame('1447-06-07', $hijri->isoformat());
     }
 }
