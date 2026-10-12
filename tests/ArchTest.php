@@ -147,7 +147,7 @@ final class ArchTest extends TestCase
     }
 
     /**
-     * Code with comments stripped (strings kept).
+     * Code with comments and string literals stripped (code tokens only).
      *
      * Scans must ignore doc prose (e.g. a doc link or a "not DateTimeInterface"
      * sentence) but still catch runtime strings such as 'https://…'.
@@ -163,6 +163,14 @@ final class ArchTest extends TestCase
         foreach (token_get_all($code) as $token) {
             if (is_array($token)) {
                 if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
+                    $out .= str_repeat("\n", substr_count($token[1], "\n"));
+
+                    continue;
+                }
+
+                if ($token[0] === T_CONSTANT_ENCAPSED_STRING
+                    || $token[0] === T_ENCAPSED_AND_WHITESPACE
+                ) {
                     $out .= str_repeat("\n", substr_count($token[1], "\n"));
 
                     continue;
@@ -402,11 +410,18 @@ final class ArchTest extends TestCase
             $code = self::codeWithoutComments($file->getPathname());
 
             foreach (['Prayer', 'Qibla', 'Moon', 'Hijri'] as $context) {
-                if (preg_match('/AlFalaq\\\\AlFalaq\\\\' . $context . '\\\\/', $code) === 1) {
+                if (preg_match('/AlFalaq\\\\AlFalaq\\\\' . $context . '(?=\\\\|;)/', $code) === 1) {
                     $violations[] = $file->getPathname() . ': Astro must not reference ' . $context;
                 }
             }
         }
+
+        // Regression (#20): bare-use evasion + string-literal false positive.
+        $context = 'Astro'; // probe the loop-built pattern with a bare-use context.
+        $probeBare = 'use AlFalaq\\AlFalaq\\Astro;';
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\' . $context . '(?=\\\\|;)/', $probeBare));
+        $probeStringBlanked = "\n";
+        self::assertSame(0, preg_match('/AlFalaq\\\\AlFalaq\\\\' . $context . '(?=\\\\|;)/', $probeStringBlanked));
 
         self::assertSame([], $violations);
     }
@@ -445,10 +460,16 @@ final class ArchTest extends TestCase
 
             $code = self::codeWithoutComments($file->getPathname());
 
-            if (preg_match('/AlFalaq\\\\AlFalaq\\\\Astro\\\\/', $code) === 1) {
+            if (preg_match('/AlFalaq\\\\AlFalaq\\\\Astro(?=\\\\|;)/', $code) === 1) {
                 $violations[] = $file->getPathname() . ': engine import outside Services/non-Moon Strategies';
             }
         }
+
+        // Regression (#20): bare-use evasion + string-literal false positive.
+        $probeBare = 'use AlFalaq\\AlFalaq\\Astro;';
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\Astro(?=\\\\|;)/', $probeBare));
+        $probeStringBlanked = "\n";
+        self::assertSame(0, preg_match('/AlFalaq\\\\AlFalaq\\\\Astro(?=\\\\|;)/', $probeStringBlanked));
 
         self::assertSame([], $violations);
     }
@@ -475,10 +496,16 @@ final class ArchTest extends TestCase
 
             $code = self::codeWithoutComments($file->getPathname());
 
-            if (preg_match('/AlFalaq\\\\AlFalaq\\\\(Astro|Moon)\\\\/', $code) === 1) {
+            if (preg_match('/AlFalaq\\\\AlFalaq\\\\(Astro|Moon)(?=\\\\|;)/', $code) === 1) {
                 $violations[] = $file->getPathname() . ': Hijri must not reference Astro or Moon';
             }
         }
+
+        // Regression (#20): bare-use evasion + string-literal false positive.
+        $probeBare = 'use AlFalaq\\AlFalaq\\Astro;';
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\(Astro|Moon)(?=\\\\|;)/', $probeBare));
+        $probeStringBlanked = "\n";
+        self::assertSame(0, preg_match('/AlFalaq\\\\AlFalaq\\\\(Astro|Moon)(?=\\\\|;)/', $probeStringBlanked));
 
         self::assertSame([], $violations);
     }
