@@ -58,3 +58,12 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   labelled Habous convention with fajr 18-vs-19 undecided, Tehran isha 14
   a convention-not-official). UOIF gap: pin-only method,
   no PHP preset (future minor, see issue #7).
+- **Emptied golden cells (Wave-2 verdict: documented no-fit):** a few cells
+  ship empty where no integer preset fits both golden rows — Turkey Dec
+  maghrib (+1 seasonal dusk-side), Kemenag 13 cells (±1–2 mixed-sign
+  sub-minute ephemeris wobble), MUIS June fajr (−1 single-cell rounding),
+  Brunei Doha (+24 structural — KHEU publishes values, no citable rule) plus
+  Brunei Dec imsak/fajr/maghrib (±1 model noise). Residual tables live on
+  issues #8/#10/#23/#11. Cells unpublished by the official tables (Diyanet
+  ishraq/dhuha, Kemenag/MUIS/KHEU ishraq, MUIS imsak/dhuha) are
+  correctly-empty, not gaps.
