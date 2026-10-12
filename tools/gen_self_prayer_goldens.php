@@ -50,7 +50,9 @@ foreach ($methods as $method) {
         throw new RuntimeException('Cannot open ' . $tmpPath);
     }
 
-    fputcsv($handle, array_merge(['method', 'date', 'latitude', 'longitude'], $markers, ['source']));
+    if (fputcsv($handle, array_merge(['method', 'date', 'latitude', 'longitude'], $markers, ['source'])) === false) {
+        throw new RuntimeException('Cannot write ' . $tmpPath);
+    }
 
     foreach ($dates as $datestr) {
         [$y, $m, $d] = array_map('intval', explode('-', $datestr));
@@ -95,11 +97,15 @@ foreach ($methods as $method) {
             };
 
             $row[] = $source;
-            fputcsv($handle, $row);
+            if (fputcsv($handle, $row) === false) {
+                throw new RuntimeException('Cannot write ' . $tmpPath);
+            }
         }
     }
 
-    fclose($handle);
+    if (! fclose($handle)) {
+        throw new RuntimeException('Cannot close ' . $tmpPath);
+    }
 
     $check = fopen($tmpPath, 'r');
 
@@ -107,11 +113,19 @@ foreach ($methods as $method) {
         throw new RuntimeException('Cannot verify ' . $tmpPath);
     }
 
-    $first = fgetcsv($check);
+    $rows = 0;
+    $width = 0;
+    while (($cells = fgetcsv($check)) !== false) {
+        $rows++;
+        if ($rows === 1) {
+            $width = count($cells);
+        }
+    }
     fclose($check);
-
-    if (! is_array($first) || count($first) < 5) {
-        throw new RuntimeException('Refusing to publish truncated ' . $tmpPath);
+    $expectedRows = 1 + count($dates) * count($locations);
+    $expectedWidth = 4 + count($markers) + 1;
+    if ($rows !== $expectedRows || $width !== $expectedWidth) {
+        throw new RuntimeException(sprintf('Refusing to publish truncated %s: got %d rows x %d cols, want %d x %d.', $tmpPath, $rows, $width, $expectedRows, $expectedWidth));
     }
 
     // Per-file atomic publish: each CSV is independently consumable, so no

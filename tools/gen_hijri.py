@@ -340,7 +340,10 @@ def main() -> int:
     for name, text in (("UmmAlQuraMonthStarts.php", uq_text), ("MabimsMonthStarts.php", mabims_text)):
         target = data_dir / name
         tmp = target.with_suffix(".php.tmp")
-        tmp.write_text(text, encoding="utf-8", newline="\n")
+        with tmp.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
         tmp.replace(target)
 
     write_csv(goldens / "hijri_tabular.csv", ["gregorian", "hijri", "source"], tabular_rows)
