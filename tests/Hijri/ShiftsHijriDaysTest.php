@@ -6,8 +6,10 @@ namespace AlFalaq\AlFalaq\Tests\Hijri;
 
 use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
 use AlFalaq\AlFalaq\Hijri\Exceptions\HijriOutOfRangeException;
+use AlFalaq\AlFalaq\Hijri\Strategies\TabularCalendar;
 use AlFalaq\AlFalaq\Hijri\Traits\ShiftsHijriDays;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use PHPUnit\Framework\TestCase;
 use TypeError;
@@ -160,5 +162,54 @@ final class ShiftsHijriDaysTest extends TestCase
         $calendar = $this->fakeCalendar();
         /** @phpstan-ignore-next-line deliberate contract violation */
         $calendar->shift(new HijriDate(1446, 9, 1), true);
+    }
+
+    public function testShiftBoundAcceptsTenYears(): void
+    {
+        $calendar = new TabularCalendar();
+        $start = new HijriDate(1446, 9, 1);
+        $shifted = $calendar->shift($start, 3650);
+
+        self::assertSame($start->isoformat(), $calendar->shift($shifted, -3650)->isoformat());
+    }
+
+    public function testShiftBeyondBoundThrows(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        (new TabularCalendar())->shift(new HijriDate(1446, 9, 1), 3651);
+    }
+
+    public function testShiftIntMinThrowsFast(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        (new TabularCalendar())->shift(new HijriDate(1446, 9, 1), PHP_INT_MIN);
+    }
+
+    public function testShiftIntMaxThrowsFast(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        (new TabularCalendar())->shift(new HijriDate(1446, 9, 1), PHP_INT_MAX);
+    }
+
+    public function testMonthStepRoundTripSweep(): void
+    {
+        $calendar = new TabularCalendar();
+
+        for ($month = 1; $month <= 12; $month++) {
+            $length = $calendar->monthLength(1446, $month);
+
+            foreach ([1, $length] as $day) {
+                $start = new HijriDate(1446, $month, $day);
+
+                foreach ([7, 30, 59, 365, 3650] as $days) {
+                    $shifted = $calendar->shift($start, $days);
+
+                    self::assertSame($start->isoformat(), $calendar->shift($shifted, -$days)->isoformat(), sprintf('%s +%d', $start->isoformat(), $days));
+                }
+            }
+        }
     }
 }

@@ -15,6 +15,7 @@ use AlFalaq\AlFalaq\Moon\Strategies\YallopEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use PHPUnit\Framework\TestCase;
@@ -105,6 +106,54 @@ final class CrescentCalculatorTest extends TestCase
 
         self::assertSame('F', $verdicts['yallop']->zone);
         self::assertSame('D', $verdicts['odeh']->zone);
+    }
+
+    public function testDeltaTOverrideChangesGeometry(): void
+    {
+        $calculator = CrescentCalculator::default();
+        $coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 2, 28);
+        $default = $calculator->atSunset($coordinates, $date);
+        $overridden = $calculator->atSunset($coordinates, $date, 100.0);
+
+        self::assertNotEquals($default->elongationDeg, $overridden->elongationDeg);
+    }
+
+    public function testNullOverrideEqualsDefault(): void
+    {
+        $calculator = CrescentCalculator::default();
+        $coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 2, 28);
+
+        self::assertEquals(
+            $calculator->atSunset($coordinates, $date),
+            $calculator->atSunset($coordinates, $date, null),
+        );
+    }
+
+    public function testNonFiniteOverrideThrows(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CrescentCalculator::default()->atSunset(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 2, 28),
+            NAN,
+        );
+    }
+
+    public function testEvaluatePassesDeltaTOverrideThrough(): void
+    {
+        $calculator = CrescentCalculator::default();
+        $coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 2, 28);
+        $verdicts = $calculator->evaluate($coordinates, $date, 100.0);
+
+        self::assertSame(['yallop', 'odeh', 'mabims1992', 'neomabims2021'], array_keys($verdicts));
+        self::assertEquals(
+            $calculator->evaluateGeometry($calculator->atSunset($coordinates, $date, 100.0)),
+            $verdicts,
+        );
     }
 
     /**
