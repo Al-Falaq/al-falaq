@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Hijri\Traits;
 
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * Shared `HijriCalendar::shift()` — one port of the pin's day walk.
@@ -24,13 +25,16 @@ trait ShiftsHijriDays
      */
     abstract public function monthLength(int $year, int $month): int;
 
+    /** Maximum shift magnitude in days (~10 years); beyond it shift() raises instead of walking. */
+    private const MAX_SHIFT_DAYS = 3650;
+
     /**
      * Shift a Hijri date by whole Hijri days.
      *
      * The starting date must be valid in the using calendar (day within the month's length); results for impossible start dates are undefined.
      *
      * @param HijriDate $date Starting date.
-     * @param int $days Signed day count; zero is the identity with no range probe.
+     * @param int $days Signed day count within [-3650, 3650]; zero is the identity with no range probe.
      * @return HijriDate Shifted date.
      */
     public function shift(HijriDate $date, int $days): HijriDate
@@ -39,36 +43,61 @@ trait ShiftsHijriDays
             return $date;
         }
 
+        if ($days > self::MAX_SHIFT_DAYS || $days < -self::MAX_SHIFT_DAYS) {
+            throw new ValidationException(sprintf(
+                'Shift magnitude must be within [-%d, %d] days (~10 years), got %d.',
+                self::MAX_SHIFT_DAYS,
+                self::MAX_SHIFT_DAYS,
+                $days,
+            ));
+        }
+
         $year = $date->year;
         $month = $date->month;
         $day = $date->day;
-        $step = $days > 0 ? 1 : -1;
-        $remaining = abs($days);
+        $remaining = $days > 0 ? $days : -$days;
 
-        while ($remaining > 0) {
-            $day += $step;
+        if ($days > 0) {
+            while ($remaining > 0) {
+                $toMonthEnd = $this->monthLength($year, $month) - $day;
 
-            if ($day > $this->monthLength($year, $month)) {
-                if ($month === 12) {
-                    $year += 1;
-                    $month = 1;
+                if ($remaining > $toMonthEnd) {
+                    $remaining -= ($toMonthEnd + 1);
+
+                    if ($month === 12) {
+                        $year += 1;
+                        $month = 1;
+                    } else {
+                        $month += 1;
+                    }
+
+                    $this->monthLength($year, $month);
+                    $day = 1;
                 } else {
-                    $month += 1;
+                    $day += $remaining;
+                    $remaining = 0;
                 }
-
-                $day = 1;
-            } elseif ($day < 1) {
-                if ($month === 1) {
-                    $year -= 1;
-                    $month = 12;
-                } else {
-                    $month -= 1;
-                }
-
-                $day = $this->monthLength($year, $month);
             }
+        } else {
+            while ($remaining > 0) {
+                $toMonthStart = $day - 1;
 
-            $remaining -= 1;
+                if ($remaining > $toMonthStart) {
+                    $remaining -= ($toMonthStart + 1);
+
+                    if ($month === 1) {
+                        $year -= 1;
+                        $month = 12;
+                    } else {
+                        $month -= 1;
+                    }
+
+                    $day = $this->monthLength($year, $month);
+                } else {
+                    $day -= $remaining;
+                    $remaining = 0;
+                }
+            }
         }
 
         // Final span probe. A forward shift whose last step rolls the month
