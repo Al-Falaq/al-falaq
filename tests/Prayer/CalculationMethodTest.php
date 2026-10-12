@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Tests\Prayer;
 
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\Prayer\Strategies\AngleIsha;
 use AlFalaq\AlFalaq\Prayer\Strategies\IntervalIsha;
@@ -67,7 +69,7 @@ final class CalculationMethodTest extends TestCase
             $count++;
         }
 
-        self::assertSame(17, $count);
+        self::assertSame(18, $count);
     }
 
     public function testMadhabShadowLengths(): void
@@ -137,5 +139,31 @@ final class CalculationMethodTest extends TestCase
         self::assertSame(15, $params->ishraqOffsetMinutes);
         self::assertSame(28, $params->dhuhaOffsetMinutes);
         self::assertSame(0.0, $params->elevationM);
+    }
+
+    public function testUoifRowIsTwelveTwelveWithZeroOffsets(): void
+    {
+        // UOIF (Union des Organisations Islamiques de France) preset: pure
+        // 12/12, sunset maghrib, zero offsets — no +/-5 min adjustments
+        // (single-source claim rejected, see issue #7).
+        $params = CalculationMethod::UOIF->defaultParameters();
+
+        self::assertSame(12.0, $params->fajrAngle);
+        self::assertInstanceOf(AngleIsha::class, $params->ishaRule);
+        self::assertSame(12.0, $params->ishaRule->angle());
+        self::assertSame(0, $params->maghribRule->minutesAfterSunset());
+        self::assertSame(0, $params->dhuhrOffsetMinutes);
+        self::assertSame(10, $params->imsakOffsetMinutes);
+        self::assertSame(15, $params->ishraqOffsetMinutes);
+        self::assertSame(28, $params->dhuhaOffsetMinutes);
+        self::assertSame(0.0, $params->elevationM);
+        self::assertFalse($params->isRamadan);
+        self::assertSame(Madhab::SHAFI, $params->madhab);
+        self::assertSame(HighLatitudeRule::MIDDLE_OF_NIGHT, $params->highLatitudeRule);
+        self::assertSame(PolarCircleRule::NEAREST_LATITUDE, $params->polarCircleRule);
+        self::assertSame(0, $params->methodAdjustments->for(Prayer::FAJR));
+        self::assertSame(0, $params->methodAdjustments->for(Prayer::DHUHR));
+        self::assertSame(0, $params->methodAdjustments->for(Prayer::MAGHRIB));
+        self::assertSame(0, $params->methodAdjustments->for(Prayer::ISHA));
     }
 }

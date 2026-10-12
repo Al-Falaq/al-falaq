@@ -13,7 +13,8 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 
 /**
- * The 18 frozen calculation methods (M1 freeze from pin a7baa8b).
+ * The 19 frozen calculation methods (M1 freeze from pin a7baa8b, plus the
+ * Wave-2 UOIF drift-gated preset — see issue #7).
  *
  * String values are lowercase canonical keys; NONE means "caller supplies
  * every parameter, no defaults".
@@ -38,6 +39,7 @@ enum CalculationMethod: string
     case KEMENAG = 'kemenag';
     case MUIS = 'muis';
     case BRUNEI = 'brunei';
+    case UOIF = 'uoif';
 
     /**
      * Shipped defaults for this method (frozen M1 from pin a7baa8b).
@@ -427,6 +429,35 @@ enum CalculationMethod: string
                 // 1 min off (sub-minute model noise); those cells are emptied in
                 // prayer_brunei.csv for M1-close follow-up.
                 PrayerAdjustments::empty()->with(Prayer::DHUHR, 1),
+                PrayerAdjustments::empty(),
+            ),
+            self::UOIF => CalculationParameters::create(
+                $this,
+                Madhab::SHAFI,
+                HighLatitudeRule::MIDDLE_OF_NIGHT,
+                PolarCircleRule::NEAREST_LATITUDE,
+                // UOIF 12/12, sunset maghrib, zero offsets. Sources: 1994
+                // Dar el-Fatwa text (prayertimes.uk mirror) + UOIF president
+                // Jaballah 2012 statement (Saphirnews) + ECFR Dublin 2004
+                // toleration; current 12 deg communally confirmed (Musulmans
+                // de France, Feb 2026 Havre De Savoir review); cross-checked
+                // against praytimes.org France row. The 14/15 joint-commission
+                // compromise (2015) never landed (2016 Saphirnews, restated
+                // Oct 2025). Drift-gated golden (pin has no UOIF — never
+                // claimed as pin parity); see issue #7.
+                12.0,
+                new AngleIsha(12.0),
+                new MinutesAfterSunsetMaghrib(0),
+                0,
+                10,
+                15,
+                28,
+                0.0,
+                false,
+                // No method adjustments: the single-source -5 fajr / +5
+                // dhuhr+maghrib claim is uncorroborated and contradicts all
+                // calculator encodings (see issue #7).
+                PrayerAdjustments::empty(),
                 PrayerAdjustments::empty(),
             ),
         };

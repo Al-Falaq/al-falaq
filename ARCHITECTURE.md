@@ -130,7 +130,7 @@ Supporting directories:
 
 - `tests/` — mirrors `src/` per context, plus `Sweep/` (seeded property
   sweeps), `Wiring/` (smoke tests for every `docs/integrations.md`
-  snippet), `Goldens/` (pinned-Python parity vectors, 24 CSVs +
+  snippet), `Goldens/` (pinned-Python parity vectors, 25 CSVs +
   `Comparator.php` with dual tolerances), and `ArchTest.php` (layering and
   shape rules, `#[Group('arch')]`).
 - `examples/` — runnable snippets plus `bench.php` (performance-budget
@@ -225,7 +225,7 @@ or WGS84/Karney), wrap the bearing/distance in an immutable `QiblaResult`.
   intervals, night rules, polar fallbacks, geodesic models, calendar
   systems, visibility criteria) are separate strategy classes, not flags in
   a god class. `CalculationMethod::defaultParameters()` freezes the
-  18-method preset table; `defaultFor()` maps parameters to strategies.
+  19-method preset table; `defaultFor()` maps parameters to strategies.
 - **Explicit construction, no container.** Services take strategies by
   constructor injection and expose `default()` / `defaultFor()` named
   factories for the common wirings. There are no service providers,

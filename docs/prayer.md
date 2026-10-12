@@ -42,7 +42,9 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
 - **NONE method:** `defaultParameters()` throws `ConfigurationException` (no
   defaults); custom configs are built via `CalculationParameters::create()`.
 - **Method-default freeze state (M1):** 18 methods, dual-entered from the pin
-  (freeze `c151828`, `sha256 3bb6df93…9356`); `dhuhrOffsetMinutes` 0 everywhere
+  (freeze `c151828`, `sha256 3bb6df93…9356`) — plus UOIF (19th, Wave-2
+  addition with no pin cell: 12/12 preset drift-gated via
+  `tools/gen_self_prayer_goldens.php`, never pin parity); `dhuhrOffsetMinutes` 0 everywhere
   (the aid column conflated `methodAdjustments.dhuhr`); ishraq 15 / dhuha 28
   (pin ctor defaults; the aid said 0/15 — corrected); KARACHI SHAFI per pin;
   `methodAdjustments` exactly per pin (MWL/EGYPTIAN/KARACHI/NA/SINGAPORE/JAKIM
@@ -56,8 +58,16 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   now exist via `tools/gen_self_prayer_goldens.php`: Tehran cross-checked
   against `batoulapps/adhan-js@a2c4bda` `Tehran()`, Morocco 19/17 stays a
   labelled Habous convention with fajr 18-vs-19 undecided, Tehran isha 14
-  a convention-not-official). UOIF gap: pin-only method,
-  no PHP preset (future minor, see issue #7).
+  a convention-not-official). UOIF preset landed (Wave 2, issue #7): pure
+  12/12, sunset maghrib, zero offsets — no +/-5 min adjustments
+  (single-source claim rejected). Cited to the 1994 Dar el-Fatwa text
+  (prayertimes.uk mirror) + UOIF president Jaballah 2012 statement
+  (Saphirnews) + ECFR Dublin 2004 toleration, with current 12 deg
+  communally confirmed (Musulmans de France, Feb 2026 Havre De Savoir
+  review) and cross-checked against the praytimes.org France row; the
+  14/15 joint-commission compromise (2015) never landed. Drift-gated via
+  `tools/gen_self_prayer_goldens.php` (`tests/Goldens/prayer_uoif.csv`;
+  pin has no UOIF cell — never claimed as pin parity).
 - **Emptied golden cells (Wave-2 verdict: documented no-fit):** a few cells
   ship empty where no integer preset fits both golden rows — Turkey Dec
   maghrib (+1 seasonal dusk-side), Kemenag 13 cells (±1–2 mixed-sign

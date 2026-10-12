@@ -16,10 +16,11 @@ use PHPUnit\Framework\TestCase;
  *
  * Skips empty marker fields (unpublished markers in T2 tables). Ramadan rows are exactly
  * the UMM_AL_QURA rows dated 2025-03-02 (exporter sets Ramadan mode
- * only there). Expected file set is explicit: 17 present (11 pin + 4
- * provisional + tehran/morocco drift-gated by tools/gen_self_prayer_goldens.php:
+ * only there). Expected file set is explicit: 18 present (11 pin + 4
+ * provisional + tehran/morocco/uoif drift-gated by tools/gen_self_prayer_goldens.php:
  * Tehran cross-checked against batoulapps/adhan-js@a2c4bda, Morocco a labelled
- * Habous convention with no upstream preset).
+ * Habous convention with no upstream preset, UOIF a 12/12 zero-offset preset
+ * with no pin cell — never claimed as pin parity, see issue #7).
  */
 final class PrayerGoldensTest extends TestCase
 {
@@ -46,6 +47,7 @@ final class PrayerGoldensTest extends TestCase
             'prayer_brunei.csv',
             'prayer_tehran.csv',
             'prayer_morocco.csv',
+            'prayer_uoif.csv',
         ];
     }
 
