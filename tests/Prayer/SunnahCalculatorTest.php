@@ -167,6 +167,24 @@ final class SunnahCalculatorTest extends TestCase
         }
     }
 
+    public function testNightFractionStaysStrictlyInteriorAfterRounding(): void
+    {
+        // Short summer night (67N 2024-06-21 MWL: 2940 s): raw offsets of a
+        // few seconds used to minute-round exactly onto an anchor.
+        $night = $this->nightFor(67.0, 10.0, 2024, 6, 21);
+
+        foreach ([0.001, 0.01, 0.5, 0.99, 0.999] as $fraction) {
+            $out = $night->nightFraction($fraction);
+
+            self::assertGreaterThan($night->maghrib, $out);
+            self::assertLessThan($night->fajr, $out);
+            self::assertSame(0, (int) $out->format('s'));
+        }
+
+        self::assertSame('2024-06-21T22:34:00+00:00', $night->nightFraction(0.001)->format('Y-m-d\TH:i:sP'));
+        self::assertSame('2024-06-21T23:21:00+00:00', $night->nightFraction(0.999)->format('Y-m-d\TH:i:sP'));
+    }
+
     public function testForZonePreservesAllFiveInstants(): void
     {
         $night = $this->nightFor(3.1390, 101.6869, 2025, 1, 15);

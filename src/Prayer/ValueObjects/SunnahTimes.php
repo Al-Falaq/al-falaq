@@ -54,6 +54,10 @@ final readonly class SunnahTimes
      * Arbitrary night fraction between maghrib and fajr (M2).
      *
      * UTC-normalized then converted back, so forZone() commutes with it.
+     * The minute-rounded result is clamped strictly inside the night, so
+     * maghrib < result < fajr holds for every valid fraction on nights
+     * longer than two minutes (shorter nights admit no minute-aligned
+     * interior instant).
      *
      * @param float $fraction Exclusive (0, 1); 0.5 = middle of night.
      * @return \DateTimeImmutable Instant at that fraction (maghrib zone).
@@ -82,7 +86,17 @@ final readonly class SunnahTimes
             throw new ValidationException('Unable to compute Sunnah fraction.');
         }
 
-        return Minutes::roundedHalfUp($moved)->setTimezone($zone);
+        $rounded = Minutes::roundedHalfUp($moved);
+
+        if ($rounded <= $maghribUtc) {
+            return Minutes::add($maghribUtc, 1)->setTimezone($zone);
+        }
+
+        if ($rounded >= $fajrUtc) {
+            return Minutes::add($fajrUtc, -1)->setTimezone($zone);
+        }
+
+        return $rounded->setTimezone($zone);
     }
 
     /**
