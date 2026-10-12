@@ -83,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `HijriCalendar::fromGregorian()` now takes `CivilDate` only.
 - Coverage floor raised 80 → 85.
 - Coverage floor raised 85 → 95.
-- Infection MSI≥85% + covered-MSI≥85% gated in CI (`composer mutation`).
+- Infection MSI≥85% + covered-MSI≥85% gated in CI (`composer mutation`; `KarneyInverse` core file-excluded, audit-backed).
 
 ### Removed
 
