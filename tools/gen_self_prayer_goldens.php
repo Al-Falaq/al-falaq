@@ -3,16 +3,18 @@
 declare(strict_types=1);
 
 /**
- * Regenerate drift-gated M2 prayer goldens for TEHRAN + MOROCCO.
+ * Regenerate drift-gated M2 prayer goldens for TEHRAN + MOROCCO + UOIF.
  *
  * Official-table arbitration was inconclusive (see the M2 design spec and
  * CHANGELOG): Habous Rabat dailies and UT Geophysics times have no
  * machine-readable 30-day archive, so no angle changes. Tehran values agree
  * exactly with batoulapps/adhan-js@a2c4bda Tehran() (fajr 17.7, isha 14,
  * maghrib-angle 4.5); Morocco 19/17 has no batoulapps/adhan-* preset and
- * stays a labelled Habous convention. These CSVs gate drift, not
- * correctness. Grid mirrors tools/export_goldens.py. Regenerate and
- * diff-review with: php tools/gen_self_prayer_goldens.php
+ * stays a labelled Habous convention. UOIF 12/12 is a Wave-2 preset with no
+ * pin cell (see issue #7): pure 12/12, sunset maghrib, zero offsets, cited
+ * to the 1994 Dar el-Fatwa text + praytimes.org France cross-check. These
+ * CSVs gate drift, not correctness. Grid mirrors tools/export_goldens.py.
+ * Regenerate and diff-review with: php tools/gen_self_prayer_goldens.php
  */
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -39,7 +41,7 @@ $locations = [
 
 $dates = ['2025-01-15', '2025-03-20', '2025-06-21', '2025-09-22', '2025-12-15', '2025-03-02'];
 
-$methods = [CalculationMethod::TEHRAN, CalculationMethod::MOROCCO];
+$methods = [CalculationMethod::TEHRAN, CalculationMethod::MOROCCO, CalculationMethod::UOIF];
 
 foreach ($methods as $method) {
     $path = __DIR__ . '/../tests/Goldens/prayer_' . $method->value . '.csv';
@@ -93,6 +95,7 @@ foreach ($methods as $method) {
             $source = match ($method) {
                 CalculationMethod::TEHRAN => 'drift:adhan-js@a2c4bda-Tehran()-17.7/14/maghrib-4.5;src:praytimes.org/docs/methods-2026-10-11;isha14-convention-not-official',
                 CalculationMethod::MOROCCO => 'drift:no-batoulapps-preset-2026-10-11;src:fm6oa.org-2026-10-11;morocco:Habous-19/17-convention;fajr18-vs-19-undecided',
+                CalculationMethod::UOIF => 'drift:no-pin-cell-2026-10-12;src:1994-Dar-el-Fatwa-text+Jaballah-2012-Saphirnews+ECFR-Dublin-2004;uoif:12/12-zero-offset;xcheck:praytimes.org-France-row;14/15-compromise-never-landed',
                 default => throw new RuntimeException('No drift source tag for method ' . $method->value),
             };
 

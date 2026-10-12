@@ -130,7 +130,7 @@ Supporting directories:
 
 - `tests/` — mirrors `src/` per context, plus `Sweep/` (seeded property
   sweeps), `Wiring/` (smoke tests for every `docs/integrations.md`
-  snippet), `Goldens/` (pinned-Python parity vectors, 24 CSVs +
+  snippet), `Goldens/` (pinned-Python parity vectors, 25 CSVs +
   `Comparator.php` with dual tolerances), and `ArchTest.php` (layering and
   shape rules, `#[Group('arch')]`).
 - `examples/` — runnable snippets plus `bench.php` (performance-budget

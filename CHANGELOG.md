@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- UOIF 12/12 preset (Wave 2, issue #7): `CalculationMethod::UOIF` with
+  fajr 12°, isha `AngleIsha(12°)`, sunset maghrib, zero offsets and no
+  method adjustments (the single-source ±5 min claim rejected). Cited to
+  the 1994 Dar el-Fatwa text + Jaballah 2012 statement + ECFR Dublin 2004
+  toleration, communally confirmed current (Musulmans de France, Feb 2026)
+  and cross-checked against the praytimes.org France row; the 14/15
+  compromise never landed. Drift-gated golden
+  (`tests/Goldens/prayer_uoif.csv` via `tools/gen_self_prayer_goldens.php`;
+  pin has no UOIF cell — never claimed as pin parity).
 - Sunnah maghrib anchor + Tehran/Morocco provenance verdict: `SunnahTimes`
   gains the 5th `maghrib` anchor (append-last; stale 4-arg calls fail with
   `ArgumentCountError`) with dual degenerate guards (`fajr <= lastThird` +

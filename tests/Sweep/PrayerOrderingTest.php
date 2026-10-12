@@ -44,6 +44,7 @@ final class PrayerOrderingTest extends TestCase
             CalculationMethod::KEMENAG,
             CalculationMethod::MUIS,
             CalculationMethod::BRUNEI,
+            CalculationMethod::UOIF,
         ];
 
         for ($i = 0; $i < 200; $i++) {
