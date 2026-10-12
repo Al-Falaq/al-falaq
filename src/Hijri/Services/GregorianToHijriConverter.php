@@ -8,6 +8,7 @@ use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
 use AlFalaq\AlFalaq\Hijri\Contracts\OffsetStore;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
+use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
@@ -111,6 +112,9 @@ final class GregorianToHijriConverter
     /**
      * Predicted maghrib instant for one observer and UTC civil day.
      *
+     * Falls back to the pipeline's maghrib-only computation when the full
+     * schedule is undefined but maghrib itself is defined (#15).
+     *
      * @param Coordinates $coordinates Observer.
      * @param CalculationParameters $parameters Calculation method.
      * @param CivilDate $date UTC civil day to evaluate.
@@ -121,6 +125,14 @@ final class GregorianToHijriConverter
         CalculationParameters $parameters,
         CivilDate $date,
     ): \DateTimeImmutable {
-        return $this->calculator->calculate($coordinates, $date, $parameters)->timeFor(Prayer::MAGHRIB);
+        try {
+            return $this->calculator->calculate($coordinates, $date, $parameters)->timeFor(Prayer::MAGHRIB);
+        } catch (UndefinedScheduleException) {
+            // Strict high-latitude configs may leave the full schedule
+            // undefined while maghrib itself is defined; resolve maghrib
+            // alone rather than failing the conversion. Throws the same
+            // exception when maghrib itself is undefined (e.g. polar night).
+            return $this->calculator->maghribAt($coordinates, $date, $parameters);
+        }
     }
 }

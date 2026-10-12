@@ -80,6 +80,82 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     }
 
     /**
+     * Maghrib instant without the full schedule (strict-config fallback).
+     *
+     * Runs the pipeline's own solar/maghrib computation and returns before
+     * the Fajr/Isha correction phases, so strict high-latitude configs with
+     * an undefined schedule still resolve maghrib where the sun sets. Throws
+     * UndefinedScheduleException only when maghrib itself is undefined.
+     * Class-only capability (like highLatitudeCorrection()); the interface
+     * keeps the single calculate() command.
+     *
+     * The tomorrow-rise probe and the polar resolve are skipped by design,
+     * not by omission: they gate the full schedule's night length (Fajr/Isha
+     * portions), which maghrib never consumes. Maghrib needs only today's
+     * sunset, so a polar-transition day (sun sets today, no sunrise
+     * tomorrow) resolves here while calculate() still throws. Every call
+     * below is the same private solar/maghrib call calculate() performs, in
+     * the same order — no astronomy is reimplemented.
+     *
+     * @param Coordinates|array{0: mixed, 1: mixed} $coordinates VO or [lat, lon] pair.
+     * @param CivilDate $date Civil date to compute.
+     * @param CalculationParameters $parameters Method defaults + overrides.
+     * @return \DateTimeImmutable Maghrib instant (UTC).
+     */
+    public function maghribAt(
+        Coordinates|array $coordinates,
+        CivilDate $date,
+        CalculationParameters $parameters,
+    ): \DateTimeImmutable {
+        $coords = self::normalizeCoordinates($coordinates);
+
+        if ($parameters->isRamadan && $parameters->method !== CalculationMethod::UMM_AL_QURA) {
+            throw new ConfigurationException(sprintf(
+                'isRamadan requires UMM_AL_QURA (got %s).',
+                $parameters->method->value,
+            ));
+        }
+
+        try {
+            $day = $this->solar->solarTime($coords, $date, $parameters->elevationM);
+        } catch (AstronomicalException) {
+            throw UndefinedScheduleException::polar($coords, $date, $parameters->polarCircleRule->value);
+        }
+
+        $eff = $parameters->methodAdjustments->combinedWith($parameters->adjustments);
+
+        $maghribMinutes = $parameters->maghribRule->minutesAfterSunset();
+
+        if ($maghribMinutes !== null) {
+            $maghribBase = Minutes::add($day->sunset, $maghribMinutes);
+        } else {
+            $maghribAngle = $parameters->maghribRule->angle();
+
+            if ($maghribAngle === null) {
+                throw new AstronomicalException(sprintf(
+                    'Unable to compute Maghrib: no angle or interval defined (coordinates=%s, date=%s).',
+                    (string) $coords,
+                    $date->isoformat(),
+                ));
+            }
+
+            $maghribTemp = $this->solar->hourAngle($coords, $date, $parameters->elevationM, -$maghribAngle, true);
+
+            if ($maghribTemp === null) {
+                throw new AstronomicalException(sprintf(
+                    'Unable to compute Maghrib: the sun never reaches the angle for these coordinates and date (coordinates=%s, date=%s).',
+                    (string) $coords,
+                    $date->isoformat(),
+                ));
+            }
+
+            $maghribBase = $maghribTemp;
+        }
+
+        return $this->adjusted($maghribBase, $eff, Prayer::MAGHRIB);
+    }
+
+    /**
      * Expose the injected polar-circle strategy (introspection/testing).
      *
      * @return PolarCircleHandler The wired handler.
