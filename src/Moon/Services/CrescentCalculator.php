@@ -15,6 +15,7 @@ use AlFalaq\AlFalaq\Moon\Strategies\YallopEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
@@ -109,9 +110,10 @@ final class CrescentCalculator
      *
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date of the evening observation.
+     * @param float|null $deltaTOverride Seconds override for TT−UT1; null uses the provider.
      * @return CrescentGeometry Altitudes, elongation, ages, lag, azimuth delta.
      */
-    public function atSunset(Coordinates $coordinates, CivilDate $date): CrescentGeometry
+    public function atSunset(Coordinates $coordinates, CivilDate $date, ?float $deltaTOverride = null): CrescentGeometry
     {
         $sunsetHours = $this->solar->hourAngleFloat($coordinates, $date, 0.0, self::SUNSET_ALTITUDE_DEG, true);
 
@@ -128,7 +130,14 @@ final class CrescentCalculator
         $jdMidnightUt = JulianDay::fromCivilDate($date)->toFloat();
         $jdSunsetUt = $jdMidnightUt + $sunsetHours / 24.0;
         $decimalYear = (float) $date->year + ($date->dayOfYear() - 1) / 365.25;
-        $deltaT = DeltaTProvider::forYear($decimalYear);
+        if ($deltaTOverride !== null && ! is_finite($deltaTOverride)) {
+            throw new ValidationException(sprintf(
+                'deltaTOverride must be a finite number of seconds, got %s.',
+                var_export($deltaTOverride, true),
+            ));
+        }
+
+        $deltaT = $deltaTOverride ?? DeltaTProvider::forYear($decimalYear);
         $jdSunsetTt = $jdSunsetUt + $deltaT / 86400.0;
 
         $lst = $this->ephemeris->siderealTime($jdSunsetUt, $coordinates->longitude);
@@ -216,11 +225,12 @@ final class CrescentCalculator
      *
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date of the evening observation.
+     * @param float|null $deltaTOverride Seconds override for TT−UT1; null uses the provider.
      * @return array{yallop: CrescentVerdict, odeh: CrescentVerdict, mabims1992: CrescentVerdict, neomabims2021: CrescentVerdict} Verdicts keyed by criterion.
      */
-    public function evaluate(Coordinates $coordinates, CivilDate $date): array
+    public function evaluate(Coordinates $coordinates, CivilDate $date, ?float $deltaTOverride = null): array
     {
-        return $this->evaluateGeometry($this->atSunset($coordinates, $date));
+        return $this->evaluateGeometry($this->atSunset($coordinates, $date, $deltaTOverride));
     }
 
     /**
