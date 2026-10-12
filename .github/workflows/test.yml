@@ -42,3 +42,15 @@ jobs:
           php -r 'exit(count(json_decode(file_get_contents("composer.lock"), true)["packages"]) === 0 ? 0 : 1);'
       - run: composer test
       - run: composer bench
+
+  mutation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: date
+          coverage: pcov
+      - run: composer install --no-progress
+      - run: composer mutation
