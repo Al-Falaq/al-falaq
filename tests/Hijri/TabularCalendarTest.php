@@ -21,7 +21,7 @@ final class TabularCalendarTest extends TestCase
     private const LEAP_REMAINDERS = [2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29];
 
     /**
-     * The two pin anchors the PRD quotes.
+     * The two pin anchors.
      *
      * @return void
      */

@@ -13,7 +13,7 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 
 /**
- * The 18 frozen calculation methods (Appendix A normative, M1 freeze).
+ * The 18 frozen calculation methods (M1 freeze from pin a7baa8b).
  *
  * String values are lowercase canonical keys; NONE means "caller supplies
  * every parameter, no defaults".
@@ -40,7 +40,7 @@ enum CalculationMethod: string
     case BRUNEI = 'brunei';
 
     /**
-     * Shipped defaults for this method (Appendix A frozen M1 from pin a7baa8b).
+     * Shipped defaults for this method (frozen M1 from pin a7baa8b).
      *
      * Pin-known cells trace to MethodsParameters.py @ a7baa8b plus the
      * CalculationParameters.py ctor defaults (imsak 10 / ishraq 15 /

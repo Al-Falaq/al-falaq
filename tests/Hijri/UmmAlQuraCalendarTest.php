@@ -31,7 +31,7 @@ final class UmmAlQuraCalendarTest extends TestCase
     }
 
     /**
-     * The table floor and the PRD anchor.
+     * The table floor and the pin anchor.
      *
      * @return void
      */

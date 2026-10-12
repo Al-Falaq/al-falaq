@@ -60,3 +60,11 @@ $next = (new NextPrayerResolver())->resolve($today, $tomorrow, new DateTimeImmut
 If the host app uses `psr/clock` (suggested, never required), call
 `$clock->now()` at the edge and pass the result in — the library never
 type-hints it.
+
+## Output shapes (JSON)
+
+`PrayerSchedule::all()` keys `['imsak','fajr','sunrise','syuruk','ishraq','dhuha','dhuhr','asr','maghrib','isha']`
+in this order, UTC `DateTimeImmutable`; `toArray(): array<string,string>` maps
+same keys to `Y-m-d\TH:i:s+00:00`; `DisplaySchedule::toArray()` same keys in
+display zone; `json_encode($sched->toArray())` for consumers; no other keys
+without a minor bump.

@@ -1,4 +1,4 @@
-# Architecture (condensed from Technical-PRD.md §7–8)
+# Architecture (layering summary)
 
 ```
 Domain (Contracts, VOs, Enums, Exceptions) has ZERO dependencies inward.

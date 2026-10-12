@@ -1,4 +1,4 @@
-# migration (M1-M5 — see Technical-PRD.md)
+# migration (M1-M5)
 
 ## M5 — `nightFraction` strictly-interior clamp (pure bugfix, no action needed)
 

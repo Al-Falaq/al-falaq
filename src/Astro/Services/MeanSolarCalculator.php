@@ -661,8 +661,7 @@ final class MeanSolarCalculator implements SolarModel
     /**
      * Apparent solar altitude for rise/set with dip of the horizon.
      *
-     * Pin a7baa8b SolarTime.__init__ solar_altitude verbatim (-50/60, not
-     * the PRD-rounded -0.833); dip 0.0293·sqrt(h), h in metres.
+     * Pin a7baa8b SolarTime.__init__ solar_altitude verbatim (-50/60, not -0.833); dip 0.0293·sqrt(h), h in metres.
      *
      * @param float $elevationM Observer height in metres.
      * @return float Altitude in degrees.

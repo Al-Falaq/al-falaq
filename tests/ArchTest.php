@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Layering + shape rules (plain reflection, no plugins).
  *
- * Mirrors Technical-PRD.md §7: final value objects / services,
+ * Final value objects / services,
  * no Util/ namespace regrowth, exceptions extend the base type.
  */
 #[Group('arch')]

@@ -2,7 +2,7 @@
 
 Both geodesies shipped (M2): `QiblaCalculator::default()` is the spherical
 fast path, `QiblaCalculator::wgs84()` the WGS84/Karney precise opt-in — see
-Technical-PRD.md §5.3, §18.
+the `QiblaCalculator` strategies + `tests/Goldens/qibla_*.csv`.
 
 ## Pinned inputs
 

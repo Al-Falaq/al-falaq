@@ -14,7 +14,7 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Frozen Appendix A presets (dual-entered from pin a7baa8b).
+ * Frozen method presets (dual-entered from pin a7baa8b).
  */
 final class CalculationMethodTest extends TestCase
 {

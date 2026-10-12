@@ -10,7 +10,7 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
- * Single-day prayer-time pipeline (M1; M0 throws — see Appendix A freeze).
+ * Single-day prayer-time pipeline (M1 freeze).
  *
  * Implemented once by Services\PrayerTimesCalculator; callers program to
  * this contract for testability.

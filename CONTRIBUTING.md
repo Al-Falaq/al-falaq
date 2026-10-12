@@ -13,4 +13,4 @@ composer ci
 - Every numeric golden vector cites Meeus page+ed. or Takwim URL+date + `PYTHON_PIN`.
 - Public API = `src/{SharedKernel,Prayer,Qibla,Moon,Hijri}/{Contracts,Enums,ValueObjects,Services}` + documented `*Exception`s. `Astro` is `@internal`.
 - One class per file, `final readonly` VOs, no `Util/` namespace, no `*Error` names.
-- Update `Technical-PRD.md` Appendices A–C when behavior intentionally diverges (code wins, doc follows).
+- Update `docs/prayer.md` + goldens when behavior intentionally diverges (code wins, doc follows).

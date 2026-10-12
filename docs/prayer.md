@@ -1,4 +1,4 @@
-# prayer (M1-M5 — see Technical-PRD.md)
+# prayer (M1-M5)
 
 ## Algorithm appendix (M1 — mirrors shipped code)
 
@@ -41,7 +41,7 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   sunrise + their offsets.
 - **NONE method:** `defaultParameters()` throws `ConfigurationException` (no
   defaults); custom configs are built via `CalculationParameters::create()`.
-- **Appendix A freeze state (M1):** 18 methods, dual-entered from the pin
+- **Method-default freeze state (M1):** 18 methods, dual-entered from the pin
   (freeze `c151828`, `sha256 3bb6df93…9356`); `dhuhrOffsetMinutes` 0 everywhere
   (the aid column conflated `methodAdjustments.dhuhr`); ishraq 15 / dhuha 28
   (pin ctor defaults; the aid said 0/15 — corrected); KARACHI SHAFI per pin;
@@ -57,4 +57,4 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   against `batoulapps/adhan-js@a2c4bda` `Tehran()`, Morocco 19/17 stays a
   labelled Habous convention with fajr 18-vs-19 undecided, Tehran isha 14
   a convention-not-official). UOIF gap: pin-only method,
-  no PHP preset (future minor with Appendix A amendment).
+  no PHP preset (future minor, see issue #7).

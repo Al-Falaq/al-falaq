@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Coverage gate without test-runner plugins: runs PHPUnit once with coverage,
 // parses the "Lines:" summary, and enforces --min.
 //
-// Ratchet policy (Technical-PRD.md §15): the floor starts at the M0 baseline
+// Ratchet policy: the floor starts at the M0 baseline
 // (20) and is raised per milestone as contexts land; M5 restores 95.
 // Without a coverage driver (pcov/xdebug) the gate passes on green tests
 // with a notice — CI always provides pcov, so the floor is enforced there.

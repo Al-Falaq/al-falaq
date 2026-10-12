@@ -11,7 +11,7 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
  * One day of prayer instants, stored UTC-only (display via forZone()).
  *
  * The ctor rejects non-UTC inputs; user adjustments may break ordering —
- * the calculator never silently reorders (see Technical-PRD.md §5.2).
+ * the calculator never silently reorders.
  */
 final readonly class PrayerSchedule
 {
@@ -71,7 +71,7 @@ final readonly class PrayerSchedule
     }
 
     /**
-     * All ten instants in UTC, in schedule order (Appendix C schema).
+     * All ten instants in UTC, in schedule order (stable output schema — see docs/integrations.md).
      *
      * @return array<string, \DateTimeImmutable> Keyed by Prayer value.
      */
@@ -85,7 +85,7 @@ final readonly class PrayerSchedule
     }
 
     /**
-     * ISO8601 strings in UTC (JSON-ready timetable row, Appendix C schema).
+     * ISO8601 strings in UTC (JSON-ready timetable row, stable output schema — see docs/integrations.md).
      *
      * @return array<string, string> Keyed by Prayer value.
      */

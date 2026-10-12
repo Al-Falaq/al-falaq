@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Enums;
 
 /**
- * High-latitude night-splitting rule (picked per method, Appendix A).
+ * High-latitude night-splitting rule (picked per method).
  */
 enum HighLatitudeRule: string
 {

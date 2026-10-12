@@ -2,7 +2,7 @@
 
 Offline, zero-dependency PHP 8.2+ library for Islamic astronomy: prayer times, Qibla, Sunnah markers, crescent visibility, Hijri conversion.
 
-Status: **M4 landed** — prayer pipeline (`PrayerTimesCalculator`), monthly timetable (`TimetableService`), next-prayer resolver (`NextPrayerResolver`), Qibla (spherical + WGS84/Karney), Sunnah markers, crescent visibility, and Hijri calendars (tabular, Umm al-Qura, MABIMS + bridge) shipped; Appendix A frozen + milestone amendments. Goldens green (24 CSVs incl. drift-gated tehran/morocco; UOIF gap open, see issues). See `Technical-PRD.md` + `docs/`.
+Status: **M5 landed** — prayer pipeline, monthly timetable, next-prayer resolver, Qibla (spherical + WGS84/Karney), Sunnah markers, crescent visibility, Hijri calendars (tabular, Umm al-Qura, MABIMS + bridge), hardening gates green (coverage 95, MSI≥85%); calculation-method defaults frozen + milestone amendments. Goldens green (24 CSVs incl. drift-gated tehran/morocco; UOIF gap open, see issues). See `docs/`.
 
 ## Install
 
@@ -28,7 +28,16 @@ $schedule = PrayerTimesCalculator::defaultFor($params)->calculate($coords, $date
 echo $schedule->forZone(new DateTimeZone('Asia/Kuala_Lumpur'))->timeFor(Prayer::FAJR)->format('H:i');
 ```
 
-See `docs/prayer.md` for the algorithm appendix + Appendix A freeze state.
+See `docs/prayer.md` for the algorithm appendix + method-freeze state.
+
+## Non-goals
+
+- No CLI, HTTP endpoint, daemon, or telemetry; the library is offline only.
+- No magnetic-declination model: `QiblaResult::magneticHeading()` takes a
+  caller-supplied declination, nothing more.
+- Month labels are `en`/`ar` only via `HijriMonth::label()`; no ICU.
+- Hijri coverage is exactly the shipped tables (Umm al-Qura 1423–1500,
+  MABIMS 1445–1500, Tabular) with caller `OffsetStore` corrections.
 
 ## Scripts
 
@@ -40,7 +49,6 @@ composer bench
 
 ## Docs
 
-- `Technical-PRD.md` — build contract
 - `ARCHITECTURE.md` — layering summary
 - `docs/` — per-context guides (M1–M5)
 - `UQ_PROVENANCE.md` — Umm al-Qura + MABIMS table provenance, digests, regeneration

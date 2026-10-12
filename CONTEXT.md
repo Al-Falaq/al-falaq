@@ -19,7 +19,7 @@ implementation, proven by golden vectors.
 
 Landed: composer scaffold, `SharedKernel` value objects (`Coordinates`,
 `CivilDate`, `Angle`, `Minutes`, `JulianDay`), exception hierarchy, prayer pipeline
-(`PrayerTimesCalculator`, `TimetableService`, `NextPrayerResolver`), Appendix A
+(`PrayerTimesCalculator`, `TimetableService`, `NextPrayerResolver`), method-default
 freeze + milestone amendments, Qibla (spherical + WGS84/Karney), Sunnah markers
 (incl. `nightFraction`), crescent visibility evaluators, Hijri calendars
 (tabular, Umm al-Qura, per-country MABIMS + Gregorian bridge), parity goldens
@@ -44,7 +44,7 @@ M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed);
   `ArchTest.php`, `bootstrap.php`. `examples/` — runnable snippets +
   `bench.php`. `tools/` — `coverage_gate.php`, `gen_hijri.py` (M4),
   `export_goldens.py` (goldens from `PYTHON_PIN`).
-- Docs: `Technical-PRD.md` (build contract), `ARCHITECTURE.md` (layering),
+- Docs: `ARCHITECTURE.md` (layering),
   `docs/` per-context guides + `integrations.md` (plain-`new` wiring),
   `AGENTS.md` (agent instructions), `UQ_PROVENANCE.md` (M4).
 

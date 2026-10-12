@@ -27,8 +27,7 @@ final class MakkahHandler implements PolarCircleHandler
      */
     public function resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array
     {
-        // Pin Constants.MAKKAH full precision; the PRD's 4dp (21.4225, 39.8262)
-        // is rounded display (~11 m), kept here verbatim for cross-port parity.
+        // Pin Constants.MAKKAH full precision (21.4225241, 39.8261818); 4dp display would be ~11 m off — kept verbatim for cross-port parity.
         return [
             'coordinates' => Coordinates::fromDegrees(21.4225241, 39.8261818),
             'date' => $date,
