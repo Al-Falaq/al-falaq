@@ -370,5 +370,6 @@ What affects code design:
   `America/New_York` leg on 8.4. A manual Windows gate runs on `v*` tags.
 - Quality gates before merge: `composer ci` (lint + cs + stan + test),
   `composer arch`, coverage ratchet (`tools/coverage_gate.php`, floor only
-  moves up, 95 at M5), and the bench budget. Mutation testing
-  (`composer mutation`, MSI ≥ 85 scoped gate) runs from M5.
+  moves up, currently 95), and the bench budget. Mutation testing
+  (`composer mutation`, MSI ≥ 85 configured in `infection.json.dist`)
+  runs in CI.
