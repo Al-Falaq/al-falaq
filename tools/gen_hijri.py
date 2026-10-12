@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import os
 import subprocess
 import sys
 from datetime import date, timedelta
@@ -232,11 +233,15 @@ final class MabimsMonthStarts
 
 
 def write_csv(path: Path, header: list[str], rows: list[list[str]]) -> None:
-    """Write a golden CSV with LF newlines."""
-    with path.open("w", encoding="utf-8", newline="") as handle:
+    """Write a golden CSV atomically (tmp + fsync + rename)."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(header)
         writer.writerows(rows)
+        handle.flush()
+        os.fsync(handle.fileno())
+    tmp.replace(path)
 
 
 def main() -> int:
@@ -284,11 +289,6 @@ def main() -> int:
 
     data_dir = root / "src" / "Hijri" / "Data"
     data_dir.mkdir(parents=True, exist_ok=True)
-    with (data_dir / "UmmAlQuraMonthStarts.php").open("w", encoding="utf-8", newline="\n") as handle:
-        handle.write(render_uq(pin_sha, uq_starts))
-
-    with (data_dir / "MabimsMonthStarts.php").open("w", encoding="utf-8", newline="\n") as handle:
-        handle.write(render_mabims(pin_sha, mabims_tables))
 
     # --- goldens --------------------------------------------------------------
     goldens = root / "tests" / "Goldens"
@@ -307,8 +307,6 @@ def main() -> int:
         day += timedelta(days=1)
         index += 1
 
-    write_csv(goldens / "hijri_tabular.csv", ["gregorian", "hijri", "source"], tabular_rows)
-
     uq_rows: list[list[str]] = []
     year, month = uq_first, uq_first_month
     for start in uq_starts[:-1]:
@@ -320,8 +318,6 @@ def main() -> int:
 
         uq_rows.append([start.isoformat(), expected, tag])
         year, month = (year + 1, 1) if month == 12 else (year, month + 1)
-
-    write_csv(goldens / "hijri_uqu.csv", ["gregorian", "hijri", "source"], uq_rows)
 
     mabims_rows: list[list[str]] = []
     for code in MABIMS_COUNTRIES:
@@ -338,6 +334,20 @@ def main() -> int:
             mabims_rows.append([code, start.isoformat(), expected, tag])
             year, month = (year + 1, 1) if month == 12 else (year, month + 1)
 
+    # --- publish (all pin-disagreement checks above passed) ----------------------
+    uq_text = render_uq(pin_sha, uq_starts)
+    mabims_text = render_mabims(pin_sha, mabims_tables)
+    for name, text in (("UmmAlQuraMonthStarts.php", uq_text), ("MabimsMonthStarts.php", mabims_text)):
+        target = data_dir / name
+        tmp = target.with_suffix(".php.tmp")
+        with tmp.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp.replace(target)
+
+    write_csv(goldens / "hijri_tabular.csv", ["gregorian", "hijri", "source"], tabular_rows)
+    write_csv(goldens / "hijri_uqu.csv", ["gregorian", "hijri", "source"], uq_rows)
     write_csv(goldens / "hijri_mabims.csv", ["country", "gregorian", "hijri", "source"], mabims_rows)
 
     # --- report ---------------------------------------------------------------

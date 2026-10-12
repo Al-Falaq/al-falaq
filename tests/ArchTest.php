@@ -147,6 +147,45 @@ final class ArchTest extends TestCase
     }
 
     /**
+     * Code with comments and string literals stripped (code tokens only).
+     *
+     * Layering scans match real code tokens: doc prose and string-literal
+     * contents (e.g. an FQCN inside an example string) are invisible.
+     *
+     * @param string $path PHP file to read.
+     * @return string Code with comment and string-literal tokens replaced by newlines.
+     */
+    private static function codeWithoutCommentsAndStrings(string $path): string
+    {
+        $code = (string) file_get_contents($path);
+        $out = '';
+
+        foreach (token_get_all($code) as $token) {
+            if (is_array($token)) {
+                if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
+                    $out .= str_repeat("\n", substr_count($token[1], "\n"));
+
+                    continue;
+                }
+
+                if ($token[0] === T_CONSTANT_ENCAPSED_STRING
+                    || $token[0] === T_ENCAPSED_AND_WHITESPACE
+                ) {
+                    $out .= str_repeat("\n", substr_count($token[1], "\n"));
+
+                    continue;
+                }
+
+                $out .= $token[1];
+            } else {
+                $out .= $token;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Code with comments stripped (strings kept).
      *
      * Scans must ignore doc prose (e.g. a doc link or a "not DateTimeInterface"
@@ -399,14 +438,24 @@ final class ArchTest extends TestCase
                 continue;
             }
 
-            $code = self::codeWithoutComments($file->getPathname());
+            $code = self::codeWithoutCommentsAndStrings($file->getPathname());
 
             foreach (['Prayer', 'Qibla', 'Moon', 'Hijri'] as $context) {
-                if (preg_match('/AlFalaq\\\\AlFalaq\\\\' . $context . '\\\\/', $code) === 1) {
+                if (preg_match('/AlFalaq\\\\AlFalaq\\\\(?:' . $context . '(?![\\w])|\\{(?:[^},]*,)*\\s*' . $context . '(?![\\w]))/', $code) === 1) {
                     $violations[] = $file->getPathname() . ': Astro must not reference ' . $context;
                 }
             }
         }
+
+        // Regression (#20): bare-use evasion + string-literal false positive.
+        $context = 'Astro'; // probe the loop-built pattern with a bare-use context.
+        $probeBare = 'use AlFalaq\\AlFalaq\\Astro;';
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:' . $context . '(?![\\w])|\\{(?:[^},]*,)*\\s*' . $context . '(?![\\w]))/', $probeBare));
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:' . $context . '(?![\\w])|\\{(?:[^},]*,)*\\s*' . $context . '(?![\\w]))/', 'use AlFalaq\\AlFalaq\\Astro as Engine;'));
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:' . $context . '(?![\\w])|\\{(?:[^},]*,)*\\s*' . $context . '(?![\\w]))/', 'use AlFalaq\\AlFalaq\\{Astro, Qibla};'));
+        self::assertSame(0, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:' . $context . '(?![\\w])|\\{(?:[^},]*,)*\\s*' . $context . '(?![\\w]))/', 'use AlFalaq\\AlFalaq\\Astrology;'));
+        $probeStringBlanked = "\n";
+        self::assertSame(0, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:' . $context . '(?![\\w])|\\{(?:[^},]*,)*\\s*' . $context . '(?![\\w]))/', $probeStringBlanked));
 
         self::assertSame([], $violations);
     }
@@ -443,12 +492,21 @@ final class ArchTest extends TestCase
                 continue;
             }
 
-            $code = self::codeWithoutComments($file->getPathname());
+            $code = self::codeWithoutCommentsAndStrings($file->getPathname());
 
-            if (preg_match('/AlFalaq\\\\AlFalaq\\\\Astro\\\\/', $code) === 1) {
+            if (preg_match('/AlFalaq\\\\AlFalaq\\\\(?:Astro(?![\\w])|\\{(?:[^},]*,)*\\s*Astro(?![\\w]))/', $code) === 1) {
                 $violations[] = $file->getPathname() . ': engine import outside Services/non-Moon Strategies';
             }
         }
+
+        // Regression (#20): bare-use evasion + string-literal false positive.
+        $probeBare = 'use AlFalaq\\AlFalaq\\Astro;';
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:Astro(?![\\w])|\\{(?:[^},]*,)*\\s*Astro(?![\\w]))/', $probeBare));
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:Astro(?![\\w])|\\{(?:[^},]*,)*\\s*Astro(?![\\w]))/', 'use AlFalaq\\AlFalaq\\Astro as Engine;'));
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:Astro(?![\\w])|\\{(?:[^},]*,)*\\s*Astro(?![\\w]))/', 'use AlFalaq\\AlFalaq\\{Astro, Qibla};'));
+        self::assertSame(0, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:Astro(?![\\w])|\\{(?:[^},]*,)*\\s*Astro(?![\\w]))/', 'use AlFalaq\\AlFalaq\\Astrology;'));
+        $probeStringBlanked = "\n";
+        self::assertSame(0, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:Astro(?![\\w])|\\{(?:[^},]*,)*\\s*Astro(?![\\w]))/', $probeStringBlanked));
 
         self::assertSame([], $violations);
     }
@@ -473,12 +531,21 @@ final class ArchTest extends TestCase
                 continue;
             }
 
-            $code = self::codeWithoutComments($file->getPathname());
+            $code = self::codeWithoutCommentsAndStrings($file->getPathname());
 
-            if (preg_match('/AlFalaq\\\\AlFalaq\\\\(Astro|Moon)\\\\/', $code) === 1) {
+            if (preg_match('/AlFalaq\\\\AlFalaq\\\\(?:(?:Astro|Moon)(?![\\w])|\\{(?:[^},]*,)*\\s*(?:Astro|Moon)(?![\\w]))/', $code) === 1) {
                 $violations[] = $file->getPathname() . ': Hijri must not reference Astro or Moon';
             }
         }
+
+        // Regression (#20): bare-use evasion + string-literal false positive.
+        $probeBare = 'use AlFalaq\\AlFalaq\\Astro;';
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:(?:Astro|Moon)(?![\\w])|\\{(?:[^},]*,)*\\s*(?:Astro|Moon)(?![\\w]))/', $probeBare));
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:(?:Astro|Moon)(?![\\w])|\\{(?:[^},]*,)*\\s*(?:Astro|Moon)(?![\\w]))/', 'use AlFalaq\\AlFalaq\\Moon as Engine;'));
+        self::assertSame(1, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:(?:Astro|Moon)(?![\\w])|\\{(?:[^},]*,)*\\s*(?:Astro|Moon)(?![\\w]))/', 'use AlFalaq\\AlFalaq\\{Moon, Qibla};'));
+        self::assertSame(0, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:(?:Astro|Moon)(?![\\w])|\\{(?:[^},]*,)*\\s*(?:Astro|Moon)(?![\\w]))/', 'use AlFalaq\\AlFalaq\\Astrology;'));
+        $probeStringBlanked = "\n";
+        self::assertSame(0, preg_match('/AlFalaq\\\\AlFalaq\\\\(?:(?:Astro|Moon)(?![\\w])|\\{(?:[^},]*,)*\\s*(?:Astro|Moon)(?![\\w]))/', $probeStringBlanked));
 
         self::assertSame([], $violations);
     }

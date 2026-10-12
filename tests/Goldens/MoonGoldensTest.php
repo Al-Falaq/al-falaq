@@ -41,9 +41,21 @@ final class MoonGoldensTest extends TestCase
             self::assertTrue(abs($geometry->arcvGeoDeg - (float) self::field($row, 'arcv_geo_deg', $line, $file)) <= 0.01, 'ageo line ' . $line);
             self::assertTrue(abs(($geometry->moonAltitude - $geometry->sunAltitude) - (float) self::field($row, 'arcv_topo_deg', $line, $file)) <= 0.01, 'atopo line ' . $line);
             self::assertTrue(abs($geometry->widthArcmin - (float) self::field($row, 'width_arcmin', $line, $file)) <= 0.01, 'width line ' . $line);
-            self::assertTrue(abs(($geometry->lagMinutes ?? NAN) / 60.0 - (float) self::field($row, 'lag_hours', $line, $file)) <= 0.01, 'lag line ' . $line);
+            $lagCell = $row['lag_hours'] ?? '';
+            if ($lagCell === '') {
+                self::assertNull($geometry->lagMinutes, 'lag null line ' . $line);
+            } else {
+                self::assertNotNull($geometry->lagMinutes, 'lag null line ' . $line);
+                self::assertTrue(abs($geometry->lagMinutes / 60.0 - (float) $lagCell) <= 0.01, 'lag line ' . $line);
+            }
             self::assertTrue(abs($geometry->moonAgeHours / 24.0 - (float) self::field($row, 'moon_age_days', $line, $file)) <= 0.01, 'age line ' . $line);
-            self::assertTrue(abs(($geometry->ageAtMoonsetHours ?? NAN) / 24.0 - (float) self::field($row, 'moon_age_at_moonset_days', $line, $file)) <= 0.01, 'agem line ' . $line);
+            $agemCell = $row['moon_age_at_moonset_days'] ?? '';
+            if ($agemCell === '') {
+                self::assertNull($geometry->ageAtMoonsetHours, 'agem null line ' . $line);
+            } else {
+                self::assertNotNull($geometry->ageAtMoonsetHours, 'agem null line ' . $line);
+                self::assertTrue(abs($geometry->ageAtMoonsetHours / 24.0 - (float) $agemCell) <= 0.01, 'agem line ' . $line);
+            }
 
             $verdicts = $calculator->evaluateGeometry($geometry);
 
@@ -187,9 +199,11 @@ final class MoonGoldensTest extends TestCase
         self::assertTrue(abs($geometry->deltaAzimuthDeg - 1.0278791375318406) <= 1e-6, 'daz');
         self::assertTrue(abs($geometry->widthArcmin - 0.09531389154651401) <= 1e-6, 'width');
         self::assertTrue(abs($geometry->illuminatedFraction - 0.002900038687049744) <= 1e-6, 'illum');
-        self::assertTrue(abs(($geometry->lagMinutes ?? NAN) / 60.0 - 0.4120943493906335) <= 1e-6, 'lag');
+        self::assertNotNull($geometry->lagMinutes, 'lag null');
+        self::assertTrue(abs($geometry->lagMinutes / 60.0 - 0.4120943493906335) <= 1e-6, 'lag');
         self::assertTrue(abs($geometry->moonAgeHours / 24.0 - 0.4166666666666667) <= 1e-6, 'age');
-        self::assertTrue(abs(($geometry->ageAtMoonsetHours ?? NAN) / 24.0 - 0.4338372645579431) <= 1e-6, 'agem');
+        self::assertNotNull($geometry->ageAtMoonsetHours, 'agem null');
+        self::assertTrue(abs($geometry->ageAtMoonsetHours / 24.0 - 0.4338372645579431) <= 1e-6, 'agem');
     }
 
     /**

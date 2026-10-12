@@ -867,7 +867,10 @@ final class MeanSolarCalculator implements SolarModel
     /**
      * Asr shadow angle for a latitude, declination, and shadow factor.
      *
-     * Pin a7baa8b SolarTime.afternoon (TODO cites Swift original).
+     * Pin a7baa8b `SolarTime.afternoon` verbatim: cotangent form
+     * arccot(shadow + tan|lat - dec|); the pin's TODO cites the Swift
+     * original (adhan-swift `SolarTime.afternoonShadowAngle`), kept here
+     * as provenance — no independent derivation.
      *
      * @param float $latitude Observer latitude in degrees.
      * @param float $declination Current declination in degrees.
