@@ -10,7 +10,7 @@ use AlFalaq\AlFalaq\Prayer\Services\TimetableService;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
-// Performance smoke harness (tripwires loose; M5 records headroom, gates later).
+// Performance smoke harness (CI enforces only the loose 50ms/30000ms tripwires; the printed PRD budgets are headroom references, gated later).
 // Usage: php examples/bench.php [--budget]
 
 $budget = in_array('--budget', $argv ?? [], true);

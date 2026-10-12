@@ -349,9 +349,10 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
     "cs-fix": "php-cs-fixer fix",
     "stan": "phpstan analyse --memory-limit=1G",
     "test-unit": "phpunit --no-coverage",
-    "test": "php tools/coverage_gate.php --min=20",
+    "test": "php tools/coverage_gate.php --min=95",
     "arch": "phpunit --group arch",
     "bench": "php examples/bench.php --budget",
+    "mutation": "infection --threads=4",
     "ci": ["@lint", "@cs", "@stan", "@test"]
   }
 }

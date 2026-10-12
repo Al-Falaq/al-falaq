@@ -185,7 +185,7 @@ final class MeanSolarCalculatorTest extends TestCase
         $utc = new \DateTimeZone('UTC');
         $transit = new \DateTimeImmutable('2025-01-15 05:24:00', $utc);
         $sunrise = new \DateTimeImmutable('2025-01-14 23:24:00', $utc);
-        $sunsetNy = new \DateTimeImmutable('2025-01-15 11:21:00', $utc)->setTimezone(new \DateTimeZone('America/New_York'));
+        $sunsetNy = (new \DateTimeImmutable('2025-01-15 11:21:00', $utc))->setTimezone(new \DateTimeZone('America/New_York'));
 
         $this->expectException(ValidationException::class);
 
@@ -196,7 +196,7 @@ final class MeanSolarCalculatorTest extends TestCase
     {
         // Every slot is zone-checked, including the first (mutation gate).
         $utc = new \DateTimeZone('UTC');
-        $transitNy = new \DateTimeImmutable('2025-01-15 05:24:00', $utc)->setTimezone(new \DateTimeZone('America/New_York'));
+        $transitNy = (new \DateTimeImmutable('2025-01-15 05:24:00', $utc))->setTimezone(new \DateTimeZone('America/New_York'));
         $sunrise = new \DateTimeImmutable('2025-01-14 23:24:00', $utc);
         $sunset = new \DateTimeImmutable('2025-01-15 11:21:00', $utc);
 

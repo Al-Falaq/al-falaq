@@ -361,4 +361,44 @@ final class SunnahCalculatorTest extends TestCase
         $this->expectException(ValidationException::class);
         new SunnahTimes($maghrib, $maghrib, $fajr, $fajr, $maghrib);
     }
+
+    public function testNightFractionClampsNormalizeAnchorsToTheMinute(): void
+    {
+        // Directly-constructed non-minute-aligned anchors: the pipeline always
+        // minute-aligns anchors, so only direct construction reaches the clamp
+        // branches with seconds-bearing anchors. Both clamps must return
+        // minute-aligned instants (seconds zero), never anchor seconds ±1.
+        $utc = new \DateTimeZone('UTC');
+        $at = static fn(string $time): \DateTimeImmutable => new \DateTimeImmutable($time, $utc);
+
+        // 300 s night: fraction 0.001 offsets 0 s, so the rounded instant lands
+        // on maghrib's minute and the +1-minute clamp applies.
+        $shortAligned = new SunnahTimes(
+            $at('2025-01-15 10:02:00'),
+            $at('2025-01-15 10:01:00'),
+            $at('2025-01-15 10:04:00'),
+            $at('2025-01-15 10:05:01'),
+            $at('2025-01-15 10:00:01'),
+        );
+
+        self::assertSame(
+            '2025-01-15 10:01:00',
+            $shortAligned->nightFraction(0.001)->format('Y-m-d H:i:s'),
+        );
+
+        // 330 s night with a :31-second fajr: fraction 0.999 lands exactly on
+        // fajr, which rounds half-up past it, so the -1-minute clamp applies.
+        $lateFajr = new SunnahTimes(
+            $at('2025-01-15 10:02:00'),
+            $at('2025-01-15 10:01:00'),
+            $at('2025-01-15 10:04:00'),
+            $at('2025-01-15 10:05:31'),
+            $at('2025-01-15 10:00:01'),
+        );
+
+        self::assertSame(
+            '2025-01-15 10:05:00',
+            $lateFajr->nightFraction(0.999)->format('Y-m-d H:i:s'),
+        );
+    }
 }

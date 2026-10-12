@@ -89,11 +89,11 @@ final readonly class SunnahTimes
         $rounded = Minutes::roundedHalfUp($moved);
 
         if ($rounded <= $maghribUtc) {
-            return Minutes::add($maghribUtc, 1)->setTimezone($zone);
+            return Minutes::add(Minutes::roundedHalfUp($maghribUtc), 1)->setTimezone($zone);
         }
 
         if ($rounded >= $fajrUtc) {
-            return Minutes::add($fajrUtc, -1)->setTimezone($zone);
+            return Minutes::add(Minutes::roundedHalfUp($fajrUtc), -1)->setTimezone($zone);
         }
 
         return $rounded->setTimezone($zone);
