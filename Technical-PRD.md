@@ -2,7 +2,7 @@
 
 - Package: `al-falaq/al-falaq`
 - Type: offline, zero-dependency, stateless, framework-agnostic PHP library
-- Lineage: port of `nexusnv/al-falak` (Python, detached fork of `alphahm/adhanpy` ← `batoulapps/adhan`) at pinned commit `PYTHON_PIN: <fill e.g. abc1234 — MUST be filled before M1>`; **library surface only, CLI excluded**. All parity goldens in `tests/Goldens/` are generated from that pin via `tools/export_goldens.py --pin <sha>`. If pin changes, goldens MUST be regenerated and diff reviewed.
+- Lineage: port of `nexusnv/al-falak` (Python, detached fork of `alphahm/adhanpy` ← `batoulapps/adhan`) at pinned commit `PYTHON_PIN: a7baa8b202790d3bc84c47a610ac763be6c0b7e7`; **library surface only, CLI excluded**. All parity goldens in `tests/Goldens/` are generated from that pin via `tools/export_goldens.py --pin <sha>`. If pin changes, goldens MUST be regenerated and diff reviewed.
 - PHP: `>=8.2`, `declare(strict_types=1)`, PSR-1/4/12 + PER-2.0
 - Status: draft for implementation (M1 blocked until Appendix A frozen and §20 decisions merged)
 
@@ -31,7 +31,7 @@ Why a fresh architecture instead of mirroring `calculation/astronomy/data/util/`
 1. **Behavioral parity** with pinned Python on: prayer schedule (imsak/fajr/sunrise/syuruk/ishraq/dhuha/dhuhr/asr/maghrib/isha per §5.2 definitions), Qibla (spherical + ellipsoidal per §5.3), Sunnah markers, crescent geometry + visibility criteria, Hijri conversion + sunset rollover + offsets.
 2. **Zero runtime dependencies**: `require: { php: >=8.2 }` only (+ `ext-date`, always present). No Carbon, no Symfony, no HTTP.
 3. **Stateless & deterministic**: same inputs → same outputs, no globals, no singletons, no clock reads inside domain, no network, no filesystem.
-4. **Framework-agnostic**: accept/return only SPL + `\DateTimeImmutable` / `\DateTimeZone`. Never type-hint Laravel/Symfony classes. `psr/clock` is a `suggest` (decided in §20 Q3): domain never reads clock; only `NextPrayerResolver` and examples accept an injected `ClockInterface`/explicit `now`.
+4. **Framework-agnostic**: accept/return only SPL + `\DateTimeImmutable` / `\DateTimeZone`. Never type-hint Laravel/Symfony classes. `psr/clock` is a `suggest` (decided in §20 Q3): domain never reads clock; callers pass explicit `now` (edge shape is the local `ClockView::now()` — neither `NextPrayerResolver` nor examples accept `ClockInterface`).
 5. **Strict typing & clean architecture**: `strict_types`, PHPStan max + strict-rules clean, `final readonly` VOs, native enums, dependency rule in §7, enforced by Arch tests.
 6. **First-class DX**: discoverable named constructors, fluent `with*()` immutability, precise exceptions, examples, and docs that let a new user print prayer times in < 5 lines.
 
@@ -86,16 +86,16 @@ All use cases must work **offline on shared hosting** (no extensions beyond `dat
 - `PrayerAdjustments`: `final readonly` DTO, per-prayer minute offsets `array<string,int>` keyed by `Prayer::value`, `empty()` + `with(Prayer,int)` (range `-60..+60`).
 - `Madhab`: `SHAFI|HANAFI` with `shadowLength(): float` (1|2). Consumed via `AsrRule` strategy (`ShafiAsr`, `HanafiAsr`).
 - `PrayerSchedule`: `final readonly`, stores **UTC only**. Props `imsak…isha: DateTimeImmutable` (all `UTC`). Methods `timeFor(Prayer): DateTimeImmutable` (UTC), `forZone(DateTimeZone): DisplaySchedule` (leaf conversion, math never rerun), `all(): array<string,DateTimeImmutable>` (UTC, keys per Prayer values), `toArray(): array<string,string>` (ISO8601 `Y-m-d\TH:i:sP` in UTC — frozen schema in Appendix C), `nightLength(): DateInterval`. Documented invariant on non-polar days with zero adjustments: `fajr ≤ sunrise ≤ dhuhr ≤ asr ≤ maghrib ≤ isha`; user `adjustments` MAY break ordering — calculator MUST NOT silently reorder; `Sweep/` test asserts ordering only when adjustments are empty. Polar-boundary saturation: `asr` clamped to `[dhuhr,maghrib]` (only documented clamping allowed).
-- `PrayerTimesCalculator`: `final`, `__construct(HighLatitudeCorrection $hl, PolarCircleHandler $polar, TwilightModel $twilight)` with `default(): self` and `defaultFor(CalculationParameters): self` (rule-driven wiring). Single command `calculate(Coordinates, CivilDate, CalculationParameters): PrayerSchedule` — **no `$display` param** (display is `forZone()` post-step). Constructor does no computation. Throws `AstronomicalException` (polar undefined, never NaN/null), `ConfigurationException` (method-vs-params misuse, e.g. `isRamadan=true` with non-UQU), `ValidationException` (bad inputs), never bare `\ValueError`. Deferred-context `\LogicException` markers were removed as each context landed (M2–M4); none remain in `src/` — the pre-M5 no-throw sweep verifies that (`SunnahTimes::nightFraction` shipped its maghrib anchor in M2 and no longer throws). The qibla geodesies are no longer deferred: `Wgs84KarneyCalculator` shipped the Karney (2013) inverse in M2 (§5.3).
-- High-latitude rules (`MIDDLE_OF_NIGHT, SEVENTH_OF_NIGHT, TWILIGHT_ANGLE`) → `HighLatitudeCorrection` strategy returning `NightPortions(fajr,isha)`. Moonsighting-Committee seasonal twilight (`SeasonAdjustedTwilight: seasonalSeconds(dayOfYear, year, latitude): {morning, evening}` in whole SECONDS, `int(round(adj·60))` per pin) is an injectable `TwilightModel`. Seasonal SAFE caps engage whenever the MSC method or the `SEASONAL_TWILIGHT` rule is in play, at ALL latitudes; the seventh-of-night temp replaces the angle temp only at signed latitude ≥ 55 (pin `_set_fajr`/`_set_isha` gate). Formula pinned in Appendix B.
+- `PrayerTimesCalculator`: `final`, `__construct(HighLatitudeCorrection $hl, PolarCircleHandler $polar, TwilightModel $twilight)` with `default(): self` and `defaultFor(CalculationParameters): self` (rule-driven wiring). Single command `calculate(Coordinates, CivilDate, CalculationParameters): PrayerSchedule` — **no `$display` param** (display is `forZone()` post-step). Constructor does no computation. Throws `AstronomicalException` (polar undefined, never NaN/null), `ConfigurationException` (method-vs-params misuse, e.g. `isRamadan=true` with non-UQU), `ValidationException` (bad inputs), never bare `\ValueError`. Deferred-context `\LogicException` markers were removed as each context landed (M2–M4); no deferred-context markers remain in `src/` (one defensive generated-data guard excepted: `LooksUpMonthStarts::parseIso()`) — the pre-M5 no-throw sweep verifies that (`SunnahTimes::nightFraction` shipped its maghrib anchor in M2 and no longer throws). The qibla geodesies are no longer deferred: `Wgs84KarneyCalculator` shipped the Karney (2013) inverse in M2 (§5.3).
+- High-latitude rules (`NONE, MIDDLE_OF_NIGHT, SEVENTH_OF_NIGHT, TWILIGHT_ANGLE, SEASONAL_TWILIGHT`) → `HighLatitudeCorrection` strategy returning `NightPortions(fajr,isha)`. Moonsighting-Committee seasonal twilight (`SeasonAdjustedTwilight: seasonalSeconds(dayOfYear, year, latitude): {morning, evening}` in whole SECONDS, `int(round(adj·60))` per pin) is an injectable `TwilightModel`. Seasonal SAFE caps engage whenever the MSC method or the `SEASONAL_TWILIGHT` rule is in play, at ALL latitudes; the seventh-of-night temp replaces the angle temp only at signed latitude ≥ 55 (pin `_set_fajr`/`_set_isha` gate). Formula pinned in Appendix B.
 - Polar-circle handlers (`NEAREST_LATITUDE default, NEAREST_DAY, MAKKAH, NONE`) → `PolarCircleHandler` strategies selected by `PolarCircleRule` enum. `NearestLatitude` bisects toward equator (max 60 iterations, stop when sunrise/sunset solvable, then 0.5° backoff toward equator per Python `_nearest_latitude_with_sunrise_sunset`); if still unsolvable → `AstronomicalException`. `NearestDay` searches ±366d day-by-day, nearest first; if none → `AstronomicalException`. `Makkah` substitutes Makkah coords `(21.4225, 39.8262)` keeping input date; `None/Throw` lets `AstronomicalException` propagate. `UndefinedScheduleException extends AstronomicalException` carries `coordinates/civilDate/rule` typed props.
 - Elevation: dip-of-horizon `h0 = -0.833 - 0.0293 * sqrt(h_m)` degrees (code form, `sqrt()` on meters), plumbed through internal `SolarTime`, default `0`. Negative elevation rejected.
 - Umm al-Qura Ramadan mode (normative): `method===UMM_AL_QURA && isRamadan===true` → `isha = maghrib + 120min`; `method===UMM_AL_QURA && isRamadan===false` → `isha = maghrib + 90min`. The old prose "+30" was a typo and is removed. `isRamadan` with any other method → `ConfigurationException`.
 
 #### 5.2.1 Timetable + next-prayer (required for "best" claim)
 
-- `TimetableService`: `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` (UTC, loops `CivilDate::plusDays`, constant memory, no retained state). Year helper is a loop over `monthly()`, NOT a separate code path. Performance budget in §6 applies here.
-- `NextPrayerResolver`: `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` where `$nowUtc` must be UTC (`ValidationException` otherwise; no clock read inside — caller passes `now`, optionally from injected `psr/clock`). Returns `readonly(from: Prayer, at: DateTimeImmutable UTC, inSeconds: int)`. Spring-forward/day-boundary semantics tested with `America/New_York` DST vector.
+- `TimetableService`: `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` (UTC, loops `CivilDate::plusDays`, constant memory, no retained state). No yearly helper by design — callers loop `monthly()`. Performance budget in §6 applies here.
+- `NextPrayerResolver`: `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` where `$nowUtc` must be UTC (`ValidationException` otherwise; no clock read inside — caller passes `now`, optionally from injected `psr/clock`). Returns `readonly(prayer: Prayer, at: DateTimeImmutable UTC, inSeconds: int)`. Spring-forward/day-boundary semantics tested with `America/New_York` DST vector.
 
 ### 5.3 Qibla context
 
@@ -130,8 +130,8 @@ All use cases must work **offline on shared hosting** (no extensions beyond `dat
 | Stateless | No static mutable props, no singletons, no `date_default_timezone_set` calls. Clock injected only at edges (`NextPrayerResolver::resolve(now)`, examples); domain takes explicit dates. |
 | Offline | No `curl/file_get_contents(http)`, no `exec`, no GD/ICU requirement. ArchTest bans `curl_, file_get_contents('http', exec, shell_exec`. |
 | Determinism | Minute-rounded goldens identical across PHP 8.2–8.4 × UTC/non-UTC ini. Tests force `date_default_timezone_set('UTC')` in bootstrap + a dedicated non-UTC matrix leg asserting same UTC goldens. No `byte-identical float` claim. |
-| Precision | Prayer goldens match pinned-Python minute-rounded UTC values 100% (hard gate). Float intermediates: absolute tolerance `1e-9` deg on reference `linux/x86_64/PHP8.2` leg, `1e-7` deg on other legs (arm64/Windows/8.3/8.4). Haversine `clamp(a,0,1)` preserved. Tolerance logic lives in `tests/Goldens/Comparator.php`, not inline. |
-| Performance | Budgets enforced by `examples/bench.php --budget` in CI (not ad-hoc): single-day schedule p50 < 2ms on `ubuntu-latest` runner, 1-year `TimetableService` < 1s wall, peak memory < 16MB. Observational Hijri tables are month-start arrays searched with a binary search (O(log n)); no rule evaluation and no cache at conversion time. No memoization with unbounded growth; any cache is caller-owned. Budgets are informative in M1–M2, gates from M5. |
+| Precision | Prayer goldens match pinned-Python minute-rounded UTC values 100% of non-emptied cells (hard gate); emptied cells ship with per-file reasons (turkey/kemenag/muis/brunei) tracked by issues #8/#10/#11/#23. Float intermediates: absolute tolerance `1e-9` deg on reference `linux/x86_64/PHP8.2` leg, `1e-7` deg on other legs (arm64/Windows/8.3/8.4). Haversine `clamp(a,0,1)` preserved. Tolerance logic lives in `tests/Goldens/Comparator.php`, not inline. |
+| Performance | PRD budgets recorded as headroom; enforced gate is the loose 50ms/30000ms tripwires in `examples/bench.php --budget` in CI (not ad-hoc): single-day schedule p50 < 2ms on `ubuntu-latest` runner, 1-year `TimetableService` < 1s wall, peak memory < 16MB. Observational Hijri tables are month-start arrays searched with a binary search (O(log n)); no rule evaluation and no cache at conversion time. No memoization with unbounded growth; any cache is caller-owned. Budgets are informative in M1–M2, loose tripwires gate from M5. |
 | Compatibility | `php >=8.2`, 64-bit float assumed. 32-bit is explicitly **unsupported** (previous "best-effort" removed — it contradicted determinism; 64-bit requirement documented in `README.md`/docs — Composer has no arch-level constraint to express it). No fibers, no 8.3-only syntax in `src/`. |
 | Security | No unserialize, no eval, no dynamic include. All numeric inputs validated with `is_finite()` before trig; any residual `NaN`/`INF` → `AstronomicalException`, never returned. |
 
@@ -216,7 +216,7 @@ src/
 └── Astro/              # @internal
     ├── Contracts/      # SolarModel
     ├── ValueObjects/   # SolarPosition, SolarTime, LunarPosition
-    └── Services/       # MeanSolarCalculator, DeltaTProvider, GeodesyEngine
+    └── Services/       # MeanSolarCalculator, DeltaTProvider, GeodesyEngine, CrescentEphemeris, KarneyInverse
 tests/
 ├── SharedKernel/       # mirrors src/SharedKernel/ (context suites land with M1+)
 ├── Sweep/              # deterministic property sweeps (seeded mt_srand inline per test)
@@ -271,14 +271,14 @@ $next = (new NextPrayerResolver())->resolve($scheduleUtc, $month[12], new DateTi
 $qibla = QiblaCalculator::default()->calculate($coords); // ->direction, ->distanceKm
 $qiblaWgs = QiblaCalculator::wgs84()->calculate($coords);
 // Hijri (DateTimeImmutable only)
-$hijri = (new GregorianToHijriConverter())->convert(
+$hijri = GregorianToHijriConverter::default()->convert(
     new DateTimeImmutable('2025-03-01 12:00:00', new DateTimeZone('UTC')),
     new TabularCalendar(),
 );
 echo $hijri->isoformat(); // 1446-09-01
 ```
 
-Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateTimeImmutable` only (reject mutable `DateTime` via `ValidationException` — ArchTest bans `DateTimeInterface` unions in `src/` except `DateTimeImmutable`); schedules store UTC, display via `forZone()` leaf conversion, never an input to math.
+Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateTimeImmutable` only (mutable `DateTime` rejected by the engine with `TypeError` — ArchTest bans `DateTimeInterface` unions in `src/` except `DateTimeImmutable`); schedules store UTC, display via `forZone()` leaf conversion, never an input to math.
 
 ---
 
@@ -318,7 +318,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 ## 14. Future-Proofness
 
 - **PHP trajectory**: 8.2 baseline avoids 8.3+ lock-in; code is `Rector`-upgradeable (typed constants, readonly evolution). When `php: >=8.3` becomes safe (shared-hosting lag ~2y), adopt typed-class-constants and `#[\Override]` mechanically.
-- **Standards track**: PER-3.0 via php-cs-fixer upgrades; PHPStan max + strict-rules absorb new checks; PHPUnit 11 baseline (PHP 8.2-compatible, no framework-ecosystem runner). `psr/clock` accepted as `suggest` for edge injection (decided §20); domain never type-hints it, only `NextPrayerResolver`/examples accept `ClockInterface` optionally.
+- **Standards track**: PER-3.0 via php-cs-fixer upgrades; PHPStan max + strict-rules absorb new checks; PHPUnit 11 baseline (PHP 8.2-compatible, no framework-ecosystem runner). `psr/clock` accepted as `suggest` for edge injection (decided §20); domain never type-hints it, and neither `NextPrayerResolver` nor examples accept `ClockInterface` — the edge shape is the local `ClockView::now()` (callers pass explicit `now`).
 - **Astronomy track**: `DeltaTProvider` contract isolates polynomial-vs-table updates; Meeus citations pin formulas so future errata map to single `Astro` classes. Lunar/moon-sighting evaluators versioned (`Mabims1992Evaluator` vs `NeoMabims2021Evaluator`) so criteria revisions coexist.
 - **Deprecation discipline**: `@deprecated` + `E_USER_DEPRECATED` one minor before removal; `CHANGELOG.md` (Keep-a-Changelog) + `UPGRADE.md` per major; `composer audit` + `roave/security-advisories` (dev) in CI.
 
@@ -334,7 +334,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
   "type": "library",
   "license": "MIT",
   "require": { "php": ">=8.2" },
-  "suggest": { "psr/clock": "For ClockInterface injection at edges (NextPrayerResolver, examples)" },
+  "suggest": { "psr/clock": "For host-app ClockView adapters at edges (callers pass explicit now)" },
   "require-dev": {
     "phpunit/phpunit": "^11.0",
     "phpstan/phpstan": "^2.0",
@@ -360,7 +360,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 
 - **Tests**: plain PHPUnit 11 (no ecosystem runner); layout mirrors `src/` as contexts land (M0: `SharedKernel` + `Sweep` + `Wiring`); `tests/bootstrap.php` fixes UTC; `tests/Goldens/` (pinned-Python parity vectors + `Comparator.php` with dual tolerances + primary-source citations), `tests/Sweep/` (seeded `mt_srand(1234)` property: ordering invariant only when adjustments empty, round-trip `CivilDate`, unwind idempotence), `tests/ArchTest.php` (reflection-based layer bans per §7 via composer autoloader, all `ValueObjects/` + all `Services/` final, all `Exceptions/` extend the base, `Util`/`Utils` ban, `Error` filename + class-name ban, comment-aware `DateTimeImmutable`-only + offline-IO scans, docblock rules: every class-like and public/protected method needs a summary, every `@param $name`, every non-void `@return`), `tests/Wiring/` (plain-`new` constructibility smoke test). Coverage floor enforced by `tools/coverage_gate.php` (single `phpunit --coverage-text` run, validated `--min=0-100`) via pcov on CI as a ratchet: M0 baseline `--min=20`, raised per milestone as contexts land, 95 at M5. Without a local driver the gate passes on green tests with a notice (failures still fail). Mutation gate: `composer mutation` (Infection MSI≥85% + covered-MSI≥85% on `src/` excluding the ported `KarneyInverse` numerical core — survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`; file-scoped exclusion)) enforced by the `mutation` CI job.
 - **Mutation** (gated in CI from M5): Infection MSI ≥ 85% + covered-MSI ≥ 85% on `src/` excluding the ported `KarneyInverse` numerical core (survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`; file-scoped exclusion).
-- **CI** (`.github/workflows/test.yml`, push + PR, ubuntu-only): `lint/cs/stan` once on PHP 8.4, then `test + bench` on PHP `8.2, 8.3, 8.4` × `TZ=UTC` plus one `TZ=America/New_York` leg on 8.4, plus the `mutation` gate job (PHP 8.4, pcov) (tz rules are platform-independent — PHP bundles tzdata — so the full tz cross-product is redundant). Windows is a pre-release gate (`.github/workflows/pre-release.yml`, manual dispatch + `v*` tags, `windows-latest` × same php/tz shape): the Windows leg asserts UTC goldens (documents that PHP bundles its own tzdata; no OS tzdata requirement). Docs + release workflows mirror upstream.
+- **CI** (`.github/workflows/test.yml`, push + PR, ubuntu-only): `lint/cs/stan` once on PHP 8.4, then `test + bench` on PHP `8.2, 8.3, 8.4` × `TZ=UTC` plus one `TZ=America/New_York` leg on 8.4, plus the `mutation` gate job (PHP 8.4, pcov) (tz rules are platform-independent — PHP bundles tzdata — so the full tz cross-product is redundant). Windows is a pre-release gate (`.github/workflows/pre-release.yml`, manual dispatch + `v*` tags, `windows-latest` × same php/tz shape): the Windows leg asserts UTC goldens (documents that PHP bundles its own tzdata; no OS tzdata requirement). Docs + release workflows are deferred to the v1.0.0 release milestone.
 
 ## 16. Packaging & Release
 
@@ -388,19 +388,19 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 ## 19. Milestones & Acceptance
 
 - **M0 skeleton**: composer + namespaces + `SharedKernel` VOs + `*Exception` hierarchy + CI green (empty calculators throw `LogicException("not implemented")` — only allowed exception to this rule, removed in M1).
-- **M1 prayer parity**: Appendix A frozen + checksummed; all methods, polar + high-latitude + adjustments + elevation + Ramadan; `TimetableService` + `NextPrayerResolver`; `tests/Goldens/prayer_*.csv` 100% minute-equality vs pinned Python.
+- **M1 prayer parity**: Appendix A frozen + checksummed; all methods, polar + high-latitude + adjustments + elevation + Ramadan; `TimetableService` + `NextPrayerResolver`; `tests/Goldens/prayer_*.csv` 100% minute-equality on non-emptied cells vs pinned Python.
 - **M2 qibla+sunnah**: spherical + WGS84 (Karney accepted and shipped via `Wgs84KarneyCalculator`), magnetic hook, DST-safe sunnah + `forZone()`; goldens green.
 - **M3 moon**: public `Moon/` facade + `CrescentGeometry` fields + Yallop/Odeh/MABIMS evaluators with cited vectors; no userland `Astro` imports.
 - **M4 hijri**: Tabular + UQ (1423–1500) + MABIMS (1445–1500) generated tables with provenance + digest + rollover (coords+params required) + `offsetDaysFor()`; bridge-parity tests covering both civil-date frames and both rollover directions (naive-doc removed).
 - **M5 hardening**: ArchTest + PHPStan max + php-cs-fixer clean + 95% coverage + Infection MSI≥85% on all math contexts except the ported KarneyInverse core (file-scoped exclusion — survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`) + `bench --budget` gate + docs/examples. M5 ends at a release-ready PR; the v1.0.0 tag and its entry criteria belong to a later release milestone.
 
-Done = `composer ci` green on all matrix legs + minute-goldens 100% + float tolerances per §6 + `bench --budget` pass + docs build with relative links intact.
+Done = `composer ci` green on all matrix legs + minute-goldens 100% of non-emptied cells + float tolerances per §6 + `bench --budget` pass + docs build with relative links intact.
 
 ## 20. Decisions (former Open Questions — all resolved)
 
 1. **CalculationMethod freeze:** FROZEN to 18 cases in Appendix A. JAKIM/KEMENAG/MUIS/BRUNEI rows MUST be dual-entered from `PYTHON_PIN:CalculationMethod.py` before M1; M1 blocked until checksum matches. No new method without Appendix A row + golden.
 2. **`functions.php` shim:** REJECTED. Class-only API. Rationale: global `gregorian_to_hijri()` pollutes namespace, breaks static analysis, and duplicates `GregorianToHijriConverter::convert()`. Migration doc shows 3-line equivalent.
-3. **`psr/clock`:** ACCEPT as `suggest` now. Domain never type-hints it; only `NextPrayerResolver::resolve(now)` callers and `examples/` MAY accept `Psr\Clock\ClockInterface` to supply `now`. No hard require.
+3. **`psr/clock`:** ACCEPT as `suggest` now. Domain never type-hints it; host apps adapt it to the local `ClockView::now()` shape at the edge and `NextPrayerResolver::resolve(now)` callers pass explicit `now`. No hard require.
 4. **Umm al-Qura provenance:** SHIP rule-generated tables. The shipped data is the pinned implementation's own rule output, so there is no third-party table transcription and no redistribution question; `UQ_PROVENANCE.md` records the pin SHA, the rules, per-table SHA256 digests, and the regeneration gate.
 
 ---

@@ -39,4 +39,22 @@ final class HijriOutOfRangeExceptionTest extends TestCase
             HijriOutOfRangeException::forDate('tabular', 'x', 'y'),
         );
     }
+
+    /**
+     * Props mirror the factory inputs, message stays byte-identical.
+     *
+     * @return void
+     */
+    public function testPropsMirrorFactoryInputs(): void
+    {
+        $exception = HijriOutOfRangeException::forDate('uqu', '2002-03-14', '1423–1500 AH');
+
+        self::assertSame('uqu', $exception->calendar);
+        self::assertSame('2002-03-14', $exception->iso);
+        self::assertSame('1423–1500 AH', $exception->range);
+        self::assertSame(
+            'Date 2002-03-14 out of range for uqu calendar (1423–1500 AH).',
+            $exception->getMessage(),
+        );
+    }
 }
