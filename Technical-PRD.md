@@ -31,7 +31,7 @@ Why a fresh architecture instead of mirroring `calculation/astronomy/data/util/`
 1. **Behavioral parity** with pinned Python on: prayer schedule (imsak/fajr/sunrise/syuruk/ishraq/dhuha/dhuhr/asr/maghrib/isha per §5.2 definitions), Qibla (spherical + ellipsoidal per §5.3), Sunnah markers, crescent geometry + visibility criteria, Hijri conversion + sunset rollover + offsets.
 2. **Zero runtime dependencies**: `require: { php: >=8.2 }` only (+ `ext-date`, always present). No Carbon, no Symfony, no HTTP.
 3. **Stateless & deterministic**: same inputs → same outputs, no globals, no singletons, no clock reads inside domain, no network, no filesystem.
-4. **Framework-agnostic**: accept/return only SPL + `\DateTimeImmutable` / `\DateTimeZone`. Never type-hint Laravel/Symfony classes. `psr/clock` is a `suggest` (decided in §20 Q3): domain never reads clock; only `NextPrayerResolver` and examples accept an injected `ClockInterface`/explicit `now`.
+4. **Framework-agnostic**: accept/return only SPL + `\DateTimeImmutable` / `\DateTimeZone`. Never type-hint Laravel/Symfony classes. `psr/clock` is a `suggest` (decided in §20 Q3): domain never reads clock; callers pass explicit `now` (edge shape is the local `ClockView::now()` — neither `NextPrayerResolver` nor examples accept `ClockInterface`).
 5. **Strict typing & clean architecture**: `strict_types`, PHPStan max + strict-rules clean, `final readonly` VOs, native enums, dependency rule in §7, enforced by Arch tests.
 6. **First-class DX**: discoverable named constructors, fluent `with*()` immutability, precise exceptions, examples, and docs that let a new user print prayer times in < 5 lines.
 
@@ -130,7 +130,7 @@ All use cases must work **offline on shared hosting** (no extensions beyond `dat
 | Stateless | No static mutable props, no singletons, no `date_default_timezone_set` calls. Clock injected only at edges (`NextPrayerResolver::resolve(now)`, examples); domain takes explicit dates. |
 | Offline | No `curl/file_get_contents(http)`, no `exec`, no GD/ICU requirement. ArchTest bans `curl_, file_get_contents('http', exec, shell_exec`. |
 | Determinism | Minute-rounded goldens identical across PHP 8.2–8.4 × UTC/non-UTC ini. Tests force `date_default_timezone_set('UTC')` in bootstrap + a dedicated non-UTC matrix leg asserting same UTC goldens. No `byte-identical float` claim. |
-| Precision | Prayer goldens match pinned-Python minute-rounded UTC values 100% of non-emptied cells (hard gate); emptied cells ship with per-file reasons (turkey/kemenag/muis/brunei) tracked by issues #8/#10/#11. Float intermediates: absolute tolerance `1e-9` deg on reference `linux/x86_64/PHP8.2` leg, `1e-7` deg on other legs (arm64/Windows/8.3/8.4). Haversine `clamp(a,0,1)` preserved. Tolerance logic lives in `tests/Goldens/Comparator.php`, not inline. |
+| Precision | Prayer goldens match pinned-Python minute-rounded UTC values 100% of non-emptied cells (hard gate); emptied cells ship with per-file reasons (turkey/kemenag/muis/brunei) tracked by issues #8/#10/#11/#23. Float intermediates: absolute tolerance `1e-9` deg on reference `linux/x86_64/PHP8.2` leg, `1e-7` deg on other legs (arm64/Windows/8.3/8.4). Haversine `clamp(a,0,1)` preserved. Tolerance logic lives in `tests/Goldens/Comparator.php`, not inline. |
 | Performance | PRD budgets recorded as headroom; enforced gate is the loose 50ms/30000ms tripwires in `examples/bench.php --budget` in CI (not ad-hoc): single-day schedule p50 < 2ms on `ubuntu-latest` runner, 1-year `TimetableService` < 1s wall, peak memory < 16MB. Observational Hijri tables are month-start arrays searched with a binary search (O(log n)); no rule evaluation and no cache at conversion time. No memoization with unbounded growth; any cache is caller-owned. Budgets are informative in M1–M2, loose tripwires gate from M5. |
 | Compatibility | `php >=8.2`, 64-bit float assumed. 32-bit is explicitly **unsupported** (previous "best-effort" removed — it contradicted determinism; 64-bit requirement documented in `README.md`/docs — Composer has no arch-level constraint to express it). No fibers, no 8.3-only syntax in `src/`. |
 | Security | No unserialize, no eval, no dynamic include. All numeric inputs validated with `is_finite()` before trig; any residual `NaN`/`INF` → `AstronomicalException`, never returned. |
@@ -334,7 +334,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
   "type": "library",
   "license": "MIT",
   "require": { "php": ">=8.2" },
-  "suggest": { "psr/clock": "For ClockInterface injection at edges (NextPrayerResolver, examples)" },
+  "suggest": { "psr/clock": "For host-app ClockView adapters at edges (callers pass explicit now)" },
   "require-dev": {
     "phpunit/phpunit": "^11.0",
     "phpstan/phpstan": "^2.0",
@@ -388,19 +388,19 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 ## 19. Milestones & Acceptance
 
 - **M0 skeleton**: composer + namespaces + `SharedKernel` VOs + `*Exception` hierarchy + CI green (empty calculators throw `LogicException("not implemented")` — only allowed exception to this rule, removed in M1).
-- **M1 prayer parity**: Appendix A frozen + checksummed; all methods, polar + high-latitude + adjustments + elevation + Ramadan; `TimetableService` + `NextPrayerResolver`; `tests/Goldens/prayer_*.csv` 100% minute-equality vs pinned Python.
+- **M1 prayer parity**: Appendix A frozen + checksummed; all methods, polar + high-latitude + adjustments + elevation + Ramadan; `TimetableService` + `NextPrayerResolver`; `tests/Goldens/prayer_*.csv` 100% minute-equality on non-emptied cells vs pinned Python.
 - **M2 qibla+sunnah**: spherical + WGS84 (Karney accepted and shipped via `Wgs84KarneyCalculator`), magnetic hook, DST-safe sunnah + `forZone()`; goldens green.
 - **M3 moon**: public `Moon/` facade + `CrescentGeometry` fields + Yallop/Odeh/MABIMS evaluators with cited vectors; no userland `Astro` imports.
 - **M4 hijri**: Tabular + UQ (1423–1500) + MABIMS (1445–1500) generated tables with provenance + digest + rollover (coords+params required) + `offsetDaysFor()`; bridge-parity tests covering both civil-date frames and both rollover directions (naive-doc removed).
 - **M5 hardening**: ArchTest + PHPStan max + php-cs-fixer clean + 95% coverage + Infection MSI≥85% on all math contexts except the ported KarneyInverse core (file-scoped exclusion — survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`) + `bench --budget` gate + docs/examples. M5 ends at a release-ready PR; the v1.0.0 tag and its entry criteria belong to a later release milestone.
 
-Done = `composer ci` green on all matrix legs + minute-goldens 100% + float tolerances per §6 + `bench --budget` pass + docs build with relative links intact.
+Done = `composer ci` green on all matrix legs + minute-goldens 100% of non-emptied cells + float tolerances per §6 + `bench --budget` pass + docs build with relative links intact.
 
 ## 20. Decisions (former Open Questions — all resolved)
 
 1. **CalculationMethod freeze:** FROZEN to 18 cases in Appendix A. JAKIM/KEMENAG/MUIS/BRUNEI rows MUST be dual-entered from `PYTHON_PIN:CalculationMethod.py` before M1; M1 blocked until checksum matches. No new method without Appendix A row + golden.
 2. **`functions.php` shim:** REJECTED. Class-only API. Rationale: global `gregorian_to_hijri()` pollutes namespace, breaks static analysis, and duplicates `GregorianToHijriConverter::convert()`. Migration doc shows 3-line equivalent.
-3. **`psr/clock`:** ACCEPT as `suggest` now. Domain never type-hints it; only `NextPrayerResolver::resolve(now)` callers and `examples/` MAY accept `Psr\Clock\ClockInterface` to supply `now`. No hard require.
+3. **`psr/clock`:** ACCEPT as `suggest` now. Domain never type-hints it; host apps adapt it to the local `ClockView::now()` shape at the edge and `NextPrayerResolver::resolve(now)` callers pass explicit `now`. No hard require.
 4. **Umm al-Qura provenance:** SHIP rule-generated tables. The shipped data is the pinned implementation's own rule output, so there is no third-party table transcription and no redistribution question; `UQ_PROVENANCE.md` records the pin SHA, the rules, per-table SHA256 digests, and the regeneration gate.
 
 ---
