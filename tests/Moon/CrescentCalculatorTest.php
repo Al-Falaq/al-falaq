@@ -150,6 +150,10 @@ final class CrescentCalculatorTest extends TestCase
         $verdicts = $calculator->evaluate($coordinates, $date, 100.0);
 
         self::assertSame(['yallop', 'odeh', 'mabims1992', 'neomabims2021'], array_keys($verdicts));
+        self::assertEquals(
+            $calculator->evaluateGeometry($calculator->atSunset($coordinates, $date, 100.0)),
+            $verdicts,
+        );
     }
 
     /**
