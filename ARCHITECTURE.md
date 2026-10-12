@@ -225,7 +225,7 @@ or WGS84/Karney), wrap the bearing/distance in an immutable `QiblaResult`.
   intervals, night rules, polar fallbacks, geodesic models, calendar
   systems, visibility criteria) are separate strategy classes, not flags in
   a god class. `CalculationMethod::defaultParameters()` freezes the
-  18-method preset table; `defaultFor()` maps parameters to strategies.
+  19-method preset table; `defaultFor()` maps parameters to strategies.
 - **Explicit construction, no container.** Services take strategies by
   constructor injection and expose `default()` / `defaultFor()` named
   factories for the common wirings. There are no service providers,
