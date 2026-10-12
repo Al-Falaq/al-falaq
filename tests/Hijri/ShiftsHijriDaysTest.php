@@ -187,6 +187,13 @@ final class ShiftsHijriDaysTest extends TestCase
         (new TabularCalendar())->shift(new HijriDate(1446, 9, 1), PHP_INT_MIN);
     }
 
+    public function testShiftIntMaxThrowsFast(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        (new TabularCalendar())->shift(new HijriDate(1446, 9, 1), PHP_INT_MAX);
+    }
+
     public function testMonthStepRoundTripSweep(): void
     {
         $calendar = new TabularCalendar();

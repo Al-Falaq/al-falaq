@@ -71,7 +71,7 @@ trait ShiftsHijriDays
                         $month += 1;
                     }
 
-                    $this->monthLength($year, $month);
+                    $this->monthLength($year, $month); // Probe: raises off-span.
                     $day = 1;
                 } else {
                     $day += $remaining;
