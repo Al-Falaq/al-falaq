@@ -101,6 +101,21 @@ foreach ($methods as $method) {
 
     fclose($handle);
 
+    $check = fopen($tmpPath, 'r');
+
+    if ($check === false) {
+        throw new RuntimeException('Cannot verify ' . $tmpPath);
+    }
+
+    $first = fgetcsv($check);
+    fclose($check);
+
+    if (! is_array($first) || count($first) < 5) {
+        throw new RuntimeException('Refusing to publish truncated ' . $tmpPath);
+    }
+
+    // Per-file atomic publish: each CSV is independently consumable, so no
+    // cross-file transaction — a rerun completes any partial set.
     if (! rename($tmpPath, $path)) {
         throw new RuntimeException('Cannot replace ' . $path);
     }
