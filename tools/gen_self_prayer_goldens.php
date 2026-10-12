@@ -121,7 +121,7 @@ foreach ($methods as $method) {
             $width = count($cells);
         }
     }
-    fclose($check);
+    fclose($check); // Read-handle close intentionally unchecked: rows already counted, nothing to lose.
     $expectedRows = 1 + count($dates) * count($locations);
     $expectedWidth = 4 + count($markers) + 1;
     if ($rows !== $expectedRows || $width !== $expectedWidth) {
