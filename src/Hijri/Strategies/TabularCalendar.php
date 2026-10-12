@@ -15,8 +15,11 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
 /**
  * Arithmetic Type IIa ("Kuwaiti algorithm") Hijri calendar — closed form, no data.
  *
- * Ported from the pin's `TabularCalendar`. Tabular dates routinely differ from
- * observed (sighting-based) months by ±1–2 days; never present them as observed.
+ * Ported from the pin's `TabularCalendar` (pin a7baa8b
+ * `alfalak/calendar/TabularCalendar.py`): 30-year cycle with 11 leaps of
+ * 355 days; month lengths alternate 30/29 with Dhu al-Hijjah 30 in leap
+ * years. Tabular dates routinely differ from observed (sighting-based)
+ * months by ±1–2 days; never present them as observed.
  * `adjustmentDays` plays the pin's `adjustment_days` role (the .NET
  * `HijriAdjustment` nudge): it shifts the whole conversion by N days.
  */
@@ -24,10 +27,10 @@ final class TabularCalendar implements HijriCalendar
 {
     use ShiftsHijriDays;
 
-    /** 1 Muharram 1 AH (civil day start) = 622-07-19 proleptic Gregorian. */
+    /** 1 Muharram 1 AH (civil day start) = 622-07-19 proleptic Gregorian (pin `TabularCalendar.EPOCH`, Meeus Ch.9). */
     private const EPOCH_JD = 1948439.5;
 
-    /** Leap-year remainders mod 30 (Type IIa: 11 leaps of 355 days per cycle). */
+    /** Leap-year remainders mod 30 (Type IIa: years 2,5,7,10,13,16,18,21,24,26,29 — 11 leaps per 30-year / 10631-day cycle, pin-verbatim). */
     private const LEAP_YEARS_IN_CYCLE = [2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29];
 
     /** Supported span, used in range errors. */
@@ -136,6 +139,10 @@ final class TabularCalendar implements HijriCalendar
     /**
      * Julian Date of a tabular Hijri date (midnight start, .5 fraction).
      *
+     * Kuwaiti-algorithm closed form, pin-verbatim
+     * (`TabularCalendar.hijri_to_jd`): day + ceil(29.5*(m-1)) + 354*(y-1)
+     * + floor((3+11*y)/30) + EPOCH - 1.
+     *
      * @param int $year Hijri year, >= 1.
      * @param int $month Hijri month 1–12.
      * @param int $day Hijri day 1–30.
@@ -154,6 +161,10 @@ final class TabularCalendar implements HijriCalendar
     /**
      * Tabular Hijri date for a Julian Date.
      *
+     * Inverse closed form, pin-verbatim (`TabularCalendar.jd_to_hijri`):
+     * floor-to-civil-day then 30*(jd-EPOCH)+10646 over 10631-day cycle
+     * for the year, month via ceil((jd - jd(year,1,1) - 29)/29.5)+1.
+     *
      * @param float $jd Julian Date.
      * @return HijriDate Matching tabular date.
      */
@@ -168,7 +179,7 @@ final class TabularCalendar implements HijriCalendar
     }
 
     /**
-     * Proleptic Gregorian civil day for a Julian Date (Fliegel–Van Flandern).
+     * Proleptic Gregorian civil day for a Julian Date (Fliegel–Van Flandern, Meeus Ch.7 — pin `TabularCalendar.jd_to_gregorian` verbatim).
      *
      * @param float $jd Julian Date.
      * @return CivilDate Matching Gregorian day.
