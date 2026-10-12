@@ -5,7 +5,7 @@ Usage:
     python3 tools/export_goldens.py --pin <sha> --path /path/to/pin-worktree --out tests/Goldens
 
 Writes one CSV per pin method present in the PHP freeze (UOIF skipped:
-no pin cell — the PHP preset is drift-gated via gen_self_prayer_goldens.php, Polar rows use the pin default rule NEAREST_LATITUDE so
+no pin cell — the PHP preset is drift-gated via gen_self_prayer_goldens.php). Polar rows use the pin default rule NEAREST_LATITUDE so
 every cell is defined; handler-specific semantics are unit-tested in PHP.
 """
 import argparse
