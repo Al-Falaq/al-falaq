@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Tests\Astro;
 
 use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
+use AlFalaq\AlFalaq\Astro\ValueObjects\LunarPosition;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use PHPUnit\Framework\TestCase;
 
@@ -59,5 +61,54 @@ final class CrescentEphemerisTest extends TestCase
 
         self::assertGreaterThanOrEqual(0.0, $lst);
         self::assertLessThan(24.0, $lst);
+    }
+
+    public function testTopocentricRejectsNonPositiveDistance(): void
+    {
+        $this->expectException(AstronomicalException::class);
+
+        (new CrescentEphemeris())->topocentric(
+            100.0,
+            10.0,
+            0.0,
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            12.0,
+        );
+    }
+
+    public function testTopocentricRejectsNonFiniteResult(): void
+    {
+        $this->expectException(AstronomicalException::class);
+
+        (new CrescentEphemeris())->topocentric(
+            NAN,
+            10.0,
+            380000.0,
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            12.0,
+        );
+    }
+
+    public function testSiderealTimeRejectsNonFinite(): void
+    {
+        $this->expectException(AstronomicalException::class);
+
+        (new CrescentEphemeris())->siderealTime(NAN, 101.6869);
+    }
+
+    public function testSolarGeocentricRejectsNonFinite(): void
+    {
+        $this->expectException(AstronomicalException::class);
+
+        (new CrescentEphemeris())->solarGeocentric(NAN);
+    }
+
+    public function testLunarPositionBundleHoldsTopocentricTriple(): void
+    {
+        $position = new LunarPosition(12.5, 250.0, 10.25);
+
+        self::assertSame(12.5, $position->altitudeDeg);
+        self::assertSame(250.0, $position->azimuthDeg);
+        self::assertSame(10.25, $position->ageHours);
     }
 }

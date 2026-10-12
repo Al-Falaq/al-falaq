@@ -59,8 +59,12 @@ final class MabimsCalendarTest extends TestCase
      */
     public function testBelowFloorThrows(): void
     {
-        $this->expectException(HijriOutOfRangeException::class);
-        (new MabimsCalendar(MabimsCountry::MY))->fromGregorian(CivilDate::fromYmd(2023, 7, 18));
+        try {
+            (new MabimsCalendar(MabimsCountry::MY))->fromGregorian(CivilDate::fromYmd(2023, 7, 18));
+            self::fail('expected HijriOutOfRangeException');
+        } catch (HijriOutOfRangeException $exception) {
+            self::assertStringContainsString('(MY)', $exception->getMessage());
+        }
     }
 
     /**

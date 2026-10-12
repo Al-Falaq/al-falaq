@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Tests\Astro;
 
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
+use AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
@@ -177,5 +178,17 @@ final class MeanSolarCalculatorTest extends TestCase
                 self::assertNotSame('', $e->getMessage());
             }
         }
+    }
+
+    public function testSolarTimeRejectsNonUtc(): void
+    {
+        $utc = new \DateTimeZone('UTC');
+        $transit = new \DateTimeImmutable('2025-01-15 05:24:00', $utc);
+        $sunrise = new \DateTimeImmutable('2025-01-14 23:24:00', $utc);
+        $sunsetNy = new \DateTimeImmutable('2025-01-15 11:21:00', $utc)->setTimezone(new \DateTimeZone('America/New_York'));
+
+        $this->expectException(ValidationException::class);
+
+        new SolarTime($transit, $sunrise, $sunsetNy);
     }
 }

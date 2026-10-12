@@ -9,6 +9,7 @@ use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\Prayer\Strategies\AngleIsha;
 use AlFalaq\AlFalaq\Prayer\Strategies\IntervalIsha;
+use AlFalaq\AlFalaq\Prayer\Strategies\MinutesAfterSunsetMaghrib;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use PHPUnit\Framework\TestCase;
 
@@ -67,5 +68,19 @@ final class CalculationMethodTest extends TestCase
         }
 
         self::assertSame(17, $count);
+    }
+
+    public function testMadhabShadowLengths(): void
+    {
+        self::assertSame(1.0, Madhab::SHAFI->shadowLength());
+        self::assertSame(2.0, Madhab::HANAFI->shadowLength());
+    }
+
+    public function testMinutesAfterSunsetMaghribReadsDelayAndHasNoAngle(): void
+    {
+        $rule = new MinutesAfterSunsetMaghrib(3);
+
+        self::assertSame(3, $rule->minutesAfterSunset());
+        self::assertNull($rule->angle());
     }
 }

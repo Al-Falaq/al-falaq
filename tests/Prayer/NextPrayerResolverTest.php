@@ -139,4 +139,16 @@ final class NextPrayerResolverTest extends TestCase
 
         self::assertInstanceOf(DisplaySchedule::class, $today->forZone(new \DateTimeZone('America/New_York')));
     }
+
+    public function testPastAllInstantsThrows(): void
+    {
+        [$today, $tomorrow] = $this->klSchedules();
+
+        $now = $tomorrow->timeFor(Prayer::ISHA)->modify('+1 hour');
+        self::assertInstanceOf(\DateTimeImmutable::class, $now);
+
+        $this->expectException(ValidationException::class);
+
+        (new NextPrayerResolver())->resolve($today, $tomorrow, $now);
+    }
 }

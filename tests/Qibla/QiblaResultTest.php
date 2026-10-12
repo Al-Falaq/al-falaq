@@ -49,4 +49,11 @@ final class QiblaResultTest extends TestCase
 
         (new QiblaResult(55.0, 100.0))->magneticHeading(INF);
     }
+
+    public function testNegativeDistanceIsRejected(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        new QiblaResult(45.0, -1.0);
+    }
 }

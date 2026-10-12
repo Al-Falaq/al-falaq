@@ -89,6 +89,21 @@ final class PolarCircleHandlerTest extends TestCase
         );
     }
 
+    public function testBoundaryValidationFailureSkipsCandidate(): void
+    {
+        // At the 1900 floor, the -1 probes fall outside the civil span and
+        // are skipped via the ValidationException continue; an always-false
+        // probe then exhausts the year.
+        $probe = fn(Coordinates $c, CivilDate $d): bool => false;
+
+        $this->expectException(AstronomicalException::class);
+        (new NearestDayHandler())->resolve(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(1900, 1, 1),
+            $probe,
+        );
+    }
+
     public function testCalculatorTromsoeSummerMatchesGoldenRow(): void
     {
         // Oracle row: pin MWL, Tromsø 2025-06-21 (also in prayer_muslim_world_league.csv).

@@ -131,6 +131,20 @@ final class SunnahCalculatorTest extends TestCase
         new SunnahTimes($middle, $first, $last, $fajr, $maghrib);
     }
 
+    public function testDirectLastThirdAfterFajrIsRejected(): void
+    {
+        $utc = new \DateTimeZone('UTC');
+        $maghrib = new \DateTimeImmutable('2025-01-15 22:00:00', $utc);
+        $middle = new \DateTimeImmutable('2025-01-16 00:00:00', $utc);
+        $first = new \DateTimeImmutable('2025-01-15 23:30:00', $utc);
+        $last = new \DateTimeImmutable('2025-01-16 03:00:00', $utc);
+        $fajr = new \DateTimeImmutable('2025-01-16 02:00:00', $utc);
+
+        $this->expectException(ValidationException::class);
+
+        new SunnahTimes($middle, $first, $last, $fajr, $maghrib);
+    }
+
     public function testNightFractionThirdsEquality(): void
     {
         $night = $this->nightFor(3.1390, 101.6869, 2025, 1, 15);

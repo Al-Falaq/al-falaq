@@ -31,4 +31,29 @@ final class SeasonAdjustedTwilightTest extends TestCase
         $this->expectException(ValidationException::class);
         (new SeasonAdjustedTwilight())->seasonalSeconds(0, 2025, 59.9139);
     }
+
+    public function testSeasonalSecondsRejectsOutOfRangeYear(): void
+    {
+        $this->expectException(ValidationException::class);
+        (new SeasonAdjustedTwilight())->seasonalSeconds(15, 1899, 59.9139);
+    }
+
+    public function testSeasonalSecondsRejectsNonFiniteLatitude(): void
+    {
+        $this->expectException(ValidationException::class);
+        (new SeasonAdjustedTwilight())->seasonalSeconds(15, 2025, NAN);
+    }
+
+    public function testSeasonalSecondsWrapsPastYearEnd(): void
+    {
+        // Day 360 in the northern hemisphere: dayOfYear + 10 overflows the
+        // 365-day year, so days-since-solstice wraps into early January.
+        $offsets = (new SeasonAdjustedTwilight())->seasonalSeconds(360, 2025, 10.0);
+
+        self::assertSame(['morning', 'evening'], array_keys($offsets));
+        self::assertIsInt($offsets['morning']);
+        self::assertIsInt($offsets['evening']);
+        self::assertGreaterThan(0, $offsets['morning']);
+        self::assertGreaterThan(0, $offsets['evening']);
+    }
 }
