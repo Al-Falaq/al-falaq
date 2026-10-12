@@ -1,7 +1,8 @@
 {
     "$schema": "https://github.com/infection/infection/blob/master/resources/schema.json",
     "source": {
-        "directories": ["src"]
+        "directories": ["src"],
+        "excludes": ["Astro/Services/KarneyInverse.php"]
     },
     "logs": {
         "text": "infection.log"

@@ -190,6 +190,7 @@ final class HijriGoldensTest extends TestCase
                 $calendar->fromGregorian(self::civilDate($gregorian))->isoformat(),
                 sprintf('uqu %s (line %d)', $gregorian, $line),
             );
+            self::assertStringStartsWith(self::SOURCE_PREFIX, self::field($row, 'source', $line, 'hijri_uqu.csv'));
         }
     }
 
@@ -215,6 +216,7 @@ final class HijriGoldensTest extends TestCase
                 (new MabimsCalendar($country))->fromGregorian(self::civilDate($gregorian))->isoformat(),
                 sprintf('mabims/%s %s (line %d)', $country->value, $gregorian, $line),
             );
+            self::assertStringStartsWith(self::SOURCE_PREFIX, self::field($row, 'source', $line, 'hijri_mabims.csv'));
         }
     }
 

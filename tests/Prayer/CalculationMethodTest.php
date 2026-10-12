@@ -9,6 +9,7 @@ use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\Prayer\Strategies\AngleIsha;
 use AlFalaq\AlFalaq\Prayer\Strategies\IntervalIsha;
+use AlFalaq\AlFalaq\Prayer\Strategies\MinutesAfterSunsetMaghrib;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use PHPUnit\Framework\TestCase;
 
@@ -67,5 +68,74 @@ final class CalculationMethodTest extends TestCase
         }
 
         self::assertSame(17, $count);
+    }
+
+    public function testMadhabShadowLengths(): void
+    {
+        self::assertSame(1.0, Madhab::SHAFI->shadowLength());
+        self::assertSame(2.0, Madhab::HANAFI->shadowLength());
+    }
+
+    public function testMinutesAfterSunsetMaghribReadsDelayAndHasNoAngle(): void
+    {
+        $rule = new MinutesAfterSunsetMaghrib(3);
+
+        self::assertSame(3, $rule->minutesAfterSunset());
+        self::assertNull($rule->angle());
+    }
+
+    public function testMinutesAfterSunsetMaghribDefaultsToZero(): void
+    {
+        // The no-delay default is 0, not ±1 (mutation gate).
+        self::assertSame(0, (new MinutesAfterSunsetMaghrib())->minutesAfterSunset());
+    }
+
+    public function testTurkeyRowMatchesPin(): void
+    {
+        // Diyanet preset literals (mutation gate: every literal pinned).
+        $params = CalculationMethod::TURKEY->defaultParameters();
+
+        self::assertSame(18.0, $params->fajrAngle);
+        self::assertSame(17.0, $params->ishaRule->angle());
+        self::assertSame(0, $params->maghribRule->minutesAfterSunset());
+        self::assertSame(0, $params->imsakOffsetMinutes);
+        self::assertSame(15, $params->ishraqOffsetMinutes);
+        self::assertSame(28, $params->dhuhaOffsetMinutes);
+        self::assertSame(0.0, $params->elevationM);
+    }
+
+    public function testKemenagRowMatchesPin(): void
+    {
+        $params = CalculationMethod::KEMENAG->defaultParameters();
+
+        self::assertSame(20.0, $params->fajrAngle);
+        self::assertSame(18.0, $params->ishaRule->angle());
+        self::assertSame(0, $params->maghribRule->minutesAfterSunset());
+        self::assertSame(10, $params->imsakOffsetMinutes);
+        self::assertSame(15, $params->ishraqOffsetMinutes);
+        self::assertSame(28, $params->dhuhaOffsetMinutes);
+        self::assertSame(0.0, $params->elevationM);
+        self::assertSame(2, $params->methodAdjustments->for(Prayer::MAGHRIB));
+        self::assertSame(2, $params->methodAdjustments->for(Prayer::ISHA));
+    }
+
+    public function testMuisRowMatchesPin(): void
+    {
+        $params = CalculationMethod::MUIS->defaultParameters();
+
+        self::assertSame(20.0, $params->fajrAngle);
+        self::assertSame(18.0, $params->ishaRule->angle());
+        self::assertSame(10, $params->imsakOffsetMinutes);
+        self::assertSame(15, $params->ishraqOffsetMinutes);
+        self::assertSame(28, $params->dhuhaOffsetMinutes);
+    }
+
+    public function testBruneiRowMatchesPin(): void
+    {
+        $params = CalculationMethod::BRUNEI->defaultParameters();
+
+        self::assertSame(15, $params->ishraqOffsetMinutes);
+        self::assertSame(28, $params->dhuhaOffsetMinutes);
+        self::assertSame(0.0, $params->elevationM);
     }
 }

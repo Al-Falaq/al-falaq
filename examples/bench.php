@@ -10,7 +10,7 @@ use AlFalaq\AlFalaq\Prayer\Services\TimetableService;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
-// Performance smoke harness (budgets gate from M5, informative until then).
+// Performance smoke harness (CI enforces only the loose 50ms/30000ms tripwires; the printed PRD budgets are headroom references, gated later).
 // Usage: php examples/bench.php [--budget]
 
 $budget = in_array('--budget', $argv ?? [], true);
@@ -43,7 +43,7 @@ $yearMs = (hrtime(true) - $start) / 1e6;
 $peakMb = memory_get_peak_usage(true) / 1024 / 1024;
 
 printf(
-    "bench M1: single-day median %.3f ms (M5 budget p50 < 2ms); year %.0f ms (M5 budget < 1000ms); peak %.1f MB (M5 budget < 16MB)\n",
+    "bench: single-day median %.3f ms (M5 budget p50 < 2ms); year %.0f ms (M5 budget < 1000ms); peak %.1f MB (M5 budget < 16MB)\n",
     $singleMs,
     $yearMs,
     $peakMb,

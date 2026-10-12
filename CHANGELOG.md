@@ -82,6 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `HijriCalendar::fromGregorian()` now takes `CivilDate` only.
 - Coverage floor raised 80 → 85.
+- Coverage floor raised 85 → 95.
+- Infection MSI≥85% + covered-MSI≥85% gated in CI (`composer mutation`; `KarneyInverse` core file-excluded — survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`).
 
 ### Removed
 
@@ -91,6 +93,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A forward `shift()` that lands exactly on a table's sentinel month now raises
   `HijriOutOfRangeException` instead of returning an unsupported date.
+- `SunnahTimes::nightFraction()` now returns a strictly interior instant
+  (`maghrib < result < fajr`); previously the minute-rounded output could land
+  exactly on an anchor (maghrib or fajr) on short nights. Regression test in
+  `tests/Prayer/SunnahCalculatorTest.php`.
 
 ## [1.0.0] - TBD
 

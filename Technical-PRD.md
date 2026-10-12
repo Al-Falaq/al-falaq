@@ -349,17 +349,18 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
     "cs-fix": "php-cs-fixer fix",
     "stan": "phpstan analyse --memory-limit=1G",
     "test-unit": "phpunit --no-coverage",
-    "test": "php tools/coverage_gate.php --min=20",
+    "test": "php tools/coverage_gate.php --min=95",
     "arch": "phpunit --group arch",
     "bench": "php examples/bench.php --budget",
+    "mutation": "infection --threads=4",
     "ci": ["@lint", "@cs", "@stan", "@test"]
   }
 }
 ```
 
-- **Tests**: plain PHPUnit 11 (no ecosystem runner); layout mirrors `src/` as contexts land (M0: `SharedKernel` + `Sweep` + `Wiring`); `tests/bootstrap.php` fixes UTC; `tests/Goldens/` (pinned-Python parity vectors + `Comparator.php` with dual tolerances + primary-source citations), `tests/Sweep/` (seeded `mt_srand(1234)` property: ordering invariant only when adjustments empty, round-trip `CivilDate`, unwind idempotence), `tests/ArchTest.php` (reflection-based layer bans per §7 via composer autoloader, all `ValueObjects/` + all `Services/` final, all `Exceptions/` extend the base, `Util`/`Utils` ban, `Error` filename + class-name ban, comment-aware `DateTimeImmutable`-only + offline-IO scans, docblock rules: every class-like and public/protected method needs a summary, every `@param $name`, every non-void `@return`), `tests/Wiring/` (plain-`new` constructibility smoke test). Coverage floor enforced by `tools/coverage_gate.php` (single `phpunit --coverage-text` run, validated `--min=0-100`) via pcov on CI as a ratchet: M0 baseline `--min=20`, raised per milestone as contexts land, 95 at M5. Without a local driver the gate passes on green tests with a notice (failures still fail).
-- **Mutation** (nightly, not gate until M5, then gate): Infection MSI ≥ 85% on `Prayer/ + Hijri/ + Qibla/ + Astro/ + Moon/` (all math paths — previous Prayer+Hijri-only scope removed).
-- **CI** (`.github/workflows/test.yml`, push + PR, ubuntu-only): `lint/cs/stan` once on PHP 8.4, then `test + bench` on PHP `8.2, 8.3, 8.4` × `TZ=UTC` plus one `TZ=America/New_York` leg on 8.4 (tz rules are platform-independent — PHP bundles tzdata — so the full tz cross-product is redundant). Windows is a pre-release gate (`.github/workflows/pre-release.yml`, manual dispatch + `v*` tags, `windows-latest` × same php/tz shape): the Windows leg asserts UTC goldens (documents that PHP bundles its own tzdata; no OS tzdata requirement). Docs + release workflows mirror upstream.
+- **Tests**: plain PHPUnit 11 (no ecosystem runner); layout mirrors `src/` as contexts land (M0: `SharedKernel` + `Sweep` + `Wiring`); `tests/bootstrap.php` fixes UTC; `tests/Goldens/` (pinned-Python parity vectors + `Comparator.php` with dual tolerances + primary-source citations), `tests/Sweep/` (seeded `mt_srand(1234)` property: ordering invariant only when adjustments empty, round-trip `CivilDate`, unwind idempotence), `tests/ArchTest.php` (reflection-based layer bans per §7 via composer autoloader, all `ValueObjects/` + all `Services/` final, all `Exceptions/` extend the base, `Util`/`Utils` ban, `Error` filename + class-name ban, comment-aware `DateTimeImmutable`-only + offline-IO scans, docblock rules: every class-like and public/protected method needs a summary, every `@param $name`, every non-void `@return`), `tests/Wiring/` (plain-`new` constructibility smoke test). Coverage floor enforced by `tools/coverage_gate.php` (single `phpunit --coverage-text` run, validated `--min=0-100`) via pcov on CI as a ratchet: M0 baseline `--min=20`, raised per milestone as contexts land, 95 at M5. Without a local driver the gate passes on green tests with a notice (failures still fail). Mutation gate: `composer mutation` (Infection MSI≥85% + covered-MSI≥85% on `src/` excluding the ported `KarneyInverse` numerical core — survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`; file-scoped exclusion)) enforced by the `mutation` CI job.
+- **Mutation** (gated in CI from M5): Infection MSI ≥ 85% + covered-MSI ≥ 85% on `src/` excluding the ported `KarneyInverse` numerical core (survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`; file-scoped exclusion).
+- **CI** (`.github/workflows/test.yml`, push + PR, ubuntu-only): `lint/cs/stan` once on PHP 8.4, then `test + bench` on PHP `8.2, 8.3, 8.4` × `TZ=UTC` plus one `TZ=America/New_York` leg on 8.4, plus the `mutation` gate job (PHP 8.4, pcov) (tz rules are platform-independent — PHP bundles tzdata — so the full tz cross-product is redundant). Windows is a pre-release gate (`.github/workflows/pre-release.yml`, manual dispatch + `v*` tags, `windows-latest` × same php/tz shape): the Windows leg asserts UTC goldens (documents that PHP bundles its own tzdata; no OS tzdata requirement). Docs + release workflows mirror upstream.
 
 ## 16. Packaging & Release
 
@@ -391,7 +392,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 - **M2 qibla+sunnah**: spherical + WGS84 (Karney accepted and shipped via `Wgs84KarneyCalculator`), magnetic hook, DST-safe sunnah + `forZone()`; goldens green.
 - **M3 moon**: public `Moon/` facade + `CrescentGeometry` fields + Yallop/Odeh/MABIMS evaluators with cited vectors; no userland `Astro` imports.
 - **M4 hijri**: Tabular + UQ (1423–1500) + MABIMS (1445–1500) generated tables with provenance + digest + rollover (coords+params required) + `offsetDaysFor()`; bridge-parity tests covering both civil-date frames and both rollover directions (naive-doc removed).
-- **M5 hardening**: ArchTest + PHPStan max + php-cs-fixer clean + 95% coverage + Infection MSI≥85% on all math contexts + `bench --budget` gate + docs/examples + 1.0.0 tag.
+- **M5 hardening**: ArchTest + PHPStan max + php-cs-fixer clean + 95% coverage + Infection MSI≥85% on all math contexts except the ported KarneyInverse core (file-scoped exclusion — survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`) + `bench --budget` gate + docs/examples. M5 ends at a release-ready PR; the v1.0.0 tag and its entry criteria belong to a later release milestone.
 
 Done = `composer ci` green on all matrix legs + minute-goldens 100% + float tolerances per §6 + `bench --budget` pass + docs build with relative links intact.
 

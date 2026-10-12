@@ -1,5 +1,19 @@
 # migration (M1-M5 — see Technical-PRD.md)
 
+## M5 — `nightFraction` strictly-interior clamp (pure bugfix, no action needed)
+
+`SunnahTimes::nightFraction()` now clamps the minute-rounded result strictly
+inside the night. Before, on very short nights the rounded output could equal
+an anchor; after, `maghrib < result < fajr` always holds (nights longer than
+two minutes). No caller changes needed.
+
+```php
+// before: could return exactly maghrib or fajr on short nights
+$night->nightFraction(0.001); // e.g. == maghrib after minute-rounding
+// after: clamped one minute inside the anchor
+$night->nightFraction(0.001); // maghrib + 1 minute, strictly interior
+```
+
 ## M4 — Hijri surface changes
 
 Three intentional breaks land with M4. All are SemVer-minor justified because

@@ -3,6 +3,7 @@ includes:
 
 parameters:
     level: max
+    phpVersion: 80200
     paths:
         - src
         - tests
