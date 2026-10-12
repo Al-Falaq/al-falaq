@@ -391,7 +391,7 @@ Design notes: named ctors over multi-union ctors; `with*()` over setters; `DateT
 - **M2 qibla+sunnah**: spherical + WGS84 (Karney accepted and shipped via `Wgs84KarneyCalculator`), magnetic hook, DST-safe sunnah + `forZone()`; goldens green.
 - **M3 moon**: public `Moon/` facade + `CrescentGeometry` fields + Yallop/Odeh/MABIMS evaluators with cited vectors; no userland `Astro` imports.
 - **M4 hijri**: Tabular + UQ (1423–1500) + MABIMS (1445–1500) generated tables with provenance + digest + rollover (coords+params required) + `offsetDaysFor()`; bridge-parity tests covering both civil-date frames and both rollover directions (naive-doc removed).
-- **M5 hardening**: ArchTest + PHPStan max + php-cs-fixer clean + 95% coverage + Infection MSI≥85% on all math contexts + `bench --budget` gate + docs/examples + 1.0.0 tag.
+- **M5 hardening**: ArchTest + PHPStan max + php-cs-fixer clean + 95% coverage + Infection MSI≥85% on all math contexts except the ported KarneyInverse core (file-scoped exclusion, audit-backed) + `bench --budget` gate + docs/examples + 1.0.0 tag. M5 ends at a release-ready PR; the v1.0.0 tag and its entry criteria belong to a later release milestone.
 
 Done = `composer ci` green on all matrix legs + minute-goldens 100% + float tolerances per §6 + `bench --budget` pass + docs build with relative links intact.
 

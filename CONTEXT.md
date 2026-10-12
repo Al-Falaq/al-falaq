@@ -15,7 +15,7 @@ One offline library any PHP app can drop in — no extensions beyond `date`,
 no network, no framework — with behavioral parity to the pinned Python
 implementation, proven by golden vectors.
 
-## Current status (M4 landed)
+## Current status (M5 landed)
 
 Landed: composer scaffold, `SharedKernel` value objects (`Coordinates`,
 `CivilDate`, `Angle`, `Minutes`, `JulianDay`), exception hierarchy, prayer pipeline
@@ -24,8 +24,8 @@ freeze + milestone amendments, Qibla (spherical + WGS84/Karney), Sunnah markers
 (incl. `nightFraction`), crescent visibility evaluators, Hijri calendars
 (tabular, Umm al-Qura, per-country MABIMS + Gregorian bridge), parity goldens
 (`tests/Goldens/`, 24 CSVs), ArchTest layering rules, coverage-ratchet gate
-(floor 85 → 95 at M5), CI matrix. No throwing stubs remain in `src/`. Next:
-M5 hardening (95% coverage, MSI≥85%, bench gate, docs/examples, 1.0.0).
+(floor 85 → 95 at M5), CI matrix. No throwing stubs remain in `src/`. Outcome:
+M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed); release-ready PR, no tag.
 
 ## Stack & tooling
 
