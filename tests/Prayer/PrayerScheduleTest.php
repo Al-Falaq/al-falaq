@@ -55,6 +55,29 @@ final class PrayerScheduleTest extends TestCase
         );
     }
 
+    public function testNonUtcImsakIsRejected(): void
+    {
+        // Every slot is zone-checked, including the first (mutation gate).
+        $utc = self::klSchedule();
+        $ny = new \DateTimeZone('America/New_York');
+        $shifted = $utc->imsak->setTimezone($ny);
+
+        $this->expectException(ValidationException::class);
+
+        new PrayerSchedule(
+            $shifted,
+            $utc->fajr,
+            $utc->sunrise,
+            $utc->syuruk,
+            $utc->ishraq,
+            $utc->dhuha,
+            $utc->dhuhr,
+            $utc->asr,
+            $utc->maghrib,
+            $utc->isha,
+        );
+    }
+
     public function testToArrayReturnsIsoStringsInScheduleOrder(): void
     {
         $row = self::klSchedule()->toArray();

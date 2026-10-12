@@ -7,6 +7,7 @@ namespace AlFalaq\AlFalaq\Tests\Prayer;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\Prayer\Services\SunnahCalculator;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\SunnahTimes;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
@@ -238,5 +239,126 @@ final class SunnahCalculatorTest extends TestCase
             );
             self::assertSame($zone->getName(), $viaDisplay->getTimezone()->getName());
         }
+    }
+
+    /**
+     * Schedules bracketing a fixed-length night (maghrib M, fajr M + N s).
+     *
+     * @param int $nightSeconds Length of the synthetic night.
+     * @return SunnahTimes Markers for the synthetic night.
+     */
+    private function straddleNight(int $nightSeconds): SunnahTimes
+    {
+        $utc = new \DateTimeZone('UTC');
+        $maghrib = new \DateTimeImmutable('2025-01-15 10:00:00', $utc);
+        $fajr = $maghrib->modify(sprintf('+%d seconds', $nightSeconds));
+        $at = static fn(string $time): \DateTimeImmutable => new \DateTimeImmutable($time, $utc);
+
+        $today = new PrayerSchedule(
+            $at('2025-01-15 00:01:00'),
+            $maghrib->modify('+3600 seconds'),
+            $at('2025-01-15 06:00:00'),
+            $at('2025-01-15 06:00:00'),
+            $at('2025-01-15 06:15:00'),
+            $at('2025-01-15 06:28:00'),
+            $at('2025-01-15 12:00:00'),
+            $at('2025-01-15 15:00:00'),
+            $maghrib,
+            $at('2025-01-15 20:00:00'),
+        );
+        $tomorrow = new PrayerSchedule(
+            $at('2025-01-15 00:01:00'),
+            $fajr,
+            $at('2025-01-15 06:00:00'),
+            $at('2025-01-15 06:00:00'),
+            $at('2025-01-15 06:15:00'),
+            $at('2025-01-15 06:28:00'),
+            $at('2025-01-15 12:00:00'),
+            $at('2025-01-15 15:00:00'),
+            $maghrib->modify('+7200 seconds'),
+            $at('2025-01-15 20:00:00'),
+        );
+
+        return (new SunnahCalculator($today, $tomorrow))->calculate();
+    }
+
+    public function testThirdsUseHalfUpRoundingAtTheMinuteBoundary(): void
+    {
+        // 36088 s nights: firstThird raw 12029.33 s rounds to :29 (stays);
+        // ceil would give :30 (rounds up). 36089 s: raw 12029.67 s rounds to
+        // :30 (rounds up); floor would give :29 (stays). Each pin kills one
+        // RoundingFamily mutant.
+        self::assertSame(
+            '13:20:00',
+            $this->straddleNight(36088)->firstThird->format('H:i:s'),
+        );
+        self::assertSame(
+            '13:21:00',
+            $this->straddleNight(36089)->firstThird->format('H:i:s'),
+        );
+    }
+
+    public function testEqualInstantNightIsRejected(): void
+    {
+        // fajr == maghrib (not just before) still throws. Note: the guard
+        // here is defense-in-depth with SunnahTimes itself, which re-checks
+        // the same condition with the same exception — so this pins the
+        // boundary behavior rather than a single line.
+        $utc = new \DateTimeZone('UTC');
+        $anchor = new \DateTimeImmutable('2025-01-15 10:00:00', $utc);
+        $at = static fn(string $time): \DateTimeImmutable => new \DateTimeImmutable($time, $utc);
+        $mk = static function (\DateTimeImmutable $maghrib, \DateTimeImmutable $fajr) use ($at): PrayerSchedule {
+            return new PrayerSchedule(
+                $at('2025-01-15 00:01:00'),
+                $fajr,
+                $at('2025-01-15 06:00:00'),
+                $at('2025-01-15 06:00:00'),
+                $at('2025-01-15 06:15:00'),
+                $at('2025-01-15 06:28:00'),
+                $at('2025-01-15 12:00:00'),
+                $at('2025-01-15 15:00:00'),
+                $maghrib,
+                $at('2025-01-15 20:00:00'),
+            );
+        };
+
+        $this->expectException(ValidationException::class);
+        (new SunnahCalculator($mk($anchor, $at('2025-01-15 06:00:00')), $mk($at('2025-01-15 06:00:00'), $anchor)))->calculate();
+    }
+
+    public function testNightFractionHalfSecondBoundaries(): void
+    {
+        // A 10-hour night: raw 18029.5 s rounds half-up to :30 (up to 05:01)
+        // while floor stays at :29 (05:00); raw 18029.3 s rounds to :29
+        // (05:00) while ceil reaches :30 (05:01). Each pin kills one
+        // RoundingFamily mutant.
+        $utc = new \DateTimeZone('UTC');
+        $night = new SunnahTimes(
+            new \DateTimeImmutable('2025-01-15 05:00:00', $utc),
+            new \DateTimeImmutable('2025-01-15 03:00:00', $utc),
+            new \DateTimeImmutable('2025-01-15 07:00:00', $utc),
+            new \DateTimeImmutable('2025-01-15 10:00:00', $utc),
+            new \DateTimeImmutable('2025-01-15 00:00:00', $utc),
+        );
+
+        self::assertSame(
+            '2025-01-15 05:01:00',
+            $night->nightFraction(18029.5 / 36000)->format('Y-m-d H:i:s'),
+        );
+        self::assertSame(
+            '2025-01-15 05:00:00',
+            $night->nightFraction(18029.3 / 36000)->format('Y-m-d H:i:s'),
+        );
+    }
+
+    public function testLastThirdEqualToFajrIsRejected(): void
+    {
+        // A one-second night puts lastThird exactly on fajr (mutation gate).
+        $utc = new \DateTimeZone('UTC');
+        $maghrib = new \DateTimeImmutable('2025-01-15 10:00:00', $utc);
+        $fajr = new \DateTimeImmutable('2025-01-15 10:00:01', $utc);
+
+        $this->expectException(ValidationException::class);
+        new SunnahTimes($maghrib, $maghrib, $fajr, $fajr, $maghrib);
     }
 }

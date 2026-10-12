@@ -63,12 +63,29 @@ final class TimetableServiceTest extends TestCase
 
     public function testInvalidMonthThrows(): void
     {
-        $this->expectException(ValidationException::class);
-        (new TimetableService())->monthly(
-            Coordinates::fromDegrees(3.1390, 101.6869),
-            2025,
-            13,
-            CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(),
-        );
+        try {
+            (new TimetableService())->monthly(
+                Coordinates::fromDegrees(3.1390, 101.6869),
+                2025,
+                13,
+                CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(),
+            );
+
+            self::fail('expected ValidationException for month 13.');
+        } catch (ValidationException $e) {
+            // The guard itself must throw (not a downstream TypeError).
+            self::assertSame('Invalid month 13: expected 1–12.', $e->getMessage());
+        }
+    }
+
+    public function testJanuaryAndDecemberSucceed(): void
+    {
+        // The 1–12 guard is inclusive on both ends (mutation gate).
+        $service = new TimetableService();
+        $coords = Coordinates::fromDegrees(3.1390, 101.6869);
+        $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters();
+
+        self::assertCount(31, $service->monthly($coords, 2025, 1, $params));
+        self::assertCount(31, $service->monthly($coords, 2025, 12, $params));
     }
 }

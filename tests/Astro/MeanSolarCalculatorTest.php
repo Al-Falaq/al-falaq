@@ -191,4 +191,48 @@ final class MeanSolarCalculatorTest extends TestCase
 
         new SolarTime($transit, $sunrise, $sunsetNy);
     }
+
+    public function testSolarTimeRejectsNonUtcTransit(): void
+    {
+        // Every slot is zone-checked, including the first (mutation gate).
+        $utc = new \DateTimeZone('UTC');
+        $transitNy = new \DateTimeImmutable('2025-01-15 05:24:00', $utc)->setTimezone(new \DateTimeZone('America/New_York'));
+        $sunrise = new \DateTimeImmutable('2025-01-14 23:24:00', $utc);
+        $sunset = new \DateTimeImmutable('2025-01-15 11:21:00', $utc);
+
+        $this->expectException(ValidationException::class);
+
+        new SolarTime($transitNy, $sunrise, $sunset);
+    }
+
+    public function testSolarTimePolarMessageIsExact(): void
+    {
+        // Both message operands and their order are pinned (mutation gate).
+        $tromsoe = Coordinates::fromDegrees(69.6496, 18.9553);
+        $polarDate = CivilDate::fromYmd(2025, 12, 15);
+
+        try {
+            (new MeanSolarCalculator())->solarTime($tromsoe, $polarDate, 0.0);
+
+            self::fail('expected AstronomicalException for polar night.');
+        } catch (AstronomicalException $e) {
+            self::assertSame(
+                'Unable to compute solar times: sunrise, sunset, or transit is undefined '
+                . 'for these coordinates and date (polar day/night). coordinates=69.649600,18.955300, date=2025-12-15.',
+                $e->getMessage(),
+            );
+        }
+    }
+
+    public function testAfternoonRejectsStringElevation(): void
+    {
+        // The afternoon elevation guard must stay (mutation gate).
+        $this->expectException(ValidationException::class);
+        (new MeanSolarCalculator())->afternoon(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            '100',
+            1.0,
+        );
+    }
 }

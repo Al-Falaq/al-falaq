@@ -258,4 +258,69 @@ final class TabularCalendarTest extends TestCase
 
         self::assertGreaterThan(6000, $checked);
     }
+
+    /**
+     * The [-2, 2] adjustment contract is inclusive on both ends.
+     *
+     * @return void
+     */
+    public function testAdjustmentDaysAcceptsBounds(): void
+    {
+        self::assertSame('tabular', (new TabularCalendar(-2))->name());
+        self::assertSame('tabular', (new TabularCalendar(2))->name());
+    }
+
+    /**
+     * toGregorian honors the adjustment with the opposite sign and size.
+     *
+     * @return void
+     */
+    public function testToGregorianHonorsAdjustmentDays(): void
+    {
+        $date = new HijriDate(1446, 9, 1);
+
+        self::assertSame('2025-03-01', (new TabularCalendar(0))->toGregorian($date)->isoformat());
+        self::assertSame('2025-02-27', (new TabularCalendar(2))->toGregorian($date)->isoformat());
+        self::assertSame('2025-03-03', (new TabularCalendar(-2))->toGregorian($date)->isoformat());
+    }
+
+    /**
+     * Fliegel–Van Flandern constants pinned at quotient-boundary dates.
+     *
+     * Each row sits where a ±1 change to one intdiv constant flips the
+     * conversion (verified by running the mutated conversion); the expected
+     * dates are oracle values confirmed by the fromGregorian round-trip.
+     *
+     * @return void
+     */
+    public function testFliegelVanFlandernConstantsAtBoundaries(): void
+    {
+        $calendar = new TabularCalendar();
+        $cases = [
+            [1320, 12, 1, '1903-03-01'],
+            [1368, 5, 1, '1949-03-01'],
+            [1340, 7, 1, '1922-02-28'],
+            [1321, 12, 12, '1904-02-29'],
+            [1317, 9, 1, '1900-01-03'],
+            [1317, 10, 1, '1900-02-02'],
+            [1318, 2, 1, '1900-05-31'],
+            [1320, 11, 1, '1903-01-30'],
+            [1348, 9, 1, '1930-01-31'],
+            [1368, 4, 1, '1949-01-31'],
+            [1318, 9, 1, '1900-12-23'],
+            [1319, 9, 1, '1901-12-12'],
+            [1318, 10, 1, '1901-01-22'],
+        ];
+
+        foreach ($cases as [$year, $month, $day, $expected]) {
+            $gregorian = $calendar->toGregorian(new HijriDate($year, $month, $day));
+
+            self::assertSame($expected, $gregorian->isoformat(), sprintf('%04d-%02d-%02d', $year, $month, $day));
+            self::assertSame(
+                sprintf('%04d-%02d-%02d', $year, $month, $day),
+                $calendar->fromGregorian($gregorian)->isoformat(),
+                sprintf('round-trip %04d-%02d-%02d', $year, $month, $day),
+            );
+        }
+    }
 }

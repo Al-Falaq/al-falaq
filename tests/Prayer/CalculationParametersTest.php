@@ -387,6 +387,39 @@ final class CalculationParametersTest extends TestCase
         self::assertNull($minutes->maghribRule->angle());
     }
 
+    public function testWithMaghribRuleRejectsOutOfRangeAngle(): void
+    {
+        // The maghrib angle re-validation in the wither must stay.
+        $this->expectException(ValidationException::class);
+        self::qatarBase()->withMaghribRule(new AngleMaghrib(31.0));
+    }
+
+    public function testWithMaghribRuleAcceptsZeroMinutes(): void
+    {
+        // Zero minutes after sunset is valid (mutation gate).
+        $changed = self::qatarBase()->withMaghribRule(new MinutesAfterSunsetMaghrib(0));
+
+        self::assertSame(0, $changed->maghribRule->minutesAfterSunset());
+    }
+
+    public function testWithIshraqOffsetAcceptsEqualToDhuha(): void
+    {
+        // Raising ishraq exactly onto dhuha is valid (mutation gate).
+        $changed = self::qatarBase()->withIshraqOffset(28);
+
+        self::assertSame(28, $changed->ishraqOffsetMinutes);
+    }
+
+    public function testWithDhuhrOffsetAcceptsBoundaries(): void
+    {
+        // The wither dhuhr range is [0, 5]: both ends construct.
+        self::assertSame(5, self::qatarBase()->withDhuhrOffset(5)->dhuhrOffsetMinutes);
+        self::assertSame(0, self::qatarBase()->withDhuhrOffset(0)->dhuhrOffsetMinutes);
+
+        $this->expectException(ValidationException::class);
+        self::qatarBase()->withDhuhrOffset(-1);
+    }
+
     public function testWithMaghribRuleRejectsNegativeMinutes(): void
     {
         $this->expectException(ValidationException::class);
@@ -522,5 +555,316 @@ final class CalculationParametersTest extends TestCase
     {
         $this->expectException(ValidationException::class);
         self::qatarBase()->withIshaRule(new IntervalIsha(0));
+    }
+
+    public function testCreateAcceptsBoundaryAngles(): void
+    {
+        // validateAngle is inclusive on both ends of [0, 30] (mutation gate).
+        foreach ([0.0, 30.0] as $angle) {
+            $params = CalculationParameters::create(
+                CalculationMethod::NONE,
+                Madhab::SHAFI,
+                HighLatitudeRule::MIDDLE_OF_NIGHT,
+                PolarCircleRule::NEAREST_LATITUDE,
+                $angle,
+                new AngleIsha($angle),
+                new MinutesAfterSunsetMaghrib(0),
+                0,
+                10,
+                15,
+                28,
+                0.0,
+                false,
+                PrayerAdjustments::empty(),
+                PrayerAdjustments::empty(),
+            );
+
+            self::assertSame($angle, $params->fajrAngle);
+            self::assertSame($angle, $params->ishaRule->angle());
+        }
+    }
+
+    public function testCreateRejectsOutOfRangeIshaAngle(): void
+    {
+        // The isha angle re-validation in create() must stay (mutation gate).
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(31.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateRejectsOutOfRangeMaghribAngle(): void
+    {
+        // The maghrib angle re-validation in create() must stay (mutation gate).
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new AngleMaghrib(31.0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateAcceptsSingleMinuteIntervalIsha(): void
+    {
+        // Interval floor is >= 1, so exactly 1 minute is valid (mutation gate).
+        $params = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new IntervalIsha(1),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        self::assertSame(1, $params->ishaRule->minutesAfterMaghrib());
+    }
+
+    public function testCreateRejectsNegativeDhuhrOffset(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            -1,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateAcceptsMaxDhuhrOffset(): void
+    {
+        // Dhuhr offset range is [0, 5]: both ends construct (mutation gate).
+        $params = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            5,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        self::assertSame(5, $params->dhuhrOffsetMinutes);
+    }
+
+    public function testCreateAcceptsDhuhaEqualToIshraq(): void
+    {
+        // dhuha >= ishraq: equality is valid (mutation gate).
+        $params = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            15,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        self::assertSame(15, $params->dhuhaOffsetMinutes);
+    }
+
+    public function testCreateAcceptsIntElevation(): void
+    {
+        // Ints normalize to float (mutation gate: the cast is load-bearing).
+        $params = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            5,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        self::assertSame(5.0, $params->elevationM);
+    }
+
+    public function testCreateRejectsStringElevation(): void
+    {
+        // Strings are neither int nor float (mutation gate).
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            '5',
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testCreateAcceptsMaxElevation(): void
+    {
+        // Elevation cap is inclusive at 8848 (mutation gate).
+        $params = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            8848.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        self::assertSame(8848.0, $params->elevationM);
+    }
+
+    public function testWithIshaRuleAcceptsSingleMinuteInterval(): void
+    {
+        $changed = self::qatarBase()->withIshaRule(new IntervalIsha(1));
+
+        self::assertSame(1, $changed->ishaRule->minutesAfterMaghrib());
+    }
+
+    public function testWithDhuhaOffsetAcceptsEqualToIshraq(): void
+    {
+        $changed = self::qatarBase()->withDhuhaOffset(15);
+
+        self::assertSame(15, $changed->dhuhaOffsetMinutes);
+    }
+
+    public function testWithImsakOffsetEnforcesZeroToSixty(): void
+    {
+        // Wither guard range is [0, 60]: both ends construct (mutation gate).
+        self::assertSame(60, self::qatarBase()->withImsakOffset(60)->imsakOffsetMinutes);
+        self::assertSame(0, self::qatarBase()->withImsakOffset(0)->imsakOffsetMinutes);
+
+        foreach ([61, -1] as $bad) {
+            try {
+                self::qatarBase()->withImsakOffset($bad);
+
+                self::fail(sprintf('withImsakOffset(%d) must throw ValidationException.', $bad));
+            } catch (ValidationException $e) {
+                self::assertNotSame('', $e->getMessage());
+            }
+        }
+    }
+
+    public function testWithImsakOffsetRejectsString(): void
+    {
+        $this->expectException(ValidationException::class);
+        self::qatarBase()->withImsakOffset('5');
+    }
+
+    public function testAdjustmentsAcceptBoundaryMinutes(): void
+    {
+        // Adjustment range is [-60, 60]: both ends construct (mutation gate).
+        self::assertSame(-60, PrayerAdjustments::empty()->with(Prayer::FAJR, -60)->for(Prayer::FAJR));
+        self::assertSame(60, PrayerAdjustments::empty()->with(Prayer::FAJR, 60)->for(Prayer::FAJR));
+    }
+
+    public function testCreateRejectsNanElevation(): void
+    {
+        // NaN is the only input distinguishing || from && in the finiteness
+        // guard (INF trips the range disjuncts either way).
+        $this->expectException(ValidationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            NAN,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
     }
 }

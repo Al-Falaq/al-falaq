@@ -96,6 +96,9 @@ final class KarneyInverseTest extends TestCase
         self::assertTrue(abs($solved['distanceKm'] * 1000.0 - 20003931.458625) <= 1e-3);
         self::assertFalse(is_nan($solved['direction']));
         self::assertTrue(is_finite($solved['direction']));
+        // Exact-antipode azimuth is deterministic (+180.0): the swap logic
+        // must not flip it by half a turn (mutation gate).
+        self::assertTrue(abs($solved['direction'] - 180.0) <= 1e-9);
     }
 
     public function testInverseCoincidentReturnsZeroDistance(): void
@@ -145,6 +148,15 @@ final class KarneyInverseTest extends TestCase
                 // Pin: pytest.raises(ValidationError, match="(?i)latitude|longitude")
                 self::assertStringContainsStringIgnoringCase($keyword, $e->getMessage(), $name);
                 self::assertStringContainsString('must be within', $e->getMessage(), $name);
+
+                if ($name === 'lat-nan') {
+                    // floatRepr renders NaN as 'nan' (mutation gate).
+                    self::assertStringContainsString('nan', $e->getMessage(), $name);
+                }
+
+                if ($name === 'lon-inf') {
+                    self::assertStringContainsString('inf', $e->getMessage(), $name);
+                }
             }
         }
     }
@@ -398,5 +410,99 @@ final class KarneyInverseTest extends TestCase
             self::assertTrue($solved['distanceKm'] > 19000.0, sprintf('half circumference %d', $i));
             self::assertTrue($solved['direction'] > -180.0 && $solved['direction'] <= 180.0, sprintf('range %d', $i));
         }
+    }
+
+    /**
+     * Implementation-pinned regression goldens at tight tolerance.
+     *
+     * These are NOT independent oracles (no GeographicLib here to re-derive
+     * them): they pin this transcription's deterministic outputs at 1e-9 deg
+     * / 1e-6 m so any arithmetic or branch perturbation that propagates to an
+     * output fails loudly. Absolute correctness is anchored by
+     * testInverseCityGoldens (GeographicLib 2.1 vectors); the sweeps above
+     * separately pin forward/backward distance symmetry.
+     */
+    public function testInverseExtendedGoldensTight(): void
+    {
+        $mLat = self::MAKKA_LAT;
+        $mLon = self::MAKKA_LON;
+        $cases = [
+            // Near-antipodal (tripolar iteration regime).
+            [-20.4, -139.2, $mLat, $mLon, 31.740215702329, 19862471.480885372],
+            [-21.0, -139.0, $mLat, $mLon, 57.125544853124, 19896782.918205902],
+            [0.0, -140.17, $mLat, $mLon, 0.009538144550, 17634072.775451433],
+            [0.5, 0.5, -0.5, 179.5, 90.001730116549, 19926190.521422211],
+            // Symmetric reduced latitudes, high-latitude, swapped meridian.
+            [20.0, 0.0, -20.0, 60.0, 120.470313168976, 7895615.962187378],
+            [80.0, 0.0, 80.0, 90.0, 45.438518976712, 1575399.990903556],
+            [10.0, 0.0, 80.0, 0.0, 0.0, 7779285.038702502],
+            // Cross-hemisphere and antimeridian pairs.
+            [12.0, 8.0, -12.0, -8.0, -145.767947246878, 3189152.326687072],
+            [45.0, 45.0, 45.0, -45.0, -54.726097228269, 6690232.932542715],
+            [89.9, 0.0, 89.9, 179.0, 0.500000761506, 22337.945088767],
+            [0.0, 179.9, 0.0, -179.9, 90.0, 22263.898158653],
+            [48.8566, 2.3522, -33.9249, 18.4241, 166.591387571295, 9306838.237282539],
+            // Southern hemisphere and European cities into Makkah.
+            [35.6762, 139.6503, $mLat, $mLon, -66.927911594798, 9487882.454906663],
+            [-23.5505, -46.6333, $mLat, $mLon, 69.094344494204, 10601047.883590108],
+            [55.7558, 37.6173, $mLat, $mLon, 176.345583403008, 3815937.840578200],
+            [64.1466, -21.9426, $mLat, $mLon, 106.027463055326, 6522778.870971395],
+            [-41.2865, 174.7762, $mLat, $mLon, -103.871911040397, 15271815.533873595],
+            [71.0, 25.0, 71.5, 26.0, 32.281525096503, 66334.357251106],
+        ];
+        $engine = new KarneyInverse();
+
+        foreach ($cases as [$lat1, $lon1, $lat2, $lon2, $azi, $s12m]) {
+            $solved = $engine->inverse($lat1, $lon1, $lat2, $lon2);
+            $tag = sprintf('%s,%s -> %s,%s', $lat1, $lon1, $lat2, $lon2);
+
+            self::assertTrue(abs($solved['direction'] - $azi) <= 1e-9, sprintf(
+                '%s direction: got %.12f, expected %.12f.',
+                $tag,
+                $solved['direction'],
+                $azi,
+            ));
+            self::assertTrue(abs($solved['distanceKm'] * 1000.0 - $s12m) <= 1e-6, sprintf(
+                '%s distance: got %.9f m, expected %.9f m.',
+                $tag,
+                $solved['distanceKm'] * 1000.0,
+                $s12m,
+            ));
+        }
+    }
+
+    public function testInverseShortLineGoldensTight(): void
+    {
+        // Metre-scale and sub-millimetre lines pin the auxiliary-sphere
+        // short-line branch (xthresh/etol2 regime) at tight tolerance.
+        $engine = new KarneyInverse();
+
+        $metre = $engine->inverse(self::MAKKA_LAT, self::MAKKA_LON, 21.42253, 39.82619);
+
+        self::assertTrue(abs($metre['direction'] - 52.460497476826) <= 1e-9, sprintf(
+            'metre direction: got %.12f.',
+            $metre['direction'],
+        ));
+        self::assertTrue(abs($metre['distanceKm'] * 1000.0 - 1.072138991) <= 1e-6, sprintf(
+            'metre distance: got %.9f m.',
+            $metre['distanceKm'] * 1000.0,
+        ));
+
+        $offset = 1e-8 / sqrt(2.0);
+        $submm = $engine->inverse(
+            self::MAKKA_LAT,
+            self::MAKKA_LON,
+            self::MAKKA_LAT + $offset,
+            self::MAKKA_LON + $offset,
+        );
+
+        self::assertTrue(abs($submm['direction'] - 43.117267988326) <= 1e-9, sprintf(
+            'sub-mm direction: got %.12f.',
+            $submm['direction'],
+        ));
+        self::assertTrue(abs($submm['distanceKm'] * 1000.0 - 0.001072567) <= 1e-6, sprintf(
+            'sub-mm distance: got %.9f m.',
+            $submm['distanceKm'] * 1000.0,
+        ));
     }
 }

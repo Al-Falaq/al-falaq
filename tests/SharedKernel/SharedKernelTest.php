@@ -84,4 +84,74 @@ final class SharedKernelTest extends TestCase
         $jd = JulianDay::fromCivilDate(CivilDate::fromYmd(2000, 1, 1))->toFloat();
         self::assertLessThan(1e-9, abs($jd - 2451544.5));
     }
+
+    public function testFromArrayRejectsThreeElementPair(): void
+    {
+        // A 3-element pair fails the count guard even with keys 0 and 1 present.
+        $this->expectException(InvalidCoordinatesException::class);
+        Coordinates::fromArray([1.0, 2.0, 3.0]);
+    }
+
+    public function testFromArrayRejectsMissingZeroKey(): void
+    {
+        $this->expectException(InvalidCoordinatesException::class);
+        Coordinates::fromArray([1 => 1.0, 2 => 2.0]);
+    }
+
+    public function testFromArrayRejectsMissingOneKey(): void
+    {
+        $this->expectException(InvalidCoordinatesException::class);
+        Coordinates::fromArray([0 => 1.0, 5 => 2.0]);
+    }
+
+    public function testEqualsRequiresBothAxes(): void
+    {
+        $base = Coordinates::fromDegrees(3.0, 10.0);
+
+        self::assertTrue($base->equals(Coordinates::fromDegrees(3.0, 10.0)));
+        self::assertFalse($base->equals(Coordinates::fromDegrees(3.0, 20.0)));
+        self::assertFalse($base->equals(Coordinates::fromDegrees(4.0, 10.0)));
+    }
+
+    public function testCivilDateEqualsRequiresAllFields(): void
+    {
+        $base = CivilDate::fromYmd(2025, 1, 15);
+
+        self::assertTrue($base->equals(CivilDate::fromYmd(2025, 1, 15)));
+        self::assertFalse($base->equals(CivilDate::fromYmd(2026, 1, 15)));
+        self::assertFalse($base->equals(CivilDate::fromYmd(2025, 2, 15)));
+        self::assertFalse($base->equals(CivilDate::fromYmd(2025, 1, 16)));
+    }
+
+    public function testNormalizedNegativeWraparoundStaysPositiveZero(): void
+    {
+        // fmod(-360, 360) is -0.0; the + 0.0 guard must yield +0.0, not -0.0.
+        $degrees = Angle::fromDegrees(-360.0)->normalized()->degrees;
+
+        self::assertSame(0.0, $degrees);
+        self::assertSame(INF, fdiv(1.0, $degrees));
+    }
+
+    public function testRoundedHalfUpZeroesMicroseconds(): void
+    {
+        // setTime pins microseconds to 0, never 1 (mutation gate).
+        $base = new \DateTimeImmutable('2015-07-12 12:34:29', new \DateTimeZone('UTC'));
+
+        self::assertSame('000000', Minutes::roundedHalfUp($base)->format('u'));
+    }
+
+    public function testOutOfRangeMessageNamesRangeAndValue(): void
+    {
+        // Both ternaries and the scalar rendering are pinned (mutation gate).
+        $lat = InvalidCoordinatesException::outOfRange('lat', 91.0)->getMessage();
+
+        self::assertStringContainsString('latitude', $lat);
+        self::assertStringContainsString('[-90, 90]', $lat);
+        self::assertStringContainsString('Received: 91', $lat);
+
+        $lon = InvalidCoordinatesException::outOfRange('lon', 200.0)->getMessage();
+
+        self::assertStringContainsString('longitude', $lon);
+        self::assertStringContainsString('[-180, 180]', $lon);
+    }
 }

@@ -20,7 +20,6 @@ use AlFalaq\AlFalaq\Prayer\Strategies\IntervalIsha;
 use AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\MinutesAfterSunsetMaghrib;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight;
-use AlFalaq\AlFalaq\Prayer\Strategies\SeventhOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\TwilightAngleCorrection;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
@@ -310,10 +309,9 @@ final class PrayerTimesCalculatorTest extends TestCase
 
     public function testDefaultForSelectsHighLatitudeArms(): void
     {
+        // Only the arms the wiring test does not cover (mutation gate); the
+        // middle/seventh arms live in CalculatorWiringTest.
         $base = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters();
-
-        $seventh = PrayerTimesCalculator::defaultFor($base->withHighLatitudeRule(HighLatitudeRule::SEVENTH_OF_NIGHT));
-        self::assertInstanceOf(SeventhOfNightCorrection::class, $seventh->highLatitudeCorrection());
 
         $twilight = PrayerTimesCalculator::defaultFor($base->withHighLatitudeRule(HighLatitudeRule::TWILIGHT_ANGLE));
         self::assertInstanceOf(TwilightAngleCorrection::class, $twilight->highLatitudeCorrection());
@@ -323,6 +321,62 @@ final class PrayerTimesCalculatorTest extends TestCase
 
         $none = PrayerTimesCalculator::defaultFor($base->withHighLatitudeRule(HighLatitudeRule::NONE));
         self::assertInstanceOf(MiddleOfNightCorrection::class, $none->highLatitudeCorrection());
+    }
+
+    public function testSeasonalMscAtLatitude55UsesSeventhOfNight(): void
+    {
+        // The pin gates its temp branch on signed latitude >= 55: at exactly
+        // 55.0 the seventh-of-night temp replaces the angle temp (mutation
+        // gate pins the boundary against 54.9, which stays on angle temps).
+        $params = CalculationMethod::MOON_SIGHTING_COMMITTEE->defaultParameters();
+
+        $at55 = PrayerTimesCalculator::default()->calculate(
+            Coordinates::fromDegrees(55.0, 37.6173),
+            CivilDate::fromYmd(2025, 6, 21),
+            $params,
+        );
+
+        self::assertSame('2025-06-20 23:53', $at55->timeFor(Prayer::FAJR)->format('Y-m-d H:i'));
+        self::assertSame('2025-06-21 19:09', $at55->timeFor(Prayer::ISHA)->format('Y-m-d H:i'));
+    }
+
+    public function testNoneRuleThrowsWhereMiddleSucceedsAtPolarSummer(): void
+    {
+        // NONE skips the portions safe caps (raw angle temps); at polar
+        // summer the raw fajr temp is unreachable while Middle clamps.
+        $coords = Coordinates::fromDegrees(69.6496, 18.9553);
+        $date = CivilDate::fromYmd(2025, 6, 21);
+        $base = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters();
+
+        $middle = PrayerTimesCalculator::default()->calculate($coords, $date, $base);
+        self::assertTrue($middle->timeFor(Prayer::FAJR) < $middle->timeFor(Prayer::SUNRISE));
+
+        $this->expectException(AstronomicalException::class);
+        PrayerTimesCalculator::default()->calculate(
+            $coords,
+            $date,
+            $base->withHighLatitudeRule(HighLatitudeRule::NONE),
+        );
+    }
+
+    public function testCalculateAcceptsArrayCoordinates(): void
+    {
+        // The Coordinates|array union normalizes pairs (mutation gate).
+        $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters();
+        $date = CivilDate::fromYmd(2025, 1, 15);
+
+        $fromVo = PrayerTimesCalculator::default()->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            $date,
+            $params,
+        );
+        $fromArray = PrayerTimesCalculator::default()->calculate([3.1390, 101.6869], $date, $params);
+
+        self::assertSame(
+            $fromVo->timeFor(Prayer::FAJR)->format('Y-m-d H:i'),
+            $fromArray->timeFor(Prayer::FAJR)->format('Y-m-d H:i'),
+        );
+        self::assertSame('2025-01-14 22:10', $fromArray->timeFor(Prayer::FAJR)->format('Y-m-d H:i'));
     }
 
     public function testRamadanFlagRequiresUmmAlQura(): void

@@ -218,6 +218,31 @@ final class GregorianToHijriConverterTest extends TestCase
     }
 
     /**
+     * Exactly at the previous day's maghrib the date stays on the UTC civil
+     * date (the backward comparison is strict: <, not <=).
+     *
+     * @return void
+     */
+    public function testExactPreviousMaghribStaysOnTheUtcDate(): void
+    {
+        $coordinates = $this->honolulu();
+        $calendar = new TabularCalendar();
+        $utcDate = CivilDate::fromYmd(2024, 1, 2);
+        $previousMaghrib = $this->maghrib($coordinates, $utcDate->plusDays(-1));
+
+        // Precondition: same fixture as the backward rollover (previous
+        // maghrib after 00:00 UTC), but exactly on the instant.
+        self::assertGreaterThan($utcDate->toUtcMidnight(), $previousMaghrib);
+
+        self::assertSame(
+            $calendar->fromGregorian($utcDate)->isoformat(),
+            GregorianToHijriConverter::default()
+                ->convert($previousMaghrib, $calendar, $coordinates, $this->parameters(), true)
+                ->isoformat(),
+        );
+    }
+
+    /**
      * A DST spring-forward does not disturb the local civil date.
      *
      * @return void
