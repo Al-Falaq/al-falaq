@@ -149,13 +149,13 @@ final class ArchTest extends TestCase
     /**
      * Code with comments and string literals stripped (code tokens only).
      *
-     * Scans must ignore doc prose (e.g. a doc link or a "not DateTimeInterface"
-     * sentence) but still catch runtime strings such as 'https://…'.
+     * Layering scans match real code tokens: doc prose and string-literal
+     * contents (e.g. an FQCN inside an example string) are invisible.
      *
      * @param string $path PHP file to read.
-     * @return string Code with comment tokens replaced by newlines.
+     * @return string Code with comment and string-literal tokens replaced by newlines.
      */
-    private static function codeWithoutComments(string $path): string
+    private static function codeWithoutCommentsAndStrings(string $path): string
     {
         $code = (string) file_get_contents($path);
         $out = '';
@@ -171,6 +171,37 @@ final class ArchTest extends TestCase
                 if ($token[0] === T_CONSTANT_ENCAPSED_STRING
                     || $token[0] === T_ENCAPSED_AND_WHITESPACE
                 ) {
+                    $out .= str_repeat("\n", substr_count($token[1], "\n"));
+
+                    continue;
+                }
+
+                $out .= $token[1];
+            } else {
+                $out .= $token;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Code with comments stripped (strings kept).
+     *
+     * Scans must ignore doc prose (e.g. a doc link or a "not DateTimeInterface"
+     * sentence) but still catch runtime strings such as 'https://…'.
+     *
+     * @param string $path PHP file to read.
+     * @return string Code with comment tokens replaced by newlines.
+     */
+    private static function codeWithoutComments(string $path): string
+    {
+        $code = (string) file_get_contents($path);
+        $out = '';
+
+        foreach (token_get_all($code) as $token) {
+            if (is_array($token)) {
+                if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
                     $out .= str_repeat("\n", substr_count($token[1], "\n"));
 
                     continue;
@@ -407,7 +438,7 @@ final class ArchTest extends TestCase
                 continue;
             }
 
-            $code = self::codeWithoutComments($file->getPathname());
+            $code = self::codeWithoutCommentsAndStrings($file->getPathname());
 
             foreach (['Prayer', 'Qibla', 'Moon', 'Hijri'] as $context) {
                 if (preg_match('/AlFalaq\\\\AlFalaq\\\\' . $context . '(?=\\\\|;)/', $code) === 1) {
@@ -458,7 +489,7 @@ final class ArchTest extends TestCase
                 continue;
             }
 
-            $code = self::codeWithoutComments($file->getPathname());
+            $code = self::codeWithoutCommentsAndStrings($file->getPathname());
 
             if (preg_match('/AlFalaq\\\\AlFalaq\\\\Astro(?=\\\\|;)/', $code) === 1) {
                 $violations[] = $file->getPathname() . ': engine import outside Services/non-Moon Strategies';
@@ -494,7 +525,7 @@ final class ArchTest extends TestCase
                 continue;
             }
 
-            $code = self::codeWithoutComments($file->getPathname());
+            $code = self::codeWithoutCommentsAndStrings($file->getPathname());
 
             if (preg_match('/AlFalaq\\\\AlFalaq\\\\(Astro|Moon)(?=\\\\|;)/', $code) === 1) {
                 $violations[] = $file->getPathname() . ': Hijri must not reference Astro or Moon';
