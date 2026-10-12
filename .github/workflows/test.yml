@@ -18,6 +18,7 @@ jobs:
       - run: composer lint
       - run: composer cs
       - run: composer stan
+      - run: composer audit
 
   test:
     strategy:
