@@ -99,6 +99,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so existing implementations keep loading.
 - `HighLatitudeCorrection::portions()` takes only the angles adapters read
   (`float, ?float`); place/date dropped (breaking for custom implementations).
+- `PrayerTimesCalculatorInterface` gains `maghribAt()`; the Hijri converter
+  hints the interface (breaking for custom implementations, which must add
+  the method).
 - Night temps extracted to the internal `NightResolver` step (single owner
   for seasonal / NONE-raw / portions fajr+isha logic; composed from the
   injected strategies, no new port).

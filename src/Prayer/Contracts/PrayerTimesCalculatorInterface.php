@@ -29,4 +29,19 @@ interface PrayerTimesCalculatorInterface
      * @return PrayerSchedule All instants in UTC; display via forZone().
      */
     public function calculate(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule;
+
+    /**
+     * Maghrib instant without the full schedule (strict-config fallback).
+     *
+     * Runs the pipeline's own solar/maghrib computation and returns before
+     * the Fajr/Isha correction phases, so strict high-latitude configs with
+     * an undefined schedule still resolve maghrib where the sun sets. Throws
+     * UndefinedScheduleException only when maghrib itself is undefined.
+     *
+     * @param Coordinates $coordinates Observer location.
+     * @param CivilDate $date Civil date to compute.
+     * @param CalculationParameters $parameters Method defaults + overrides.
+     * @return \DateTimeImmutable Maghrib instant (UTC).
+     */
+    public function maghribAt(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): \DateTimeImmutable;
 }

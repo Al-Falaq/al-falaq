@@ -323,8 +323,8 @@ sequenceDiagram
 
 1. Resolve the civil date. Default frame: the caller's own zone decides the
    date. With `changeAtSunset: true`, use the UTC date and roll it at the
-   observer's maghrib (probed through `PrayerTimesCalculator`, never
-   reimplemented).
+   observer's maghrib (probed through `PrayerTimesCalculatorInterface`,
+   `calculate()` with `maghribAt()` fallback — never reimplemented).
 2. Convert the civil date via the selected `HijriCalendar` (tabular
    arithmetic or month-start table lookup).
 3. Optionally apply an `OffsetStore` day correction via `shift()`. The

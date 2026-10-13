@@ -117,6 +117,11 @@ final class TimetableServiceTest extends TestCase
             {
                 return $this->canned;
             }
+
+            public function maghribAt(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): \DateTimeImmutable
+            {
+                return $this->canned->maghrib;
+            }
         };
 
         $month = (new TimetableService($double))->monthly(
