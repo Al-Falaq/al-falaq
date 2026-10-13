@@ -7,6 +7,7 @@ namespace AlFalaq\AlFalaq\Moon\Services;
 use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
 use AlFalaq\AlFalaq\Astro\Services\DeltaTProvider;
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
+use AlFalaq\AlFalaq\Astro\Traits\SharesSolarTheory;
 use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\Strategies\Mabims1992Evaluator;
 use AlFalaq\AlFalaq\Moon\Strategies\NeoMabims2021Evaluator;
@@ -29,10 +30,7 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
  */
 final class CrescentCalculator
 {
-    /**
-     * Sunset depression for rise/set in degrees (pin CrescentGeometry.py:36).
-     */
-    private const SUNSET_ALTITUDE_DEG = -50.0 / 60.0;
+    use SharesSolarTheory;
 
     /**
      * Moon-age backward search window in days (pin CrescentGeometry.py:38).
@@ -115,7 +113,7 @@ final class CrescentCalculator
      */
     public function atSunset(Coordinates $coordinates, CivilDate $date, ?float $deltaTOverride = null): CrescentGeometry
     {
-        $sunsetHours = $this->solar->hourAngleFloat($coordinates, $date, 0.0, self::SUNSET_ALTITUDE_DEG, true);
+        $sunsetHours = $this->solar->hourAngleFloat($coordinates, $date, 0.0, self::SUNSET_DEPRESSION_DEG, true);
 
         if ($sunsetHours === null) {
             throw new AstronomicalException(sprintf(
@@ -368,21 +366,4 @@ final class CrescentCalculator
         return rad2deg(acos($this->clamp($cosSep)));
     }
 
-    /**
-     * Clamp an asin/acos argument to [-1, 1] (float overshoot guard).
-     *
-     * Non-finite values pass through untouched so bad inputs surface as
-     * NaN downstream, exactly like CrescentEphemeris::clamp().
-     *
-     * @param float $value Candidate trig argument.
-     * @return float Value clamped to [-1, 1].
-     */
-    private function clamp(float $value): float
-    {
-        if (! is_finite($value)) {
-            return $value;
-        }
-
-        return max(-1.0, min(1.0, $value));
-    }
 }

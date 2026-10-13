@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Astro\Services;
 
 use AlFalaq\AlFalaq\Astro\Contracts\SolarModel;
+use AlFalaq\AlFalaq\Astro\Traits\SharesSolarTheory;
 use AlFalaq\AlFalaq\Astro\ValueObjects\SolarPosition;
 use AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
@@ -23,6 +24,8 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
  */
 final class MeanSolarCalculator implements SolarModel
 {
+    use SharesSolarTheory;
+
     /**
      * Solar declination in degrees (M1).
      *
@@ -380,211 +383,17 @@ final class MeanSolarCalculator implements SolarModel
         return $this->hoursToUtc($tomorrow, $tomorrowRiseHours) !== null;
     }
 
-    /**
-     * Julian centuries since J2000.0.
-     *
-     * Meeus Astronomical Algorithms 2nd ed., Ch. 25 p. 163 (T definition);
-     * pin a7baa8b CalendricalHelper.julian_century (T).
-     *
-     * @param float $julianDay Julian Day number.
-     * @return float Centuries since 2451545.0.
-     */
-    private function julianCentury(float $julianDay): float
-    {
-        return ($julianDay - 2451545.0) / 36525.0;
-    }
 
-    /**
-     * Mean solar longitude L0 in degrees.
-     *
-     * Meeus 2nd ed. p. 163 eq. 25.2; pin a7baa8b
-     * Astronomical.mean_solar_longitude (L0).
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Longitude unwound to [0, 360).
-     */
-    private function meanSolarLongitude(float $century): float
-    {
-        return $this->unwindAngle(
-            280.4664567 + 36000.76983 * $century + 0.0003032 * $century * $century,
-        );
-    }
 
-    /**
-     * Mean lunar longitude Lp in degrees (nutation-series argument).
-     *
-     * Meeus 2nd ed. p. 144 (nutation arguments); pin a7baa8b
-     * Astronomical.mean_lunar_longitude (Lp).
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Longitude unwound to [0, 360).
-     */
-    private function meanLunarLongitude(float $century): float
-    {
-        return $this->unwindAngle(218.3165 + 481267.8813 * $century);
-    }
 
-    /**
-     * Ascending lunar node Omega in degrees (nutation-series argument).
-     *
-     * Meeus 2nd ed. p. 144 (nutation arguments); pin a7baa8b
-     * Astronomical.ascending_lunar_node_longitude (Om).
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Node longitude unwound to [0, 360).
-     */
-    private function ascendingNode(float $century): float
-    {
-        return $this->unwindAngle(
-            125.04452 - 1934.136261 * $century
-            + 0.0020708 * $century * $century
-            + $century * $century * $century / 450000.0,
-        );
-    }
 
-    /**
-     * Solar mean anomaly M in degrees.
-     *
-     * Meeus 2nd ed. p. 163 eq. 25.3; pin a7baa8b
-     * Astronomical.mean_solar_anomaly (M).
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Anomaly unwound to [0, 360).
-     */
-    private function solarAnomaly(float $century): float
-    {
-        return $this->unwindAngle(
-            357.52911 + 35999.05029 * $century - 0.0001537 * $century * $century,
-        );
-    }
 
-    /**
-     * Solar equation of the center C in degrees.
-     *
-     * Meeus 2nd ed. p. 164 eq. 25.4; pin a7baa8b
-     * Astronomical.solar_equation_of_the_center (C).
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Center correction in degrees.
-     */
-    private function equationOfCenter(float $century): float
-    {
-        $anomalyRad = deg2rad($this->solarAnomaly($century));
 
-        return (1.914602 - 0.004817 * $century - 0.000014 * $century * $century) * sin($anomalyRad)
-            + (0.019993 - 0.000101 * $century) * sin(2.0 * $anomalyRad)
-            + 0.000289 * sin(3.0 * $anomalyRad);
-    }
 
-    /**
-     * Apparent solar longitude (lambda) in degrees.
-     *
-     * True longitude corrected for aberration (-0.00569) and nutation
-     * (-0.00478 sin); Meeus 2nd ed. p. 164 eq. 25.6-25.7; pin a7baa8b
-     * Astronomical.apparent_solar_longitude (lam).
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Longitude unwound to [0, 360).
-     */
-    private function apparentLongitude(float $century): float
-    {
-        return $this->unwindAngle(
-            $this->meanSolarLongitude($century)
-            + $this->equationOfCenter($century)
-            - 0.00569
-            // Truncated form is pin-verbatim (Meeus); do NOT replace with ascendingNode().
-            - 0.00478 * sin(deg2rad(125.04 - 1934.136 * $century)),
-        );
-    }
 
-    /**
-     * Mean obliquity of the ecliptic (epsilon0) in degrees.
-     *
-     * Meeus 2nd ed. p. 147 eq. 22.2; pin a7baa8b
-     * Astronomical.mean_obliquity_of_the_ecliptic (eps0). Note the T^3
-     * term is ADDED (term1 - term2 - term3 + term4), matching the pin
-     * and Meeus — not subtracted.
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Mean obliquity in degrees.
-     */
-    private function meanObliquity(float $century): float
-    {
-        return 23.439291 - 0.013004167 * $century
-            - 0.0000001639 * $century * $century
-            + 0.0000005036 * $century * $century * $century;
-    }
 
-    /**
-     * Apparent obliquity of the ecliptic in degrees.
-     *
-     * Meeus 2nd ed. p. 165 (pin comment; +0.00256 cos term); pin a7baa8b
-     * Astronomical.apparent_obliquity_of_the_ecliptic (epsApp).
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Apparent obliquity in degrees.
-     */
-    private function apparentObliquity(float $century): float
-    {
-        return $this->meanObliquity($century)
-            // Truncated form is pin-verbatim (Meeus); do NOT replace with ascendingNode().
-            + 0.00256 * cos(deg2rad(125.04 - 1934.136 * $century));
-    }
 
-    /**
-     * Nutation in longitude (delta-Psi) in degrees, truncated series.
-     *
-     * Meeus 2nd ed. p. 144 Table 22.A (four dominant terms); pin a7baa8b
-     * Astronomical.nutation_in_longitude (dPsi).
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Nutation in longitude in degrees.
-     */
-    private function nutationLongitude(float $century): float
-    {
-        $node = $this->ascendingNode($century);
-        $meanSolar = $this->meanSolarLongitude($century);
-        $meanLunar = $this->meanLunarLongitude($century);
 
-        return -(17.2 / 3600.0) * sin(deg2rad($node))
-            - (1.32 / 3600.0) * sin(deg2rad(2.0 * $meanSolar))
-            - (0.23 / 3600.0) * sin(deg2rad(2.0 * $meanLunar))
-            + (0.21 / 3600.0) * sin(deg2rad(2.0 * $node));
-    }
-
-    /**
-     * Nutation in obliquity (delta-epsilon) in degrees, truncated series.
-     *
-     * Meeus 2nd ed. p. 144 Table 22.A (four dominant terms); pin a7baa8b
-     * Astronomical.nutation_in_obliquity (dEps).
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Nutation in obliquity in degrees.
-     */
-    private function nutationObliquity(float $century): float
-    {
-        $node = $this->ascendingNode($century);
-        $meanSolar = $this->meanSolarLongitude($century);
-        $meanLunar = $this->meanLunarLongitude($century);
-
-        return (9.2 / 3600.0) * cos(deg2rad($node))
-            + (0.57 / 3600.0) * cos(deg2rad(2.0 * $meanSolar))
-            + (0.10 / 3600.0) * cos(deg2rad(2.0 * $meanLunar))
-            - (0.09 / 3600.0) * cos(deg2rad(2.0 * $node));
-    }
-
-    /**
-     * Reduce an angle to [0, 360) degrees.
-     *
-     * Pin a7baa8b FloatUtil.unwind_angle; no Meeus page (bookkeeping).
-     *
-     * @param float $angle Angle in degrees.
-     * @return float Equivalent angle in [0, 360).
-     */
-    private function unwindAngle(float $angle): float
-    {
-        return $angle - 360.0 * floor($angle / 360.0);
-    }
 
     /**
      * Wrap a signed angle to (-180, 180] degrees.
@@ -604,27 +413,6 @@ final class MeanSolarCalculator implements SolarModel
         return $angle - 360.0 * round($angle / 360.0, 0, PHP_ROUND_HALF_EVEN);
     }
 
-    /**
-     * Mean sidereal time at Greenwich in degrees.
-     *
-     * Meeus 2nd ed. p. 165; pin a7baa8b Astronomical.mean_sidereal_time.
-     *
-     * @param float $century Julian centuries since J2000.0.
-     * @return float Sidereal angle unwound to [0, 360).
-     */
-    private function meanSiderealTime(float $century): float
-    {
-        $square = $century * $century;
-        $cube = $square * $century;
-        $julianDay = $century * 36525.0 + 2451545.0;
-
-        return $this->unwindAngle(
-            280.46061837
-            + 360.98564736629 * ($julianDay - 2451545.0)
-            + 0.000387933 * $square
-            - $cube / 38710000.0,
-        );
-    }
 
     /**
      * Right ascension, declination, and sidereal time for one Julian Day.
@@ -668,37 +456,10 @@ final class MeanSolarCalculator implements SolarModel
      */
     private function solarAltitude(float $elevationM): float
     {
-        return -50.0 / 60.0 - 0.0293 * sqrt($elevationM);
+        return self::SUNSET_DEPRESSION_DEG - 0.0293 * sqrt($elevationM);
     }
 
-    /**
-     * Reduce a value into [0, max) via floor (handles negatives).
-     *
-     * Pin a7baa8b FloatUtil.normalize_with_bound; no Meeus page.
-     *
-     * @param float $value Value to wrap.
-     * @param float $max Exclusive upper bound.
-     * @return float Wrapped value.
-     */
-    private function normalizeBound(float $value, float $max): float
-    {
-        return $value - $max * floor($value / $max);
-    }
 
-    /**
-     * Approximate transit fraction m0 for one solar day.
-     *
-     * Pin a7baa8b Astronomical.approximate_transit; Meeus 2nd ed. p. 102.
-     *
-     * @param float $longitude Observer longitude in degrees.
-     * @param float $rightAscension Current right ascension in degrees.
-     * @param float $siderealTime Current sidereal time in degrees.
-     * @return float Day fraction in [0, 1).
-     */
-    private function approximateTransit(float $longitude, float $rightAscension, float $siderealTime): float
-    {
-        return $this->normalizeBound(($rightAscension + (-$longitude) - $siderealTime) / 360.0, 1.0);
-    }
 
     /**
      * Corrected transit in float hours (Meeus Ch.15 interpolation).
@@ -792,46 +553,7 @@ final class MeanSolarCalculator implements SolarModel
         return ($m + ($altitude - $altitudeDeg) / $denominator) * 24.0;
     }
 
-    /**
-     * Lagrange interpolation for declination across three days.
-     *
-     * Pin a7baa8b Astronomical.interpolate; Meeus 2nd ed. p. 24.
-     *
-     * @param float $yCurr Current-day value.
-     * @param float $yPrev Previous-day value.
-     * @param float $yNext Next-day value.
-     * @param float $n Interpolation fraction.
-     * @return float Interpolated value.
-     */
-    private function interp(float $yCurr, float $yPrev, float $yNext, float $n): float
-    {
-        $a = $yCurr - $yPrev;
-        $b = $yNext - $yCurr;
-        $c = $b - $a;
 
-        return $yCurr + ($n / 2.0) * ($a + $b + $n * $c);
-    }
-
-    /**
-     * Angle-aware interpolation for right ascension across three days.
-     *
-     * Pin a7baa8b Astronomical.interpolate_angles; Meeus 2nd ed. p. 24.
-     * Deltas are unwound but c is NOT unwound — verbatim.
-     *
-     * @param float $yCurr Current-day angle.
-     * @param float $yPrev Previous-day angle.
-     * @param float $yNext Next-day angle.
-     * @param float $n Interpolation fraction.
-     * @return float Interpolated angle.
-     */
-    private function interpAngles(float $yCurr, float $yPrev, float $yNext, float $n): float
-    {
-        $a = $this->unwindAngle($yCurr - $yPrev);
-        $b = $this->unwindAngle($yNext - $yCurr);
-        $c = $b - $a;
-
-        return $yCurr + ($n / 2.0) * ($a + $b + $n * $c);
-    }
 
     /**
      * Float hours to a UTC instant on the civil date.
