@@ -39,18 +39,10 @@ import sys
 
 from alfalak.astronomy.Geodesy import geodesic_inverse
 from alfalak.data.Constants import MAKKAH
-from golden_cities import CITIES_QIBLA as CITIES
+from golden_cities import CITIES_QIBLA as CITIES, antipode_rows
 
 
-# Antipode longitude unwound to [-180, 180] (robust to sign, not just lon - 180).
-ANTIPODE = [
-    ("Makkah self", MAKKAH.latitude, MAKKAH.longitude),
-    (
-        "Antipode of Makkah",
-        -MAKKAH.latitude,
-        (MAKKAH.longitude + 180.0 + 540.0) % 360.0 - 180.0,
-    ),
-]
+ANTIPODE = antipode_rows(MAKKAH.latitude, MAKKAH.longitude)
 
 
 def unwind(azi: float) -> float:

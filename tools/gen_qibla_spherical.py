@@ -30,21 +30,13 @@ import sys
 
 from alfalak import Qibla
 from alfalak.data.Constants import EARTH_MEAN_RADIUS_KM, MAKKAH
-from golden_cities import CITIES_QIBLA as CITIES
+from golden_cities import CITIES_QIBLA as CITIES, antipode_rows
 
 BEARING_GATE_DEG = 1e-12
 DISTANCE_GATE_KM = 1e-9
 
 
-# Antipode longitude unwound to [-180, 180] (robust to sign, not just lon - 180).
-ANTIPODE = [
-    ("Makkah self", MAKKAH.latitude, MAKKAH.longitude),
-    (
-        "Antipode of Makkah",
-        -MAKKAH.latitude,
-        (MAKKAH.longitude + 180.0 + 540.0) % 360.0 - 180.0,
-    ),
-]
+ANTIPODE = antipode_rows(MAKKAH.latitude, MAKKAH.longitude)
 
 
 def ang_diff_deg(a: float, b: float) -> float:
