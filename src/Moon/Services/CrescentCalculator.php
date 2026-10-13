@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Moon\Services;
 
+use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
 use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
 use AlFalaq\AlFalaq\Astro\Services\DeltaTProvider;
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
@@ -59,7 +60,7 @@ final class CrescentCalculator
      * doubles can substitute in tests; default() wires the specified
      * criterion set in map order.
      *
-     * @param MeanSolarCalculator $solar Day-level solar geometry (sunset instants).
+     * @param SolarDayEngine $solar Day-level solar geometry (sunset instants).
      * @param CrescentEphemeris $ephemeris Sun/moon ephemeris + sidereal time.
      * @param CrescentEvaluator $yallop Yallop q-criterion strategy.
      * @param CrescentEvaluator $odeh Odeh V-criterion strategy.
@@ -67,7 +68,7 @@ final class CrescentCalculator
      * @param CrescentEvaluator $neoMabims2021 Neo-MABIMS-2021 strategy.
      */
     public function __construct(
-        private readonly MeanSolarCalculator $solar,
+        private readonly SolarDayEngine $solar,
         private readonly CrescentEphemeris $ephemeris,
         private readonly CrescentEvaluator $yallop,
         private readonly CrescentEvaluator $odeh,

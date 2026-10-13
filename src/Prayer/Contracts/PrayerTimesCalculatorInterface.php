@@ -20,10 +20,10 @@ interface PrayerTimesCalculatorInterface
     /**
      * Compute all ten prayer instants for one date and place (UTC).
      *
-     * @param Coordinates $coordinates Observer location.
+     * @param Coordinates|array{0: mixed, 1: mixed} $coordinates VO or [lat, lon] pair.
      * @param CivilDate $date Civil date to compute.
      * @param CalculationParameters $parameters Method defaults + overrides.
      * @return PrayerSchedule All instants in UTC; display via forZone().
      */
-    public function calculate(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule;
+    public function calculate(Coordinates|array $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule;
 }

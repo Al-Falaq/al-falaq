@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Tests\Prayer;
 
+use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\Prayer\Services\TimetableService;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
@@ -87,5 +90,46 @@ final class TimetableServiceTest extends TestCase
 
         self::assertCount(31, $service->monthly($coords, 2025, 1, $params));
         self::assertCount(31, $service->monthly($coords, 2025, 12, $params));
+    }
+
+    public function testInjectedCalculatorDoubleServesMonthly(): void
+    {
+        // The monthly loop crosses the same interface seam callers use: a
+        // pre-wired double replaces 28 full-pipeline calls.
+        $utc = new \DateTimeZone('UTC');
+        $at = static fn(string $time): \DateTimeImmutable => new \DateTimeImmutable($time, $utc);
+        $canned = new PrayerSchedule(
+            $at('2025-02-01 22:00'),
+            $at('2025-02-01 22:10'),
+            $at('2025-02-01 23:00'),
+            $at('2025-02-01 23:00'),
+            $at('2025-02-01 23:15'),
+            $at('2025-02-01 23:30'),
+            $at('2025-02-02 05:00'),
+            $at('2025-02-02 08:00'),
+            $at('2025-02-02 10:00'),
+            $at('2025-02-02 11:00'),
+        );
+        $double = new class ($canned) implements PrayerTimesCalculatorInterface {
+            public function __construct(private readonly PrayerSchedule $canned) {}
+
+            public function calculate(Coordinates|array $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule
+            {
+                return $this->canned;
+            }
+        };
+
+        $month = (new TimetableService($double))->monthly(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            2025,
+            2,
+            CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(),
+        );
+
+        self::assertCount(28, $month);
+
+        foreach ($month as $schedule) {
+            self::assertSame($canned, $schedule);
+        }
     }
 }

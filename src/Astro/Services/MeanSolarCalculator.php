@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Astro\Services;
 
-use AlFalaq\AlFalaq\Astro\Contracts\SolarModel;
+use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
 use AlFalaq\AlFalaq\Astro\Traits\SharesSolarTheory;
 use AlFalaq\AlFalaq\Astro\ValueObjects\SolarPosition;
 use AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime;
@@ -18,11 +18,12 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
  * Mean-sun solar calculator (Meeus transcription, M1).
  *
  * The 4 day-level methods (solarTime/hourAngle/afternoon/isSolarDefined) are
- * intentionally concrete-@internal: the contract keeps only declination/equationOfTime.
+ * exposed through the SolarDayEngine port; the narrow SolarModel contract
+ * keeps only declination/equationOfTime.
  *
  * @internal Entry point is SolarTime, not this class.
  */
-final class MeanSolarCalculator implements SolarModel
+final class MeanSolarCalculator implements SolarDayEngine
 {
     use SharesSolarTheory;
 

@@ -24,12 +24,14 @@ $schedule = $calculator->calculate(
 Advanced use: inject strategies explicitly instead of `default()`.
 
 ```php
+use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight;
 
 $calculator = new PrayerTimesCalculator(
+    new MeanSolarCalculator(),
     new MiddleOfNightCorrection(),
     new NearestLatitudeHandler(),
     new SeasonAdjustedTwilight(),

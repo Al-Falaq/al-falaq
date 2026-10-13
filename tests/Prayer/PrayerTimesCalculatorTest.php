@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Tests\Prayer;
 
+use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
 use AlFalaq\AlFalaq\Prayer\Contracts\IshaRule;
 use AlFalaq\AlFalaq\Prayer\Contracts\MaghribRule;
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
@@ -418,6 +419,7 @@ final class PrayerTimesCalculatorTest extends TestCase
         };
 
         $calculator = new PrayerTimesCalculator(
+            new MeanSolarCalculator(),
             new MiddleOfNightCorrection(),
             $handler,
             new SeasonAdjustedTwilight(),

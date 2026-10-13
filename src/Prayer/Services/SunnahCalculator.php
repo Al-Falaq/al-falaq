@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Prayer\Services;
 
+use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\SunnahTimes;
@@ -32,14 +33,14 @@ final class SunnahCalculator
     /**
      * Build from a calculator instead of precomputed schedules.
      *
-     * @param PrayerTimesCalculator $calculator Single-day pipeline.
+     * @param PrayerTimesCalculatorInterface $calculator Single-day pipeline.
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date of tonight's maghrib.
      * @param CalculationParameters $parameters Method defaults + overrides.
      * @return self Calculator bound to tonight + tomorrow night.
      */
     public static function fromCalculator(
-        PrayerTimesCalculator $calculator,
+        PrayerTimesCalculatorInterface $calculator,
         Coordinates $coordinates,
         CivilDate $date,
         CalculationParameters $parameters,

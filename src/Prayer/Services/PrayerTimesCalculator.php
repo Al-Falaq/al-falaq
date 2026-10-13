@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Prayer\Services;
 
-use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
+use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
 use AlFalaq\AlFalaq\Prayer\Contracts\HighLatitudeCorrection;
+use AlFalaq\AlFalaq\Prayer\Contracts\MaghribRule;
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
 use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\TwilightModel;
@@ -48,25 +49,28 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     use NormalizesCoordinatesInput;
 
     /**
-     * Mean-sun day engine (@internal detail, not policy; ctor signature unchanged).
+     * Wire the day engine plus the three behavioral strategies explicitly (no container).
      *
-     * @var MeanSolarCalculator Day-level solar geometry.
-     */
-    private readonly MeanSolarCalculator $solar;
-
-    /**
-     * Wire the three behavioral strategies explicitly (no container).
-     *
+     * @param SolarDayEngine $solar Day-level solar geometry (real engine or test double).
      * @param HighLatitudeCorrection $highLatitudeCorrection Night splitting above ~48° latitude.
      * @param PolarCircleHandler $polarCircleHandler Polar day/night fallback.
      * @param TwilightModel $twilightModel Seasonal angles for MSC method.
      */
     public function __construct(
+        private readonly SolarDayEngine $solar,
         private readonly HighLatitudeCorrection $highLatitudeCorrection,
         private readonly PolarCircleHandler $polarCircleHandler,
         private readonly TwilightModel $twilightModel,
-    ) {
-        $this->solar = new MeanSolarCalculator();
+    ) {}
+
+    /**
+     * Expose the injected day engine (introspection/testing).
+     *
+     * @return SolarDayEngine The wired solar geometry.
+     */
+    public function solar(): SolarDayEngine
+    {
+        return $this->solar;
     }
 
     /**
@@ -108,13 +112,7 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         CalculationParameters $parameters,
     ): \DateTimeImmutable {
         $coords = self::normalizeCoordinates($coordinates);
-
-        if ($parameters->isRamadan && $parameters->method !== CalculationMethod::UMM_AL_QURA) {
-            throw new ConfigurationException(sprintf(
-                'isRamadan requires UMM_AL_QURA (got %s).',
-                $parameters->method->value,
-            ));
-        }
+        $this->assertRamadanCompatible($parameters);
 
         try {
             $day = $this->solar->solarTime($coords, $date, $parameters->elevationM);
@@ -123,34 +121,7 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         }
 
         $eff = $parameters->methodAdjustments->combinedWith($parameters->adjustments);
-
-        $maghribMinutes = $parameters->maghribRule->minutesAfterSunset();
-
-        if ($maghribMinutes !== null) {
-            $maghribBase = Minutes::add($day->sunset, $maghribMinutes);
-        } else {
-            $maghribAngle = $parameters->maghribRule->angle();
-
-            if ($maghribAngle === null) {
-                throw new AstronomicalException(sprintf(
-                    'Unable to compute Maghrib: no angle or interval defined (coordinates=%s, date=%s).',
-                    (string) $coords,
-                    $date->isoformat(),
-                ));
-            }
-
-            $maghribTemp = $this->solar->hourAngle($coords, $date, $parameters->elevationM, -$maghribAngle, true);
-
-            if ($maghribTemp === null) {
-                throw new AstronomicalException(sprintf(
-                    'Unable to compute Maghrib: the sun never reaches the angle for these coordinates and date (coordinates=%s, date=%s).',
-                    (string) $coords,
-                    $date->isoformat(),
-                ));
-            }
-
-            $maghribBase = $maghribTemp;
-        }
+        $maghribBase = $this->maghribBase($coords, $date, $parameters->elevationM, $parameters->maghribRule, $day->sunset);
 
         return $this->adjusted($maghribBase, $eff, Prayer::MAGHRIB);
     }
@@ -183,6 +154,7 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     public static function default(): self
     {
         return new self(
+            new \AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator(),
             new \AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection(),
             new \AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler(),
             new \AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight(),
@@ -215,7 +187,12 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         // Consulted on the MSC seasonal branches in calculate().
         $twilight = new SeasonAdjustedTwilight();
 
-        return new self($hl, $polar, $twilight);
+        return new self(
+            new \AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator(),
+            $hl,
+            $polar,
+            $twilight,
+        );
     }
 
     /**
@@ -233,13 +210,7 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     public function calculate(Coordinates|array $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule
     {
         $coords = self::normalizeCoordinates($coordinates);
-
-        if ($parameters->isRamadan && $parameters->method !== CalculationMethod::UMM_AL_QURA) {
-            throw new ConfigurationException(sprintf(
-                'isRamadan requires UMM_AL_QURA (got %s).',
-                $parameters->method->value,
-            ));
-        }
+        $this->assertRamadanCompatible($parameters);
 
         $elev = $parameters->elevationM;
         $effDate = $date;
@@ -370,33 +341,7 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
             $asr = $dhuhr;
         }
 
-        $maghribMinutes = $parameters->maghribRule->minutesAfterSunset();
-
-        if ($maghribMinutes !== null) {
-            $maghribBase = Minutes::add($day->sunset, $maghribMinutes);
-        } else {
-            $maghribAngle = $parameters->maghribRule->angle();
-
-            if ($maghribAngle === null) {
-                throw new AstronomicalException(sprintf(
-                    'Unable to compute Maghrib: no angle or interval defined (coordinates=%s, date=%s).',
-                    (string) $effCoords,
-                    $effDate->isoformat(),
-                ));
-            }
-
-            $maghribTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$maghribAngle, true);
-
-            if ($maghribTemp === null) {
-                throw new AstronomicalException(sprintf(
-                    'Unable to compute Maghrib: the sun never reaches the angle for these coordinates and date (coordinates=%s, date=%s).',
-                    (string) $effCoords,
-                    $effDate->isoformat(),
-                ));
-            }
-
-            $maghribBase = $maghribTemp;
-        }
+        $maghribBase = $this->maghribBase($effCoords, $effDate, $elev, $parameters->maghribRule, $day->sunset);
 
         $maghrib = $this->adjusted($maghribBase, $eff, Prayer::MAGHRIB);
 
@@ -469,6 +414,67 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     private function adjusted(\DateTimeImmutable $base, PrayerAdjustments $eff, Prayer $prayer): \DateTimeImmutable
     {
         return Minutes::roundedHalfUp(Minutes::add($base, $eff->for($prayer)));
+    }
+
+    /**
+     * Shared maghrib resolution for calculate() and maghribAt() (single owner).
+     *
+     * Callers pass their own resolved coordinates, date, and sunset: calculate()
+     * passes the polar-resolved pair, maghribAt() the raw pair (it skips the
+     * polar resolve by design — maghrib never consumes night length).
+     *
+     * @param Coordinates $coords Resolved observer location.
+     * @param CivilDate $date Resolved civil date.
+     * @param mixed $elevationM Observer height in metres.
+     * @param MaghribRule $rule Angle or interval rule.
+     * @param \DateTimeImmutable $sunset Sunset instant from the day engine.
+     * @return \DateTimeImmutable Unadjusted maghrib instant (UTC).
+     */
+    private function maghribBase(Coordinates $coords, CivilDate $date, mixed $elevationM, MaghribRule $rule, \DateTimeImmutable $sunset): \DateTimeImmutable
+    {
+        $maghribMinutes = $rule->minutesAfterSunset();
+
+        if ($maghribMinutes !== null) {
+            return Minutes::add($sunset, $maghribMinutes);
+        }
+
+        $maghribAngle = $rule->angle();
+
+        if ($maghribAngle === null) {
+            throw new AstronomicalException(sprintf(
+                'Unable to compute Maghrib: no angle or interval defined (coordinates=%s, date=%s).',
+                (string) $coords,
+                $date->isoformat(),
+            ));
+        }
+
+        $maghribTemp = $this->solar->hourAngle($coords, $date, $elevationM, -$maghribAngle, true);
+
+        if ($maghribTemp === null) {
+            throw new AstronomicalException(sprintf(
+                'Unable to compute Maghrib: the sun never reaches the angle for these coordinates and date (coordinates=%s, date=%s).',
+                (string) $coords,
+                $date->isoformat(),
+            ));
+        }
+
+        return $maghribTemp;
+    }
+
+    /**
+     * Guard Umm al-Qura Ramadan mode at pipeline entry.
+     *
+     * @param CalculationParameters $parameters Method defaults + overrides.
+     * @return void
+     */
+    private function assertRamadanCompatible(CalculationParameters $parameters): void
+    {
+        if ($parameters->isRamadan && $parameters->method !== CalculationMethod::UMM_AL_QURA) {
+            throw new ConfigurationException(sprintf(
+                'isRamadan requires UMM_AL_QURA (got %s).',
+                $parameters->method->value,
+            ));
+        }
     }
 
     private function addSeconds(\DateTimeImmutable $base, int $seconds): \DateTimeImmutable
