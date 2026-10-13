@@ -10,8 +10,6 @@ use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
-use AlFalaq\AlFalaq\Prayer\Strategies\AngleIsha;
-use AlFalaq\AlFalaq\Prayer\Strategies\AngleMaghrib;
 use AlFalaq\AlFalaq\SharedKernel\Traits\HasWithersGuard;
 use AlFalaq\AlFalaq\SharedKernel\Traits\ValidatesFinite;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
@@ -84,17 +82,8 @@ final readonly class CalculationParameters
     ): self {
         $fajr = self::validateAngle($fajrAngle, 'fajrAngle');
 
-        if ($ishaRule instanceof AngleIsha) {
-            self::validateAngle($ishaRule->angle, 'ishaAngle');
-        } elseif ($ishaRule->minutesAfterMaghrib() === null || $ishaRule->minutesAfterMaghrib() < 1) {
-            throw new ValidationException('Invalid ishaRule: interval minutes must be >= 1.');
-        }
-
-        if ($maghribRule instanceof AngleMaghrib) {
-            self::validateAngle($maghribRule->angle, 'maghribAngle');
-        } elseif ($maghribRule->minutesAfterSunset() === null || $maghribRule->minutesAfterSunset() < 0) {
-            throw new ValidationException('Invalid maghribRule: minutes after sunset must be >= 0.');
-        }
+        $ishaRule->validate();
+        $maghribRule->validate();
 
         $dhuhrOff = self::guardOffsetMinutes($dhuhrOffsetMinutes, 'dhuhrOffsetMinutes', 0, 5);
         $imsakOff = self::guardOffsetMinutes($imsakOffsetMinutes, 'imsakOffsetMinutes');
@@ -314,11 +303,7 @@ final readonly class CalculationParameters
      */
     public function withIshaRule(IshaRule $ishaRule): self
     {
-        if ($ishaRule instanceof AngleIsha) {
-            self::validateAngle($ishaRule->angle, 'ishaAngle');
-        } elseif ($ishaRule->minutesAfterMaghrib() === null || $ishaRule->minutesAfterMaghrib() < 1) {
-            throw new ValidationException('Invalid ishaRule: interval minutes must be >= 1.');
-        }
+        $ishaRule->validate();
 
         return new self(
             $this->method,
@@ -347,11 +332,7 @@ final readonly class CalculationParameters
      */
     public function withMaghribRule(MaghribRule $maghribRule): self
     {
-        if ($maghribRule instanceof AngleMaghrib) {
-            self::validateAngle($maghribRule->angle, 'maghribAngle');
-        } elseif ($maghribRule->minutesAfterSunset() === null || $maghribRule->minutesAfterSunset() < 0) {
-            throw new ValidationException('Invalid maghribRule: minutes after sunset must be >= 0.');
-        }
+        $maghribRule->validate();
 
         return new self(
             $this->method,

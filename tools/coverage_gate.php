@@ -54,6 +54,9 @@ if (str_contains($output, 'No code coverage driver available')) {
         exit($exit);
     }
 
+    // Machine-readable bypass marker: driverless runs pass on green tests
+    // with the threshold explicitly unchecked (CI always provides pcov).
+    echo "coverage_gate: status=no-driver threshold-unchecked tests-green\n";
     fwrite(STDERR, "coverage_gate: no coverage driver (pcov/xdebug); threshold unchecked, tests green.\n");
     exit(0);
 }
@@ -65,7 +68,9 @@ if ($exit !== 0 && ! str_contains($output, 'Lines:')) {
     exit($exit);
 }
 
-if (! preg_match('/^\s*Lines:\s+([0-9.]+)\s*%/m', $output, $matches)) {
+if (! preg_match('/^\s*Lines:\s+([0-9.]+)\s*%/m', $output, $matches)
+    && ! preg_match('/Lines\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*%/', $output, $matches)
+) {
     fwrite(STDERR, "coverage_gate: could not parse total coverage.\n");
     exit(1);
 }

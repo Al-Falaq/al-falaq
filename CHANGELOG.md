@@ -90,13 +90,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `HijriCalendar::fromGregorian()` now takes `CivilDate` only.
+- Prayer wiring goes through the new `SolarDayEngine` port:
+  `PrayerTimesCalculator::__construct` takes the day engine first
+  (`default()`/`defaultFor()` supply `MeanSolarCalculator`; implement the
+  port for test doubles). `MeanSolarCalculator` is the stable default
+  adapter for explicit wiring. The shipped calculator still accepts
+  `Coordinates|array` via contravariance; the interface keeps `Coordinates`
+  so existing implementations keep loading.
+- Prayer rule validation lives behind the rule interfaces: `IshaRule` and
+  `MaghribRule` gain `validate()` (angle finite in [0, 30] or valid interval),
+  and `CalculationParameters` no longer branches on shipped concretes — custom
+  third-party rules are honored through the interface (breaking for custom
+  implementations, which must add the one method).
 - Coverage floor raised 80 → 85.
 - Coverage floor raised 85 → 95.
 - Infection MSI≥85% + covered-MSI≥85% gated in CI (`composer mutation`; `KarneyInverse` core file-excluded — survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`).
+- Harness truth fixes: removed dead `Comparator::floatsEqual()` (plus its two
+  tolerance constants) — the live golden story is minute equality; the coverage
+  gate prints a machine-readable `status=no-driver` marker on driverless runs
+  and parses the `Lines:` summary defensively; bench documented as loose
+  50ms/30000ms tripwires with the PRD 2ms/1000ms/16MB budgets as headroom.
+- Crescent null-window ownership: `Mabims1992Evaluator` owns the full rule plus
+  the no-moonset alt/elongation fallback (spec §3.2); the orchestrator
+  delegates unconditionally, retiring its inline duplication.
+- Qibla normalization: `QiblaCalculator` requires its geodesy (no nullable +
+  throw); Kaaba facts move to the `GeodesyCalculator` seam; `Angle` owns the
+  unwind (incl. the 360.0 ulp guard) and one shared self-clamp serves both
+  adapters (breaking: `new QiblaCalculator()` without an argument).
+- Harness structure: arch god-test split by concern (`ArchShape/Docs/Layering`
+  + shared `ArchSupport`, same 14 tests); one `GoldenLoader` serves all four
+  golden suites (Qibla/Moon/Hijri/Prayer `checkFile` included); city grids
+  shared via `tools/golden_cities.py` (Qibla regens proven byte-identical);
+  `composer goldens` lists/delegates generator targets.
 
 ### Removed
 
 - `HijriDate::plusDays()` — use `HijriCalendar::shift()`.
+- Prayer `AsrRule` seam (`AsrRule`, `ShafiAsr`, `HanafiAsr`) — the closed
+  `Madhab` enum already carries `shadowLength()` (1.0 Shafi, 2.0 Hanafi),
+  which the pipeline now reads directly.
+- Astro `LunarPosition` value object — test-only bundle never constructed in
+  `src/` (engines return shape-arrays; the live contract is
+  `CrescentGeometry`).
 
 ### Fixed
 

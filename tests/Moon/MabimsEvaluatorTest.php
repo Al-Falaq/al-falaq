@@ -44,11 +44,19 @@ final class MabimsEvaluatorTest extends TestCase
         self::assertTrue($verdict->visible);
     }
 
-    public function test1992NullWindowIsRejected(): void
+    public function test1992NullWindowFallsBackToAltElong(): void
     {
-        $this->expectException(ValidationException::class);
+        // No-moonset window (spec §3.2): age branch undefined, so only the
+        // altitude/elongation half applies — same thresholds as the full rule.
+        $visible = (new Mabims1992Evaluator())->evaluate($this->geometry(5.0, 8.0, null));
 
-        (new Mabims1992Evaluator())->evaluate($this->geometry(5.0, 8.0, null));
+        self::assertTrue($visible->visible);
+        self::assertSame('visible', $visible->zone);
+
+        $hidden = (new Mabims1992Evaluator())->evaluate($this->geometry(1.0, 8.0, null));
+
+        self::assertFalse($hidden->visible);
+        self::assertSame('not-visible', $hidden->zone);
     }
 
     public function testNeoKeyRenamedAndThresholdsHold(): void

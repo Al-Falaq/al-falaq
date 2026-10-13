@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Tests\Wiring;
 
+use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
+use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
 use AlFalaq\AlFalaq\Prayer\Contracts\NextPrayerResolverInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\TimetableServiceInterface;
@@ -48,6 +50,14 @@ final class CalculatorWiringTest extends TestCase
     public function testPrayerCalculatorSatisfiesItsContract(): void
     {
         self::assertInstanceOf(PrayerTimesCalculatorInterface::class, PrayerTimesCalculator::default());
+    }
+
+    public function testDefaultCalculatorWiresRealDayEngineBehindPort(): void
+    {
+        $solar = PrayerTimesCalculator::default()->solar();
+
+        self::assertInstanceOf(SolarDayEngine::class, $solar);
+        self::assertInstanceOf(MeanSolarCalculator::class, $solar);
     }
 
     public function testResolverAndTimetableSatisfyTheirContracts(): void

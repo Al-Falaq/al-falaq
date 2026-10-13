@@ -146,60 +146,13 @@ final class PrayerGoldensTest extends TestCase
      */
     private function checkFile(string $path): int
     {
-        $handle = fopen($path, 'r');
-
-        if ($handle === false) {
-            self::fail('Cannot open golden file ' . $path);
-        }
-
-        $headerRow = fgetcsv($handle, escape: '');
-
-        if (! is_array($headerRow)) {
-            fclose($handle);
-            self::fail('Empty golden file ' . $path);
-        }
-
-        $header = [];
-
-        foreach ($headerRow as $cell) {
-            if (! is_string($cell)) {
-                fclose($handle);
-                self::fail('Empty header cell in golden file ' . $path);
-            }
-
-            $header[] = $cell;
-        }
+        $loaded = GoldenLoader::load($path);
 
         $method = CalculationMethod::from(substr(basename($path, '.csv'), 7));
 
         $rows = 0;
-        $line = 1;
 
-        while (true) {
-            $row = fgetcsv($handle, escape: '');
-
-            if (! is_array($row)) {
-                break;
-            }
-
-            $line++;
-
-            if (count($header) !== count($row)) {
-                fclose($handle);
-                self::fail(sprintf(
-                    'Column-count mismatch in golden file %s line %d: header has %d columns, row has %d.',
-                    $path,
-                    $line,
-                    count($header),
-                    count($row),
-                ));
-            }
-
-            $data = [];
-
-            foreach ($header as $index => $key) {
-                $data[$key] = $row[$index] ?? null;
-            }
+        foreach ($loaded['rows'] as $data) {
 
             $hasExpectation = false;
 
@@ -259,8 +212,6 @@ final class PrayerGoldensTest extends TestCase
 
             $rows++;
         }
-
-        fclose($handle);
 
         return $rows;
     }

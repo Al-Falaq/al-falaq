@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Tests\Qibla;
 
 use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use PHPUnit\Framework\TestCase;
 
@@ -49,13 +48,6 @@ final class QiblaCalculatorTest extends TestCase
         // not ignored or hardcoded (London 118.987219° / 4793.778 km).
         self::assertTrue(abs($fromArray->direction - 118.987219) <= 1e-6);
         self::assertTrue(abs($fromArray->distanceKm - 4793.778) <= 1e-3);
-    }
-
-    public function testMissingGeodesyThrowsConfigurationException(): void
-    {
-        $this->expectException(ConfigurationException::class);
-
-        (new QiblaCalculator())->calculate(Coordinates::fromDegrees(35.7750, -78.6336));
     }
 
     public function testWgs84RaleighMatchesOracle(): void

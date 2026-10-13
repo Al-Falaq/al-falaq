@@ -7,6 +7,7 @@ infection.log
 .idea/
 .vscode/
 *.cache
+__pycache__/
 
 # Development-only brainstorming artifacts (specs/plans) — never merged
 /docs/superpowers/

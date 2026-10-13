@@ -20,6 +20,9 @@ interface PrayerTimesCalculatorInterface
     /**
      * Compute all ten prayer instants for one date and place (UTC).
      *
+     * Implementations accept exactly Coordinates (parameter contravariance
+     * lets the shipped calculator widen to Coordinates|array for callers).
+     *
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date to compute.
      * @param CalculationParameters $parameters Method defaults + overrides.

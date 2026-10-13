@@ -52,6 +52,7 @@
         "test": "php tools/coverage_gate.php --min=95",
         "arch": "phpunit --group arch",
         "bench": "php examples/bench.php --budget",
+        "goldens": "python3 tools/goldens.py",
         "mutation": "infection --threads=4",
         "ci": ["@lint", "@cs", "@stan", "@test"]
     }

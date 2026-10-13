@@ -24,7 +24,7 @@ final class MoonGoldensTest extends TestCase
     {
         $calculator = CrescentCalculator::default();
         $file = 'moon_crescent.csv';
-        $loaded = self::loadGolden($file);
+        $loaded = GoldenLoader::load(__DIR__ . '/' . $file);
 
         self::assertCount(24, $loaded['rows']);
 
@@ -72,7 +72,7 @@ final class MoonGoldensTest extends TestCase
     {
         $calculator = CrescentCalculator::default();
         $file = 'moon_eclipse.csv';
-        $loaded = self::loadGolden($file);
+        $loaded = GoldenLoader::load(__DIR__ . '/' . $file);
 
         self::assertCount(2, $loaded['rows']);
 
@@ -206,82 +206,6 @@ final class MoonGoldensTest extends TestCase
         self::assertTrue(abs($geometry->ageAtMoonsetHours / 24.0 - 0.4338372645579431) <= 1e-6, 'agem');
     }
 
-    /**
-     * Load a golden CSV as header + assoc rows.
-     *
-     * @param string $file CSV basename under this directory.
-     * @return array{header: list<string>, rows: list<array<string, string>>}
-     */
-    private static function loadGolden(string $file): array
-    {
-        $path = __DIR__ . '/' . $file;
-        $handle = fopen($path, 'r');
-
-        if ($handle === false) {
-            self::fail('Cannot open golden file ' . $path);
-        }
-
-        $headerRow = fgetcsv($handle, escape: '');
-
-        if (! is_array($headerRow)) {
-            fclose($handle);
-            self::fail('Empty golden file ' . $path);
-        }
-
-        $header = [];
-
-        foreach ($headerRow as $cell) {
-            if (! is_string($cell)) {
-                fclose($handle);
-                self::fail('Empty header cell in golden file ' . $path);
-            }
-
-            $header[] = $cell;
-        }
-
-        $rows = [];
-        $line = 1;
-
-        while (true) {
-            $row = fgetcsv($handle, escape: '');
-
-            if (! is_array($row)) {
-                break;
-            }
-
-            $line++;
-
-            if (count($header) !== count($row)) {
-                fclose($handle);
-                self::fail(sprintf(
-                    'Column-count mismatch in golden file %s line %d: header has %d columns, row has %d.',
-                    $path,
-                    $line,
-                    count($header),
-                    count($row),
-                ));
-            }
-
-            $data = [];
-
-            foreach ($header as $index => $key) {
-                $value = $row[$index] ?? null;
-
-                if (! is_string($value)) {
-                    fclose($handle);
-                    self::fail(sprintf('Non-string cell in golden file %s line %d.', $path, $line));
-                }
-
-                $data[$key] = $value;
-            }
-
-            $rows[] = $data;
-        }
-
-        fclose($handle);
-
-        return ['header' => $header, 'rows' => $rows];
-    }
 
     /**
      * Require a non-empty string cell.

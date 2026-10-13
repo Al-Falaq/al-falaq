@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Prayer\Services;
 
+use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\TimetableServiceInterface;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
@@ -16,6 +17,13 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  */
 final class TimetableService implements TimetableServiceInterface
 {
+    /**
+     * Bind an optional pre-wired single-day calculator (test doubles cross the same seam callers use).
+     *
+     * @param PrayerTimesCalculatorInterface|null $calculator Pre-wired pipeline; null defers to PrayerTimesCalculator::defaultFor($parameters).
+     */
+    public function __construct(private readonly ?PrayerTimesCalculatorInterface $calculator = null) {}
+
     /**
      * Compute one schedule per day of the month (UTC, constant memory).
      *
@@ -33,7 +41,7 @@ final class TimetableService implements TimetableServiceInterface
             throw new ValidationException(sprintf('Invalid month %d: expected 1–12.', $month));
         }
 
-        $calc = PrayerTimesCalculator::defaultFor($parameters);
+        $calc = $this->calculator ?? PrayerTimesCalculator::defaultFor($parameters);
 
         $days = (int) CivilDate::fromYmd($year, $month, 1)->toUtcMidnight()->format('t');
 

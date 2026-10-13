@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Qibla\ValueObjects;
 
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Angle;
 
 /**
  * Qibla answer: initial bearing + great-circle/ellipsoid distance.
@@ -38,6 +39,9 @@ final readonly class QiblaResult
     /**
      * Compass heading given caller-supplied magnetic declination.
      *
+     * Angle::normalized() is the single unwind owner (incl. the 360.0 ulp
+     * re-clamp, which applies here exactly as for bearings).
+     *
      * @param mixed $declinationEast East-positive declination in degrees.
      * @return float Heading unwound to [0, 360).
      */
@@ -53,8 +57,6 @@ final readonly class QiblaResult
             throw new ValidationException('Declination must be finite.');
         }
 
-        $heading = fmod($this->direction - fmod($decl, 360.0), 360.0);
-
-        return $heading < 0.0 ? $heading + 360.0 : $heading;
+        return Angle::fromDegrees($this->direction - fmod($decl, 360.0))->normalized()->degrees;
     }
 }

@@ -64,7 +64,7 @@ flowchart TB
     ASTRO -.->|"may use Domain VOs only,<br/>never Services"| KERNEL
 ```
 
-Dependency rule, enforced by `tests/ArchTest.php`:
+Dependency rule, enforced by `tests/ArchLayeringTest.php`:
 
 ```
 Domain (Contracts, ValueObjects, Enums, Exceptions) has ZERO inward dependencies.
@@ -95,6 +95,25 @@ same role layout:
 
 Context map:
 
+```mermaid
+flowchart TB
+    subgraph PrayerCtx["Prayer context — one context's anatomy"]
+        direction TB
+        DRV["Driving port<br/>PrayerTimesCalculatorInterface<br/>calculate()"]
+        SVC["Service (orchestration only)<br/>PrayerTimesCalculator"]
+        D1["Driven ports<br/>HighLatitudeCorrection<br/>PolarCircleHandler<br/>TwilightModel<br/>IshaRule / MaghribRule"]
+        AD["Adapters (one per contract)<br/>MiddleOfNightCorrection<br/>NearestLatitudeHandler<br/>SeasonAdjustedTwilight<br/>AngleIsha / IntervalIsha ..."]
+        VO["ValueObjects<br/>CalculationParameters<br/>PrayerSchedule"]
+        ENG["Engine (internal)<br/>SolarDayEngine port<br/>MeanSolarCalculator"]
+    end
+    DRV --> SVC
+    SVC --> D1
+    D1 --> AD
+    SVC --> VO
+    SVC --> ENG
+    AD -.->|validate() lives<br/>with the variant| VO
+```
+
 - `src/SharedKernel/` — cross-context foundation. `ValueObjects/`
   (`Coordinates`, `CivilDate`, `Angle`, `Minutes`, `JulianDay`),
   `Exceptions/` (`AlFalaqException` base, `ValidationException`,
@@ -104,7 +123,8 @@ Context map:
 - `src/Prayer/` — the largest context. `PrayerTimesCalculator` (single-day
   pipeline), `TimetableService` (monthly loop), `NextPrayerResolver`
   (today/tomorrow badge), `SunnahCalculator` (night fractions).
-  Strategies cover Asr (`ShafiAsr`, `HanafiAsr`), Isha (`AngleIsha`,
+  Strategies cover Asr (closed `Madhab` shadow factor: 1.0 Shafi, 2.0 Hanafi),
+  Isha (`AngleIsha`,
   `IntervalIsha`), Maghrib (`AngleMaghrib`, `MinutesAfterSunsetMaghrib`),
   high-latitude corrections (`MiddleOfNightCorrection`,
   `SeventhOfNightCorrection`, `TwilightAngleCorrection`), twilight
@@ -112,7 +132,9 @@ Context map:
   `NearestDay`, `Makkah`, `Throw`).
 - `src/Qibla/` — `QiblaCalculator` plus two `GeodesyCalculator`
   strategies: `SphericalCalculator` (fast default) and
-  `Wgs84KarneyCalculator` (precise opt-in).
+  `Wgs84KarneyCalculator` (precise opt-in). Qibla facts (Kaaba, self
+  threshold) live on the seam interface; `Angle::normalized()` is the single
+  unwind owner and `ClampsMakkahSelf` the single self-clamp.
 - `src/Moon/` — `CrescentCalculator` plus four engine-free criterion
   strategies (`YallopEvaluator`, `OdehEvaluator`, `Mabims1992Evaluator`,
   `NeoMabims2021Evaluator`). Userland always goes through `Moon/`; never
@@ -123,20 +145,30 @@ Context map:
 - `src/Astro/` — `@internal` engine: `MeanSolarCalculator` (day-level solar
   geometry), `CrescentEphemeris` (sun/moon positions, sidereal time,
   moonset), `GeodesyEngine` / `KarneyInverse` (ellipsoidal geodesy),
-  `DeltaTProvider`, plus engine-local `Contracts/` and `ValueObjects/`
-  (`SolarPosition`, `SolarTime`, `LunarPosition`).
+  `DeltaTProvider`, plus engine-local `Contracts/` (`SolarModel`,
+  `SolarDayEngine`) and `ValueObjects/` (`SolarPosition`, `SolarTime`).
+  Shared Meeus theory lives once in `Traits/SharesSolarTheory`.
 
 Supporting directories:
 
 - `tests/` — mirrors `src/` per context, plus `Sweep/` (seeded property
   sweeps), `Wiring/` (smoke tests for every `docs/integrations.md`
   snippet), `Goldens/` (pinned-Python parity vectors, 25 CSVs +
-  `Comparator.php` with dual tolerances), and `ArchTest.php` (layering and
+  `Comparator.php` with minute equality), and the arch groups
+  (`tests/Arch{Shape,Docs,Layering}Test.php` + `ArchSupport.php`: layering and
   shape rules, `#[Group('arch')]`).
-- `examples/` — runnable snippets plus `bench.php` (performance-budget
-  harness).
-- `tools/` — `export_goldens.py` (regenerate parity vectors from
-  `PYTHON_PIN`), `gen_hijri.py` (month-start tables + goldens),
+- `examples/` — runnable snippets plus `bench.php` (performance-tripwire
+  harness: loose 50ms/30000ms gates, PRD 2ms/1000ms/16MB budgets as headroom).
+- `tools/` — `export_goldens.py` (pin-parity prayer vectors from `PYTHON_PIN`,
+  `--pin/--path/--out`), `gen_hijri.py` (month-start tables + goldens,
+  `--path/--pin/--out`, writes in place), `gen_self_prayer_goldens.php`
+  (drift-gated Tehran/Morocco/UOIF goldens, regenerate + diff-review in place),
+  `gen_qibla_spherical.py` / `gen_qibla_wgs84.py` (CSV to stdout, diff against
+  committed; diagnostics to stderr), `gen_moonsighting.py` (crescent
+  characterization goldens, regenerate + diff-review),
+  `golden_cities.py` (shared 23-city Qibla / 24-city Moon grids),
+  `goldens.py` (single entrypoint: `--list` contracts, delegating regen per
+  target; `composer goldens`),
   `coverage_gate.php` (coverage ratchet).
 - `docs/` — per-context guides (`prayer.md`, `qibla.md`, `moon.md`,
   `hijri.md`, `sunnah.md`, `polar.md`), `integrations.md` (wiring recipes),
@@ -169,10 +201,47 @@ edge via `forZone()`. The domain never reads the clock; callers pass
    sunrise alias; `imsak` derives from final fajr; ishraq/dhuha derive from
    adjusted sunrise.
 
+```mermaid
+sequenceDiagram
+    participant H as Host app
+    participant C as PrayerTimesCalculator
+    participant E as SolarDayEngine
+    participant P as PolarCircleHandler
+    participant L as Latitude correction
+    H->>C: calculate(coords, date, params)
+    C->>E: isSolarDefined(coords, date, elev)
+    alt sun undefined (polar day or night)
+        C->>P: resolve(coords, date, probe)
+        P-->>C: effective coords and date
+    end
+    C->>E: solarTime(effCoords, effDate)
+    E-->>C: transit, sunrise, sunset
+    C->>L: portions() or seasonalSeconds()
+    L-->>C: night fractions or seasonal caps
+    C->>E: hourAngle() for fajr, maghrib, isha
+    C->>E: afternoon() for asr
+    C->>C: maghribBase() — single maghrib owner
+    C-->>H: PrayerSchedule (ten UTC instants)
+```
+
 **Timetable** (`TimetableService::monthly()`): thin loop that builds a
 method-aware calculator via `defaultFor($parameters)` and calls the
 single-day pipeline once per calendar day. No yearly helper by design;
 callers loop months.
+
+```mermaid
+sequenceDiagram
+    participant H as Host app
+    participant T as TimetableService
+    participant C as PrayerTimesCalculator
+    H->>T: monthly(coords, year, month, params)
+    T->>C: defaultFor(params) or injected double
+    loop once per calendar day
+        T->>C: calculate(coords, day, params)
+        C-->>T: PrayerSchedule
+    end
+    T-->>H: list of PrayerSchedule in order
+```
 
 **Next prayer** (`NextPrayerResolver::resolve()`): pure function of
 `($today, $tomorrow, $nowUtc)`. Scans both schedules in canonical key
@@ -188,6 +257,21 @@ UTC.
 call `GeodesyCalculator::inverse($observer)` (spherical Todhunter/haversine
 or WGS84/Karney), wrap the bearing/distance in an immutable `QiblaResult`.
 
+```mermaid
+sequenceDiagram
+    participant H as Host app
+    participant Q as QiblaCalculator
+    participant G as GeodesyCalculator
+    participant N as Angle unwind
+    H->>Q: calculate(observer)
+    Q->>G: inverse(observer)
+    G->>N: unwind bearing to [0, 360)
+    N-->>G: bearing (360.0 ulp re-clamped)
+    G-->>Q: direction and distanceKm
+    Note over Q: Makkah-self clamps to 0.0 once
+    Q-->>H: QiblaResult
+```
+
 **Crescent** (`CrescentCalculator`): two phases.
 
 1. `atSunset($coordinates, $date)` runs the Meeus pipeline on the engine:
@@ -199,7 +283,39 @@ or WGS84/Karney), wrap the bearing/distance in an immutable `QiblaResult`.
 2. `evaluate()` / `evaluateGeometry()` fans that single geometry bundle out
    to the four criterion strategies and returns verdicts keyed by
    criterion. Strategies are pure polynomials over the geometry; only the
-   service touches the engine.
+   service touches the engine. The no-moonset window (null age) is owned by
+   `Mabims1992Evaluator` as the alt/elongation-only fallback.
+
+```mermaid
+sequenceDiagram
+    participant H as Host app
+    participant C as CrescentCalculator
+    participant E as CrescentEphemeris
+    participant S as SolarDayEngine
+    participant Y as YallopEvaluator
+    participant O as OdehEvaluator
+    participant M as Mabims1992Evaluator
+    participant V as NeoMabims2021Evaluator
+    H->>C: atSunset(coords, date)
+    C->>S: hourAngleFloat(sunset depression)
+    S-->>C: fractional-hour sunset
+    C->>E: solarGeocentric and lunarGeocentric (TT)
+    C->>E: siderealTime (UT) and topocentric()
+    C->>E: moonsetJulianDay()
+    E-->>C: NAN when the moon never sets
+    C-->>H: CrescentGeometry (null lag and age iff no moonset)
+    H->>C: evaluateGeometry(geometry)
+    par one call per criterion
+        C->>Y: evaluate(geometry)
+    and
+        C->>O: evaluate(geometry)
+    and
+        C->>M: evaluate(geometry, owns null window)
+    and
+        C->>V: evaluate(geometry)
+    end
+    C-->>H: verdicts keyed by criterion
+```
 
 **Hijri conversion** (`GregorianToHijriConverter::convert()`):
 
@@ -212,12 +328,58 @@ or WGS84/Karney), wrap the bearing/distance in an immutable `QiblaResult`.
 3. Optionally apply an `OffsetStore` day correction via `shift()`. The
    calendar itself is date-only and never sees a time zone.
 
+```mermaid
+sequenceDiagram
+    participant H as Host app
+    participant G as GregorianToHijriConverter
+    participant P as PrayerTimesCalculator
+    participant K as HijriCalendar
+    participant O as OffsetStore
+    H->>G: convert(civilDate, calendar, frame)
+    alt changeAtSunset frame
+        G->>P: maghribAt(coords, date, params)
+        P-->>G: maghrib instant (never reimplemented here)
+    end
+    G->>K: fromGregorian(resolved date)
+    K-->>G: HijriDate
+    opt caller-supplied correction
+        G->>O: shift(hijri, offset)
+    end
+    G-->>H: HijriDate with calendar identity
+```
+
 ## 5. Design patterns and principles
+
+```mermaid
+flowchart LR
+    subgraph Callers["Callers"]
+        APP["Host app"]
+        TST["Tests and doubles"]
+    end
+    subgraph Driving["Driving ports (stable entry points)"]
+        DP1["PrayerTimesCalculatorInterface"]
+        DP2["TimetableServiceInterface"]
+        DP3["CrescentCalculator"]
+    end
+    subgraph Services["Services (orchestration)"]
+        SV["final services<br/>explicit ctor injection<br/>default() factories"]
+    end
+    subgraph Driven["Driven ports (extension points)"]
+        SP1["IshaRule / MaghribRule"]
+        SP2["HighLatitudeCorrection"]
+        SP3["GeodesyCalculator"]
+        SP4["CrescentEvaluator"]
+    end
+    APP --> DP1 & DP2 & DP3
+    TST --> DP1 & DP2 & DP3
+    DP1 & DP2 & DP3 --> SV
+    SV --> SP1 & SP2 & SP3 & SP4
+```
 
 - **Ports and adapters.** Service contracts (`PrayerTimesCalculatorInterface`,
   `TimetableServiceInterface`, `NextPrayerResolverInterface`) are driving
   ports, each implemented once in `Services/`. Strategy contracts
-  (`AsrRule`, `IshaRule`, `MaghribRule`, `HighLatitudeCorrection`,
+  (`IshaRule`, `MaghribRule`, `HighLatitudeCorrection`,
   `PolarCircleHandler`, `TwilightModel`, `GeodesyCalculator`,
   `HijriCalendar`, `OffsetStore`, `CrescentEvaluator`) are driven ports with
   one or more `Strategies/` implementations or caller-supplied doubles.
@@ -238,12 +400,12 @@ or WGS84/Karney), wrap the bearing/distance in an immutable `QiblaResult`.
 - **UTC math, display at the edge.** All domain math is UTC on
   `DateTimeImmutable`. Zones appear only through `forZone()` /
   `toArray()` when rendering. Mutable `DateTime` and `DateTimeInterface`
-  unions are banned by `ArchTest`.
+  unions are banned by `ArchShapeTest`.
 - **Explicit clock.** The domain never calls "now". Host apps read their
   clock (optionally via the suggested `psr/clock` adapter) and pass the
   instant in. This keeps every calculation deterministic and testable.
 - **Offline and dependency-free.** No I/O, no network, no framework types
-  in `src/` (`curl_`, `exec`, `http` URLs are banned by `ArchTest`; the
+  in `src/` (`curl_`, `exec`, `http` URLs are banned by `ArchShapeTest`; the
   runtime `composer.json` must stay `php`-only). The library is stateless:
   same inputs always produce the same outputs.
 - **Fail fast with typed exceptions.** `ValidationException` for bad
@@ -256,7 +418,7 @@ or WGS84/Karney), wrap the bearing/distance in an immutable `QiblaResult`.
   `tests/Goldens/`. Each vector cites its source (Meeus page/edition or
   Takwim URL + date). Intentional divergence updates docs and goldens
   together; code wins, docs follow.
-- **Machine-checked shape.** `ArchTest` enforces `final` services and
+- **Machine-checked shape.** The arch groups (`composer arch`) enforce `final` services and
   value objects, `*Exception` naming, no `Util/` namespace, mandatory
   docblocks (`@param $name` / `@return` on all public API), and the
   layering rules above. `composer arch` runs these in isolation.
@@ -284,6 +446,23 @@ means versioned astronomical tables shipped as code:
 There are no migrations. Table changes are code changes: regenerate via the
 tool, update provenance, and pin new golden vectors.
 
+```mermaid
+flowchart LR
+    PIN["PYTHON_PIN checkout"]
+    GEN["tools/gen_hijri.py"]
+    TAB["Month-start tables<br/>UmmAlQuraMonthStarts<br/>MabimsMonthStarts"]
+    CAL["HijriCalendar strategies<br/>tabular / Umm al-Qura / MABIMS"]
+    CONV["GregorianToHijriConverter"]
+    OFF["OffsetStore (caller-owned)"]
+    GOLD["Golden CSVs + provenance docs"]
+    PIN --> GEN
+    GEN --> TAB
+    GEN --> GOLD
+    TAB --> CAL
+    CAL --> CONV
+    OFF --> CONV
+```
+
 ## 7. Security, authentication and authorization
 
 Not applicable in the usual sense: this is a stateless compute library
@@ -297,7 +476,7 @@ The relevant hardening is input validation and a minimal attack surface:
   exceptions rather than silent clamping.
 - No secrets, no tokens, no serialised payloads to sign or encrypt.
   Magnetic declination for Qibla is caller-supplied, never fetched.
-- Offline-by-construction (`ArchTest::testOfflineOnly`) means there is no
+- Offline-by-construction (`ArchShapeTest::testOfflineOnly`) means there is no
   SSRF, DNS, or update-channel risk from the library itself.
 
 Host apps remain responsible for their own auth, rate limiting, and output
@@ -318,7 +497,7 @@ no HTML.
 
 **Implement or select these (driven ports — extension points):**
 
-- Prayer behaviour: `AsrRule`, `IshaRule`, `MaghribRule`,
+- Prayer behaviour: `IshaRule`, `MaghribRule`,
   `HighLatitudeCorrection`, `PolarCircleHandler`, `TwilightModel`.
 - Qibla precision: `GeodesyCalculator` (`default()` = spherical,
   `wgs84()` = Karney).
@@ -343,7 +522,9 @@ no HTML.
 **What NOT to do:**
 
 - Do not import `Astro/` from userland — go through `Moon/` or the
-  relevant service. `ArchTest` fails engine imports outside
+  relevant service (stable exception: the `SolarDayEngine` port +
+  `MeanSolarCalculator` adapter for explicit Prayer wiring).
+  `ArchLayeringTest` fails engine imports outside
   `Services/` and non-Moon `Strategies/`.
 - Do not read the clock inside the domain — pass `$nowUtc` from the edge.
 - Do not add framework types, containers, or I/O to `src/`; wiring recipes
@@ -360,6 +541,19 @@ There is none beyond packaging: this is a `type: library` Composer package
 with no build step, no daemon, no CLI, and no assets.
 
 What affects code design:
+
+```mermaid
+flowchart TB
+    ST["Static gate (PHP 8.4)<br/>lint + cs + stan + audit"]
+    MT["Matrix gate<br/>8.2 / 8.3 / 8.4 x UTC<br/>+ 8.4 America/New_York"]
+    BE["Bench tripwire<br/>loose 50ms / 30000ms"]
+    MU["Mutation gate (MSI 85)<br/>infection, KarneyInverse excluded"]
+    WIN["Windows gate (manual + v* tags)<br/>same UTC goldens"]
+    ST --> MT
+    MT --> BE
+    MT --> MU
+    MT -.->|release only| WIN
+```
 
 - `composer.json` runtime stays `php`-only; CI asserts zero locked runtime
   packages. The `config.platform.php = 8.2.0` pin keeps the lock

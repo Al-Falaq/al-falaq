@@ -24,4 +24,11 @@ interface IshaRule
      * @return float|null Angle; null for IntervalIsha.
      */
     public function angle(): ?float;
+
+    /**
+     * Validate the rule variant (angle finite in [0, 30] or interval minutes >= 1).
+     *
+     * @return void Throws on invalid configuration.
+     */
+    public function validate(): void;
 }

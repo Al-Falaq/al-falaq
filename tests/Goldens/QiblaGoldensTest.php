@@ -31,7 +31,7 @@ final class QiblaGoldensTest extends TestCase
 
     public function testGoldenFileHasExpectedHeaderAndRowCount(): void
     {
-        $loaded = self::loadGolden(self::GOLDEN_FILE);
+        $loaded = GoldenLoader::load(__DIR__ . '/' . self::GOLDEN_FILE);
 
         self::assertSame(
             ['city', 'latitude', 'longitude', 'bearing_deg', 'distance_km', 'source'],
@@ -44,7 +44,7 @@ final class QiblaGoldensTest extends TestCase
     {
         $seen = [];
 
-        foreach (self::loadGolden(self::GOLDEN_FILE)['rows'] as $index => $row) {
+        foreach (GoldenLoader::load(__DIR__ . '/' . self::GOLDEN_FILE)['rows'] as $index => $row) {
             $line = $index + 2;
             $latRaw = self::field($row, 'latitude', $line, self::GOLDEN_FILE);
             $lonRaw = self::field($row, 'longitude', $line, self::GOLDEN_FILE);
@@ -85,7 +85,7 @@ final class QiblaGoldensTest extends TestCase
     public function testExcludesDegenerateBearingGoldens(): void
     {
         foreach ([self::GOLDEN_FILE, self::WGS84_GOLDEN_FILE] as $file) {
-            foreach (self::loadGolden($file)['rows'] as $index => $row) {
+            foreach (GoldenLoader::load(__DIR__ . '/' . $file)['rows'] as $index => $row) {
                 $line = $index + 2;
                 $lat = (float) self::field($row, 'latitude', $line, $file);
                 $lon = (float) self::field($row, 'longitude', $line, $file);
@@ -131,82 +131,6 @@ final class QiblaGoldensTest extends TestCase
         }
     }
 
-    /**
-     * Load a golden CSV as header + assoc rows.
-     *
-     * @param string $file CSV basename under this directory.
-     * @return array{header: list<string>, rows: list<array<string, string>>}
-     */
-    private static function loadGolden(string $file): array
-    {
-        $path = __DIR__ . '/' . $file;
-        $handle = fopen($path, 'r');
-
-        if ($handle === false) {
-            self::fail('Cannot open golden file ' . $path);
-        }
-
-        $headerRow = fgetcsv($handle, escape: '');
-
-        if (! is_array($headerRow)) {
-            fclose($handle);
-            self::fail('Empty golden file ' . $path);
-        }
-
-        $header = [];
-
-        foreach ($headerRow as $cell) {
-            if (! is_string($cell)) {
-                fclose($handle);
-                self::fail('Empty header cell in golden file ' . $path);
-            }
-
-            $header[] = $cell;
-        }
-
-        $rows = [];
-        $line = 1;
-
-        while (true) {
-            $row = fgetcsv($handle, escape: '');
-
-            if (! is_array($row)) {
-                break;
-            }
-
-            $line++;
-
-            if (count($header) !== count($row)) {
-                fclose($handle);
-                self::fail(sprintf(
-                    'Column-count mismatch in golden file %s line %d: header has %d columns, row has %d.',
-                    $path,
-                    $line,
-                    count($header),
-                    count($row),
-                ));
-            }
-
-            $data = [];
-
-            foreach ($header as $index => $key) {
-                $value = $row[$index] ?? null;
-
-                if (! is_string($value)) {
-                    fclose($handle);
-                    self::fail(sprintf('Non-string cell in golden file %s line %d.', $path, $line));
-                }
-
-                $data[$key] = $value;
-            }
-
-            $rows[] = $data;
-        }
-
-        fclose($handle);
-
-        return ['header' => $header, 'rows' => $rows];
-    }
 
     /**
      * Numeric parity: PHP spherical implementation vs committed CSV goldens.
@@ -218,7 +142,7 @@ final class QiblaGoldensTest extends TestCase
     {
         $calculator = QiblaCalculator::default();
 
-        foreach (self::loadGolden(self::GOLDEN_FILE)['rows'] as $index => $row) {
+        foreach (GoldenLoader::load(__DIR__ . '/' . self::GOLDEN_FILE)['rows'] as $index => $row) {
             $line = $index + 2;
             $result = $calculator->calculate(Coordinates::fromDegrees(
                 (float) self::field($row, 'latitude', $line, self::GOLDEN_FILE),
@@ -238,7 +162,7 @@ final class QiblaGoldensTest extends TestCase
 
     public function testWgs84GoldenFileHasExpectedHeaderAndRowCount(): void
     {
-        $loaded = self::loadGolden(self::WGS84_GOLDEN_FILE);
+        $loaded = GoldenLoader::load(__DIR__ . '/' . self::WGS84_GOLDEN_FILE);
 
         self::assertSame(
             ['city', 'latitude', 'longitude', 'bearing_deg', 'distance_km', 'source'],
@@ -251,7 +175,7 @@ final class QiblaGoldensTest extends TestCase
     {
         $seen = [];
 
-        foreach (self::loadGolden(self::WGS84_GOLDEN_FILE)['rows'] as $index => $row) {
+        foreach (GoldenLoader::load(__DIR__ . '/' . self::WGS84_GOLDEN_FILE)['rows'] as $index => $row) {
             $line = $index + 2;
             $latRaw = self::field($row, 'latitude', $line, self::WGS84_GOLDEN_FILE);
             $lonRaw = self::field($row, 'longitude', $line, self::WGS84_GOLDEN_FILE);
@@ -303,7 +227,7 @@ final class QiblaGoldensTest extends TestCase
     {
         $calculator = QiblaCalculator::wgs84();
 
-        foreach (self::loadGolden(self::WGS84_GOLDEN_FILE)['rows'] as $index => $row) {
+        foreach (GoldenLoader::load(__DIR__ . '/' . self::WGS84_GOLDEN_FILE)['rows'] as $index => $row) {
             $line = $index + 2;
             $result = $calculator->calculate(Coordinates::fromDegrees(
                 (float) self::field($row, 'latitude', $line, self::WGS84_GOLDEN_FILE),

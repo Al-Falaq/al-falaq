@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Tests\Astro;
 
 use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
-use AlFalaq\AlFalaq\Astro\ValueObjects\LunarPosition;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use PHPUnit\Framework\TestCase;
@@ -101,14 +100,5 @@ final class CrescentEphemerisTest extends TestCase
         $this->expectException(AstronomicalException::class);
 
         (new CrescentEphemeris())->solarGeocentric(NAN);
-    }
-
-    public function testLunarPositionBundleHoldsTopocentricTriple(): void
-    {
-        $position = new LunarPosition(12.5, 250.0, 10.25);
-
-        self::assertSame(12.5, $position->altitudeDeg);
-        self::assertSame(250.0, $position->azimuthDeg);
-        self::assertSame(10.25, $position->ageHours);
     }
 }

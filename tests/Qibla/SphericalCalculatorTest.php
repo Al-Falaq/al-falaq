@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Tests\Qibla;
 
-use AlFalaq\AlFalaq\Astro\Services\GeodesyEngine;
+use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
 use AlFalaq\AlFalaq\Qibla\Strategies\SphericalCalculator;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use PHPUnit\Framework\TestCase;
@@ -25,7 +25,7 @@ final class SphericalCalculatorTest extends TestCase
     public function testMakkahSelfClampsToZeroBearingAndZeroDistance(): void
     {
         $solved = (new SphericalCalculator())->inverse(
-            Coordinates::fromDegrees(GeodesyEngine::MAKKAH_LATITUDE, GeodesyEngine::MAKKAH_LONGITUDE),
+            Coordinates::fromDegrees(GeodesyCalculator::MAKKAH_LATITUDE, GeodesyCalculator::MAKKAH_LONGITUDE),
         );
 
         self::assertSame(0.0, $solved['direction']);
