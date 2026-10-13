@@ -12,6 +12,7 @@ use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\SharedKernel\Traits\HasWithersGuard;
 use AlFalaq\AlFalaq\SharedKernel\Traits\ValidatesFinite;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
@@ -58,7 +59,7 @@ final readonly class CalculationParameters
      * @param mixed $ishraqOffsetMinutes Int in [0, 60]; bools reject.
      * @param mixed $dhuhaOffsetMinutes Int in [0, 60], >= ishraq; bools reject.
      * @param mixed $elevationM Finite float in [0, 8848]; bools reject.
-     * @param bool $isRamadan Umm al-Qura Ramadan mode (guarded at calculate() time).
+     * @param bool $isRamadan Umm al-Qura Ramadan mode (rejected here unless UMM_AL_QURA).
      * @param PrayerAdjustments $methodAdjustments Shipped per-method offsets.
      * @param PrayerAdjustments $adjustments Caller overrides.
      * @return self Validated parameters.
@@ -84,6 +85,7 @@ final readonly class CalculationParameters
 
         $ishaRule->validate();
         $maghribRule->validate();
+        self::assertRamadanCompatible($method, $isRamadan);
 
         $dhuhrOff = self::guardOffsetMinutes($dhuhrOffsetMinutes, 'dhuhrOffsetMinutes', 0, 5);
         $imsakOff = self::guardOffsetMinutes($imsakOffsetMinutes, 'imsakOffsetMinutes');
@@ -115,6 +117,23 @@ final readonly class CalculationParameters
             $methodAdjustments,
             $adjustments,
         );
+    }
+
+    /**
+     * Guard Umm al-Qura Ramadan mode at construction time.
+     *
+     * @param CalculationMethod $method Owning method (NONE for custom configs).
+     * @param bool $isRamadan Umm al-Qura Ramadan mode.
+     * @return void
+     */
+    private static function assertRamadanCompatible(CalculationMethod $method, bool $isRamadan): void
+    {
+        if ($isRamadan && $method !== CalculationMethod::UMM_AL_QURA) {
+            throw new ConfigurationException(sprintf(
+                'isRamadan requires UMM_AL_QURA (got %s).',
+                $method->value,
+            ));
+        }
     }
 
     /**
@@ -242,11 +261,15 @@ final readonly class CalculationParameters
     /**
      * Toggle Umm al-Qura Ramadan Isha mode (120 vs 90 min after Maghrib).
      *
-     * @param bool $isRamadan True during Ramadan (UQU only; else throws later).
+     * Fails fast on non-Umm-al-Qura methods instead of at calculate() time.
+     *
+     * @param bool $isRamadan True during Ramadan (UQU only).
      * @return self New parameters; this instance is unchanged.
      */
     public function withRamadan(bool $isRamadan): self
     {
+        self::assertRamadanCompatible($this->method, $isRamadan);
+
         return new self(
             $this->method,
             $this->madhab,

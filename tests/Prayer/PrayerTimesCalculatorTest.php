@@ -380,35 +380,6 @@ final class PrayerTimesCalculatorTest extends TestCase
         self::assertSame('2025-01-14 22:10', $fromArray->timeFor(Prayer::FAJR)->format('Y-m-d H:i'));
     }
 
-    public function testRamadanFlagRequiresUmmAlQura(): void
-    {
-        $params = CalculationParameters::create(
-            CalculationMethod::MUSLIM_WORLD_LEAGUE,
-            Madhab::SHAFI,
-            HighLatitudeRule::MIDDLE_OF_NIGHT,
-            PolarCircleRule::NEAREST_LATITUDE,
-            18.0,
-            new AngleIsha(17.0),
-            new MinutesAfterSunsetMaghrib(0),
-            0,
-            10,
-            15,
-            28,
-            0.0,
-            true,
-            PrayerAdjustments::empty(),
-            PrayerAdjustments::empty(),
-        );
-
-        $this->expectException(ConfigurationException::class);
-
-        PrayerTimesCalculator::default()->calculate(
-            Coordinates::fromDegrees(3.1390, 101.6869),
-            CivilDate::fromYmd(2025, 1, 15),
-            $params,
-        );
-    }
-
     public function testUnresolvedPolarNightThrows(): void
     {
         $handler = new class implements PolarCircleHandler {

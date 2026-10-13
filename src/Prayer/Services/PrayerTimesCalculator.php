@@ -29,7 +29,6 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
@@ -126,7 +125,6 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         CalculationParameters $parameters,
     ): \DateTimeImmutable {
         $coords = self::normalizeCoordinates($coordinates);
-        $this->assertRamadanCompatible($parameters);
 
         try {
             $day = $this->solar->solarTime($coords, $date, $parameters->elevationM);
@@ -224,7 +222,6 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     public function calculate(Coordinates|array $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule
     {
         $coords = self::normalizeCoordinates($coordinates);
-        $this->assertRamadanCompatible($parameters);
 
         $elev = $parameters->elevationM;
         $effDate = $date;
@@ -341,21 +338,5 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         }
 
         return $maghribTemp;
-    }
-
-    /**
-     * Guard Umm al-Qura Ramadan mode at pipeline entry.
-     *
-     * @param CalculationParameters $parameters Method defaults + overrides.
-     * @return void
-     */
-    private function assertRamadanCompatible(CalculationParameters $parameters): void
-    {
-        if ($parameters->isRamadan && $parameters->method !== CalculationMethod::UMM_AL_QURA) {
-            throw new ConfigurationException(sprintf(
-                'isRamadan requires UMM_AL_QURA (got %s).',
-                $parameters->method->value,
-            ));
-        }
     }
 }

@@ -105,6 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moon age search extracted to the `ConjunctionSearch` port
   (`EphemerisConjunctionSearch` adapter; breaking for direct
   `CrescentCalculator` constructions, which take it as a new argument).
+- Ramadan consistency fails fast: `create()` and `withRamadan()` reject
+  `isRamadan` outside Umm al-Qura (previously thrown at `calculate()` time).
 - Night temps extracted to the internal `NightResolver` step (single owner
   for seasonal / NONE-raw / portions fajr+isha logic; composed from the
   injected strategies, no new port).
