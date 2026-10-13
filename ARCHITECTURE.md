@@ -25,8 +25,9 @@ contexts with a ports-and-adapters (hexagonal) layout:
 
 **Tech stack summary.** PHP `>= 8.2` (64-bit), zero runtime dependencies
 (`require: php` only). SPL plus `DateTimeImmutable` for all time math.
-Dev tooling: PHPUnit 11, PHPStan (max + strict rules), php-cs-fixer
-(`@PER`), Rector, Infection. Coverage via pcov with a ratchet gate.
+Dev tooling: PHPUnit 11, PHPStan (max + strict rules over `src`/`tests`),
+php-cs-fixer
+(`@PER`), Infection. Coverage via pcov with a ratchet gate.
 
 ## 2. Architecture diagram
 
@@ -569,4 +570,7 @@ flowchart TB
   `composer arch`, coverage ratchet (`tools/coverage_gate.php`, floor only
   moves up, currently 95), and the bench budget. Mutation testing
   (`composer mutation`, MSI ≥ 85 configured in `infection.json.dist`)
-  runs in CI.
+  runs in CI. Scope is deliberate: PHPStan max + strict rules cover
+  `src`/`tests` (shipped code); `examples/` + `tools/` get lint + cs plus
+  golden-regen verification instead — strict max flags only working
+  idioms there (exhaustive matches, I/O guards), never defects.

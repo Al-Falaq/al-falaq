@@ -109,6 +109,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `isRamadan` outside Umm al-Qura (previously thrown at `calculate()` time).
 - Wiring tests execute the documented snippets (calculate/resolve/shapes),
   not just wiring existence.
+- Harness closure: degenerate Qibla rows owned once (`golden_cities`);
+  tool inventory single-sourced (ARCHITECTURE owns it); Rector removed
+  (configured-never-run, and its sets fight the doc gate); PHPStan scope
+  stays `src`/`tests` by explicit decision (strict max finds only working
+  idioms in maintainer scripts).
 - Night temps extracted to the internal `NightResolver` step (single owner
   for seasonal / NONE-raw / portions fajr+isha logic; composed from the
   injected strategies, no new port).

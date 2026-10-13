@@ -99,8 +99,9 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 
 ## Additional Notes
 
-- `tools/export_goldens.py` regenerates parity vectors from `PYTHON_PIN`;
-  `tools/gen_hijri.py` builds the pin-generated Hijri month-start tables + goldens (M4).
+- Golden generators: full inventory + contracts in `ARCHITECTURE.md`
+  (`composer goldens` lists them); `tools/golden_cities.py` shares the
+  Qibla/Moon city grids.
 - Gotcha: same short names in `Contracts/` + `Services/` namespaces cannot
   share one file's imports (PHP fatal) — that is why service contracts keep
   the `Interface` suffix. Do not "simplify" it away.

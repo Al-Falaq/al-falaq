@@ -30,7 +30,8 @@ M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed);
 ## Stack & tooling
 
 - Runtime: PHP >=8.2, no dependencies. Dev: PHPUnit 11, PHPStan max +
-  strict-rules, php-cs-fixer (`@PER`), Rector, Infection (gated in CI from M5; MSI≥85 scoped gate). Coverage via pcov.
+  strict-rules (over `src`/`tests`), php-cs-fixer (`@PER`), Infection
+  (gated in CI from M5; MSI≥85 scoped gate). Coverage via pcov.
 - Commands: `composer ci` (lint+cs+stan+test), `test-unit`, `arch`
   (`phpunit --group arch`), `bench --budget`.
 
@@ -43,8 +44,8 @@ M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed);
 - `tests/` — `SharedKernel/`, `Sweep/`, `Wiring/`, `Goldens/`,
   arch groups (`Arch{Shape,Docs,Layering}Test.php` + `ArchSupport.php`),
   `bootstrap.php`. `examples/` — runnable snippets +
-  `bench.php`. `tools/` — `coverage_gate.php`, `gen_hijri.py` (M4),
-  `export_goldens.py` (goldens from `PYTHON_PIN`).
+  `bench.php`. `tools/` — full inventory in `ARCHITECTURE.md`
+  (`composer goldens` lists the generator contracts).
 - Docs: `ARCHITECTURE.md` (layering),
   `docs/` per-context guides + `integrations.md` (plain-`new` wiring),
   `AGENTS.md` (agent instructions), `UQ_PROVENANCE.md` (M4).
