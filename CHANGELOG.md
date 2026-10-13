@@ -106,6 +106,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Crescent null-window ownership: `Mabims1992Evaluator` owns the full rule plus
   the no-moonset alt/elongation fallback (spec §3.2); the orchestrator
   delegates unconditionally, retiring its inline duplication.
+- Qibla normalization: `QiblaCalculator` requires its geodesy (no nullable +
+  throw); Kaaba facts move to the `GeodesyCalculator` seam; `Angle` owns the
+  unwind (incl. the 360.0 ulp guard) and one shared self-clamp serves both
+  adapters (breaking: `new QiblaCalculator()` without an argument).
 
 ### Removed
 

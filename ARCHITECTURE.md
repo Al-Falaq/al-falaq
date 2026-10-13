@@ -113,7 +113,9 @@ Context map:
   `NearestDay`, `Makkah`, `Throw`).
 - `src/Qibla/` — `QiblaCalculator` plus two `GeodesyCalculator`
   strategies: `SphericalCalculator` (fast default) and
-  `Wgs84KarneyCalculator` (precise opt-in).
+  `Wgs84KarneyCalculator` (precise opt-in). Qibla facts (Kaaba, self
+  threshold) live on the seam interface; `Angle::normalized()` is the single
+  unwind owner and `ClampsMakkahSelf` the single self-clamp.
 - `src/Moon/` — `CrescentCalculator` plus four engine-free criterion
   strategies (`YallopEvaluator`, `OdehEvaluator`, `Mabims1992Evaluator`,
   `NeoMabims2021Evaluator`). Userland always goes through `Moon/`; never

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Qibla\Strategies;
 
-use AlFalaq\AlFalaq\Astro\Services\GeodesyEngine;
 use AlFalaq\AlFalaq\Astro\Services\KarneyInverse;
 use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
+use AlFalaq\AlFalaq\Qibla\Traits\ClampsMakkahSelf;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Angle;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
@@ -21,6 +22,7 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  */
 final class Wgs84KarneyCalculator implements GeodesyCalculator
 {
+    use ClampsMakkahSelf;
     /**
      * Bind the raw-math engine (defaults to a fresh instance).
      *
@@ -31,14 +33,10 @@ final class Wgs84KarneyCalculator implements GeodesyCalculator
     /**
      * Solve the inverse on the ellipsoid (M2).
      *
-     * The engine returns the azimuth unwound to (-180, 180]; it is wound
-     * here into [0, 360). The re-clamp to 0.0 after the unwind is not
-     * cosmetic: ``fmod(-1e-15, 360.0) + 360.0`` rounds to exactly 360.0
-     * (ulp(360) ≈ 5.7e-14), which QiblaResult rejects.
-     *
-     * Degenerate Makkah-self (distance < 1 m) clamps to direction 0.0 and
-     * distance 0.0 per §5.3; the raw engine bearing there is
-     * construction-defined and never leaks out.
+     * The engine returns the azimuth in (-180, 180]; Angle::normalized() is
+     * the single unwind owner (incl. the 360.0 ulp re-clamp QiblaResult
+     * rejects), and the degenerate Makkah-self clamp lives once in
+     * ClampsMakkahSelf (§5.3).
      *
      * @param Coordinates $from Observer location.
      * @return array{direction: float, distanceKm: float} Bearing + distance.
@@ -48,28 +46,16 @@ final class Wgs84KarneyCalculator implements GeodesyCalculator
         $solved = $this->engine->inverse(
             $from->latitude,
             $from->longitude,
-            GeodesyEngine::MAKKAH_LATITUDE,
-            GeodesyEngine::MAKKAH_LONGITUDE,
+            GeodesyCalculator::MAKKAH_LATITUDE,
+            GeodesyCalculator::MAKKAH_LONGITUDE,
         );
 
-        $direction = fmod($solved['direction'], 360.0);
+        $direction = Angle::fromDegrees($solved['direction'])->normalized()->degrees;
 
-        if ($direction < 0.0) {
-            $direction += 360.0;
+        if (! is_finite($solved['distanceKm'])) {
+            throw new AstronomicalException('Wgs84KarneyCalculator produced a non-finite distance.');
         }
 
-        if ($direction >= 360.0) {
-            $direction = 0.0;
-        }
-
-        if ($solved['distanceKm'] < 0.001) {
-            return ['direction' => 0.0, 'distanceKm' => 0.0];
-        }
-
-        if (! is_finite($direction) || ! is_finite($solved['distanceKm'])) {
-            throw new AstronomicalException('Wgs84KarneyCalculator produced a non-finite result.');
-        }
-
-        return ['direction' => $direction, 'distanceKm' => $solved['distanceKm']];
+        return self::clampMakkahSelf(['direction' => $direction, 'distanceKm' => $solved['distanceKm']]);
     }
 }

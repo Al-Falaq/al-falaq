@@ -39,6 +39,14 @@ final readonly class Angle
             $unwound += 360.0;
         }
 
+        // Not cosmetic: ulp(360) ≈ 5.7e-14, so a value a few ulps below zero
+        // (e.g. fmod(-1.2e-14, 360) + 360 for a point micrometres east of
+        // Makkah's meridian) rounds to exactly 360.0, which range checks
+        // reject. Re-clamp keeps the documented [0, 360) range.
+        if ($unwound >= 360.0) {
+            $unwound = 0.0;
+        }
+
         // fmod(360,360) === 0 already in range; guard -0.0.
         return new self($unwound + 0.0);
     }

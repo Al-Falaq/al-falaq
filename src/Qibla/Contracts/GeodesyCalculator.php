@@ -10,9 +10,26 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  * Geodesic inverse from an observer toward Makkah (driven port).
  *
  * Spherical (fast default) vs WGS84/Karney (precise opt-in) behind one shape.
+ * Qibla domain facts live here (Kaaba + self threshold), never in Astro:
+ * the engine takes arbitrary point pairs and owns only raw math.
  */
 interface GeodesyCalculator
 {
+    /**
+     * Kaaba latitude in degrees (pin Constants.py:8; goldens pin these digits).
+     */
+    public const MAKKAH_LATITUDE = 21.4225241;
+
+    /**
+     * Kaaba longitude in degrees (pin Constants.py:8; goldens pin these digits).
+     */
+    public const MAKKAH_LONGITUDE = 39.8261818;
+
+    /**
+     * Makkah-self distance in km below which direction clamps to 0.0 (§5.3).
+     */
+    public const SELF_DISTANCE_KM = 0.001;
+
     /**
      * Solve the inverse problem for one observer location.
      *

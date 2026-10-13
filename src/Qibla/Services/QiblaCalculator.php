@@ -8,7 +8,6 @@ use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
 use AlFalaq\AlFalaq\Qibla\Strategies\SphericalCalculator;
 use AlFalaq\AlFalaq\Qibla\Strategies\Wgs84KarneyCalculator;
 use AlFalaq\AlFalaq\Qibla\ValueObjects\QiblaResult;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
@@ -16,13 +15,12 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  */
 final class QiblaCalculator
 {
-    /** M0: geodesy accepted for API stability; wired into inverse() in M2. */
     /**
-     * Inject the geodesic algorithm (or defer to a named factory).
+     * Inject the geodesic algorithm (factories are the easy path).
      *
-     * @param GeodesyCalculator|null $geodesy Algorithm; null defers to default().
+     * @param GeodesyCalculator $geodesy Algorithm; see default()/wgs84().
      */
-    public function __construct(private readonly ?GeodesyCalculator $geodesy = null) {}
+    public function __construct(private readonly GeodesyCalculator $geodesy) {}
 
     /**
      * Spherical-earth calculator (fast default, Todhunter/haversine).
@@ -47,9 +45,9 @@ final class QiblaCalculator
     /**
      * Expose the injected geodesy (introspection/testing).
      *
-     * @return GeodesyCalculator|null The wired algorithm, if any.
+     * @return GeodesyCalculator The wired algorithm.
      */
-    public function geodesy(): ?GeodesyCalculator
+    public function geodesy(): GeodesyCalculator
     {
         return $this->geodesy;
     }
@@ -63,10 +61,6 @@ final class QiblaCalculator
     public function calculate(Coordinates|array $coordinates): QiblaResult
     {
         $observer = $coordinates instanceof Coordinates ? $coordinates : Coordinates::fromArray($coordinates);
-
-        if ($this->geodesy === null) {
-            throw new ConfigurationException('QiblaCalculator has no geodesy; use QiblaCalculator::default() or inject a GeodesyCalculator.');
-        }
 
         $solved = $this->geodesy->inverse($observer);
 

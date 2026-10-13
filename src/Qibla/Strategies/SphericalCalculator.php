@@ -6,6 +6,7 @@ namespace AlFalaq\AlFalaq\Qibla\Strategies;
 
 use AlFalaq\AlFalaq\Astro\Services\GeodesyEngine;
 use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
+use AlFalaq\AlFalaq\Qibla\Traits\ClampsMakkahSelf;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
@@ -13,6 +14,7 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  */
 final class SphericalCalculator implements GeodesyCalculator
 {
+    use ClampsMakkahSelf;
     /**
      * Bind the raw-math engine (defaults to a fresh instance).
      *
@@ -23,9 +25,8 @@ final class SphericalCalculator implements GeodesyCalculator
     /**
      * Solve the inverse on a sphere (M2).
      *
-     * Degenerate Makkah-self (distance < 1 m) clamps to direction 0.0 and
-     * distance 0.0 per §5.3; the raw engine bearing there is
-     * construction-defined and never leaks out.
+     * The degenerate Makkah-self clamp lives once in ClampsMakkahSelf; the
+     * raw engine bearing there is construction-defined and never leaks out.
      *
      * @param Coordinates $from Observer location.
      * @return array{direction: float, distanceKm: float} Bearing + distance.
@@ -35,14 +36,10 @@ final class SphericalCalculator implements GeodesyCalculator
         $raw = $this->engine->inverse(
             $from->latitude,
             $from->longitude,
-            GeodesyEngine::MAKKAH_LATITUDE,
-            GeodesyEngine::MAKKAH_LONGITUDE,
+            GeodesyCalculator::MAKKAH_LATITUDE,
+            GeodesyCalculator::MAKKAH_LONGITUDE,
         );
 
-        if ($raw['distanceKm'] < 0.001) {
-            return ['direction' => 0.0, 'distanceKm' => 0.0];
-        }
-
-        return $raw;
+        return self::clampMakkahSelf($raw);
     }
 }
