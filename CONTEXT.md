@@ -23,9 +23,9 @@ Landed: composer scaffold, `SharedKernel` value objects (`Coordinates`,
 freeze + milestone amendments, Qibla (spherical + WGS84/Karney), Sunnah markers
 (incl. `nightFraction`), crescent visibility evaluators, Hijri calendars
 (tabular, Umm al-Qura, per-country MABIMS + Gregorian bridge), parity goldens
-(`tests/Goldens/`, 25 CSVs), ArchTest layering rules, coverage-ratchet gate
+(`tests/Goldens/`, 25 CSVs), arch groups (shape/docs/layering rules), coverage-ratchet gate
 (floor 85 → 95 at M5), CI matrix. No throwing stubs remain in `src/`. Outcome:
-M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed); release-ready PR, no tag.
+M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed); release-ready PR, no tag. Post-M5 architecture rounds deepened the seams (day-engine port, rule validation, single-owners) — see CHANGELOG Unreleased.
 
 ## Stack & tooling
 
@@ -62,4 +62,4 @@ M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed);
 - Coverage floor only moves up; lock stays PHP-8.2-installable via
   `config.platform`.
 - Docblocks on all public API (class + method + `@param`/`@return`) —
-  ArchTest fails without them; engine enum methods exempt.
+  ArchDocsTest fails without them; engine enum methods exempt.

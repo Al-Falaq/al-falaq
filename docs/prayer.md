@@ -24,7 +24,9 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   latitudes (same gating arm in `PrayerTimesCalculator::calculate()`).
 - **Umm al-Qura Ramadan:** `isha = maghrib + 120 min` total in Ramadan, `+90`
   otherwise (interval anchored at sunset, which equals maghrib under UQU's
-  0-min rule). `isRamadan` with any non-UQU method → `ConfigurationException`.
+  0-min rule). `isRamadan` with any non-UQU method → `ConfigurationException`,
+  raised fail-fast at parameter build time (`create()`/`withRamadan()`),
+  never at `calculate()` time.
 - **Polar circle (4 handlers):** `NearestLatitudeHandler` — 60-iteration
   bisection toward the equator, then 0.5° backoff; `NearestDayHandler` — ±366d
   scan, nearest-first (`-o, +o`); `MakkahHandler` — pin `Constants.MAKKAH`

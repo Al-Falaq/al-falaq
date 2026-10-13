@@ -24,7 +24,7 @@ conversion matches the pin exactly. There is no third-party table to license.
 - Generator: `python3 tools/gen_hijri.py --path <pinned-checkout>`.
 - Canonical digest: `sha256("\n".join(starts))`, embedded as
   `UmmAlQuraMonthStarts::SHA256` and `MabimsMonthStarts::SHA256_{MY,ID,SG,BN}`.
-- Current digests (from the generator run recorded in the M4 plan Task 1):
+- Current digests (from the current generator run):
 
 | Table | Months | SHA256 |
 |---|---|---|

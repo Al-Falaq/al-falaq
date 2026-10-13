@@ -9,7 +9,7 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 /**
  * Date outside a calendar's supported range (e.g. past an observational table edge).
  *
- * Boundary violations throw; they never saturate and never wrap (spec §3.2).
+ * Boundary violations throw; they never saturate and never wrap.
  */
 final class HijriOutOfRangeException extends ValidationException
 {

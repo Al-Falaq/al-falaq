@@ -136,7 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and parses the `Lines:` summary defensively; bench documented as loose
   50ms/30000ms tripwires with the PRD 2ms/1000ms/16MB budgets as headroom.
 - Crescent null-window ownership: `Mabims1992Evaluator` owns the full rule plus
-  the no-moonset alt/elongation fallback (spec §3.2); the orchestrator
+  the no-moonset alt/elongation fallback; the orchestrator
   delegates unconditionally, retiring its inline duplication.
 - Qibla normalization: `QiblaCalculator` requires its geodesy (no nullable +
   throw); Kaaba facts move to the `GeodesyCalculator` seam; `Angle` owns the

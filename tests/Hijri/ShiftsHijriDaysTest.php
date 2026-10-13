@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
 use TypeError;
 
 /**
- * Shared Hijri day arithmetic: rollover, ranges, round-trips (spec §4.2).
+ * Shared Hijri day arithmetic: rollover, ranges, round-trips.
  */
 final class ShiftsHijriDaysTest extends TestCase
 {

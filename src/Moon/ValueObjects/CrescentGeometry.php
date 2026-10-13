@@ -12,7 +12,7 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 final readonly class CrescentGeometry
 {
     /**
-     * Sunset geometry bundle (spec §5.1 field contract).
+     * Sunset geometry bundle: everything evaluators need, nothing else.
      *
      * @param float $sunAltitude Geocentric sun altitude in degrees (the pin applies parallax to the moon only).
      * @param float $moonAltitude Topocentric moon altitude in degrees.

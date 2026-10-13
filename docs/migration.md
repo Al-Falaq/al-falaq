@@ -1,5 +1,59 @@
 # migration (M1-M5)
 
+## Unreleased — architecture deepening (breaking surface)
+
+One batch from the C1–C6 + synthesis rounds. `default()` / `defaultFor()` /
+`::default` factories are unaffected throughout — only explicit construction
+and custom implementations need attention.
+
+1. **`PrayerTimesCalculator::__construct` takes the day engine first.**
+   Inject `SolarDayEngine` (`MeanSolarCalculator` is the stable default
+   adapter) ahead of the three strategies.
+
+   ```php
+   // before
+   new PrayerTimesCalculator($hl, $polar, $twilight);
+   // after
+   new PrayerTimesCalculator(new MeanSolarCalculator(), $hl, $polar, $twilight);
+   ```
+
+2. **Rule interfaces gain members.** `IshaRule` / `MaghribRule` gain
+   `validate()`; `HighLatitudeCorrection::portions()` narrows to
+   `(float $fajrAngle, ?float $ishaAngle)`; `PrayerTimesCalculatorInterface`
+   gains `maghribAt()`. Custom implementations must add the members (the
+   shipped adapters already carry them); custom `HighLatitudeCorrection`
+   adapters drop the place/date params.
+
+3. **`AsrRule` seam deleted.** `AsrRule`, `ShafiAsr`, `HanafiAsr` are gone;
+   read the closed enum instead (it already carried the factor).
+
+   ```php
+   // before
+   $asrRule = match ($madhab) { Madhab::SHAFI => new ShafiAsr(), ... };
+   $asrRule->shadowLength();
+   // after
+   $madhab->shadowLength(); // 1.0 Shafi, 2.0 Hanafi
+   ```
+
+4. **`SolarModel` folded into `SolarDayEngine`.** Hint the day-engine port;
+   the narrow interface no longer exists. (`hourAngle` vs `hourAngleFloat`
+   intentionally stay a pair: floored instants for minute parity, raw
+   fractional hours for sub-second Julian-day math.)
+
+5. **`QiblaCalculator` requires its geodesy.** `new QiblaCalculator()` with
+   no argument no longer exists — use `::default()` / `::wgs84()` or inject
+   a `GeodesyCalculator`. Kaaba digits moved with it
+   (`GeodesyEngine::MAKKAH_*` → `GeodesyCalculator::MAKKAH_*`).
+
+6. **`CrescentCalculator` takes a `ConjunctionSearch`.** Pass
+   `EphemerisConjunctionSearch::default()` (or a double) as the new
+   argument; `LunarPosition` is deleted.
+
+7. **Ramadan consistency fails fast.** `isRamadan` outside Umm al-Qura now
+   throws in `create()` / `withRamadan()`, not at `calculate()` time.
+   `Comparator::floatsEqual()` is deleted (minute equality is the live
+   golden story).
+
 ## M5 — `nightFraction` strictly-interior clamp (pure bugfix, no action needed)
 
 `SunnahTimes::nightFraction()` now clamps the minute-rounded result strictly

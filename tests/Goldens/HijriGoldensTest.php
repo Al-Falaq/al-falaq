@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Exact pin-parity goldens for the M4 Hijri calendars.
  *
- * Sampling is compact (see the M4 plan's "Plan-time corrections" 3): tabular is
+ * Sampling is compact: tabular is
  * every 97th Gregorian day across 1900–2100, and each observational calendar
  * contributes day 1 of every supported month. Interior days, month lengths and
  * round-trips are covered by in-PHP invariants in the per-calendar test files,

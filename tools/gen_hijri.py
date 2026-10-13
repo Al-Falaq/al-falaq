@@ -32,7 +32,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-# Supported spans (spec §4.7/§4.8). Floors are the pinned rule's own rst rows.
+# Supported spans. Floors are the pinned rule's own rst rows.
 UQ_SPAN = (1423, 1, 1500, 12, date(2002, 3, 15))
 MABIMS_SPAN = (1445, 1, 1500, 12, date(2023, 7, 19))
 MABIMS_COUNTRIES = ("MY", "ID", "SG", "BN")
