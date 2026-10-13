@@ -99,6 +99,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so existing implementations keep loading.
 - `HighLatitudeCorrection::portions()` takes only the angles adapters read
   (`float, ?float`); place/date dropped (breaking for custom implementations).
+- Night temps extracted to the internal `NightResolver` step (single owner
+  for seasonal / NONE-raw / portions fajr+isha logic; composed from the
+  injected strategies, no new port).
 - Prayer rule validation lives behind the rule interfaces: `IshaRule` and
   `MaghribRule` gain `validate()` (angle finite in [0, 30] or valid interval),
   and `CalculationParameters` no longer branches on shipped concretes — custom

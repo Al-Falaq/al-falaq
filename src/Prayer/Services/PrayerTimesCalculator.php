@@ -30,7 +30,6 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
@@ -47,6 +46,11 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     use NormalizesCoordinatesInput;
 
     /**
+     * Night-temp resolution, composed from the injected strategies (no policy of its own).
+     */
+    private readonly NightResolver $night;
+
+    /**
      * Wire the day engine plus the three behavioral strategies explicitly (no container).
      *
      * @param SolarDayEngine $solar Day-level solar geometry (real engine or test double).
@@ -59,7 +63,9 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         private readonly HighLatitudeCorrection $highLatitudeCorrection,
         private readonly PolarCircleHandler $polarCircleHandler,
         private readonly TwilightModel $twilightModel,
-    ) {}
+    ) {
+        $this->night = new NightResolver($solar, $highLatitudeCorrection, $twilightModel);
+    }
 
     /**
      * Expose the injected day engine (introspection/testing).
@@ -69,6 +75,16 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     public function solar(): SolarDayEngine
     {
         return $this->solar;
+    }
+
+    /**
+     * Expose the night-temp resolver (introspection/testing).
+     *
+     * @return NightResolver The wired fajr/isha resolution step.
+     */
+    public function night(): NightResolver
+    {
+        return $this->night;
     }
 
     /**
@@ -235,79 +251,11 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         $tomorrowSunrise = $this->solar->solarTime($effCoords, $effDate->plusDays(1), $elev)->sunrise;
         $nightSec = $tomorrowSunrise->getTimestamp() - $day->sunset->getTimestamp();
 
-        // NONE skips the portions safe caps (raw angle temps); every other
-        // rule resolves fallback portions eagerly. The SEASONAL_TWILIGHT arm
-        // is wired to MiddleOfNightCorrection via defaultFor and only
-        // consults these portions on the non-seasonal fallback path.
-        $portions = match ($parameters->highLatitudeRule) {
-            HighLatitudeRule::NONE => null,
-            default => $this->highLatitudeCorrection->portions(
-                $parameters->fajrAngle,
-                $parameters->ishaRule->angle(),
-            ),
-        };
-
         $eff = $parameters->methodAdjustments->combinedWith($parameters->adjustments);
 
-        $isMsc = $parameters->method === CalculationMethod::MOON_SIGHTING_COMMITTEE;
+        $temps = $this->night->resolve($effCoords, $effDate, $elev, $parameters, $day, $nightSec);
 
-        // Pin _set_fajr/_set_isha MSC branches (PrayerTimes.py verbatim): the
-        // seasonal safe caps apply whenever the MSC method or the
-        // SEASONAL_TWILIGHT rule arm is in play (the rule arm is
-        // MSC-equivalent by design); the seventh-of-night temp replaces
-        // the angle temp only at high latitude.
-        // NOTE: the pin gates its temp branch on signed `latitude >= 55`
-        // (_set_fajr and _set_isha); keep pin-verbatim here.
-        $useSeasonalSafe = $isMsc || $parameters->highLatitudeRule === HighLatitudeRule::SEASONAL_TWILIGHT;
-        $useSeventh = $useSeasonalSafe && $effCoords->latitude >= 55;
-
-        $seasonalSeconds = ['morning' => 0, 'evening' => 0];
-        $seventh = 0;
-
-        if ($useSeasonalSafe) {
-            // Twilight model consulted only on the seasonal path.
-            $seasonalSeconds = $this->twilightModel->seasonalSeconds(
-                $effDate->dayOfYear(),
-                $effDate->year,
-                $effCoords->latitude,
-            );
-            $seventh = intdiv($nightSec, 7);
-        }
-
-        if ($useSeasonalSafe) {
-            $fajrSafe = $this->addSeconds($day->sunrise, -$seasonalSeconds['morning']);
-
-            if ($useSeventh) {
-                // Angle temp discarded (the pin overwrites it on this path).
-                $fajrTemp = $this->addSeconds($day->sunrise, -$seventh);
-            } else {
-                $fajrTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$parameters->fajrAngle, false);
-            }
-
-            if ($fajrTemp === null || $fajrTemp < $fajrSafe) {
-                $fajrTemp = $fajrSafe;
-            }
-        } elseif ($portions === null) {
-            // NONE rule: raw angle temp, no safe cap.
-            $fajrTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$parameters->fajrAngle, false);
-
-            if ($fajrTemp === null) {
-                throw new AstronomicalException(sprintf(
-                    'Unable to compute Fajr: the sun never reaches the angle for these coordinates and date (coordinates=%s, date=%s).',
-                    (string) $effCoords,
-                    $effDate->isoformat(),
-                ));
-            }
-        } else {
-            $fajrTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$parameters->fajrAngle, false);
-            $fajrSafe = $this->addSeconds($day->sunrise, - (int) ($portions->fajrPortion * $nightSec));
-
-            if ($fajrTemp === null || $fajrTemp < $fajrSafe) {
-                $fajrTemp = $fajrSafe;
-            }
-        }
-
-        $fajr = $this->adjusted($fajrTemp, $eff, Prayer::FAJR);
+        $fajr = $this->adjusted($temps['fajr'], $eff, Prayer::FAJR);
         $imsak = $this->adjusted(Minutes::add($fajr, -$parameters->imsakOffsetMinutes), $eff, Prayer::IMSAK);
 
         $sunrise = $this->adjusted($day->sunrise, $eff, Prayer::SUNRISE);
@@ -336,64 +284,7 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
 
         $maghrib = $this->adjusted($maghribBase, $eff, Prayer::MAGHRIB);
 
-        $ishaMinutes = $parameters->ishaRule->minutesAfterMaghrib();
-
-        if ($parameters->isRamadan && $parameters->method === CalculationMethod::UMM_AL_QURA) {
-            $ishaMinutes = 120;
-        }
-
-        if ($ishaMinutes !== null) {
-            // Pin _set_isha: interval from raw sunset, not adjusted maghrib.
-            $ishaBase = Minutes::add($day->sunset, $ishaMinutes);
-            $isha = $this->adjusted($ishaBase, $eff, Prayer::ISHA);
-        } else {
-            $ishaAngle = $parameters->ishaRule->angle();
-
-            if ($ishaAngle === null) {
-                throw new AstronomicalException(sprintf(
-                    'Unable to compute Isha: no angle or interval defined (coordinates=%s, date=%s).',
-                    (string) $effCoords,
-                    $effDate->isoformat(),
-                ));
-            }
-
-            if ($useSeasonalSafe) {
-                // Pin _set_isha MSC branch: seasonal evening safe; the
-                // seventh-of-night temp replaces the angle temp only on the
-                // high-latitude path, like fajr above.
-                $ishaSafe = $this->addSeconds($day->sunset, $seasonalSeconds['evening']);
-
-                if ($useSeventh) {
-                    $ishaTemp = $this->addSeconds($day->sunset, $seventh);
-                } else {
-                    $ishaTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$ishaAngle, true);
-                }
-
-                if ($ishaTemp === null || $ishaTemp > $ishaSafe) {
-                    $ishaTemp = $ishaSafe;
-                }
-            } elseif ($portions === null) {
-                // NONE rule: raw angle temp, no safe cap.
-                $ishaTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$ishaAngle, true);
-
-                if ($ishaTemp === null) {
-                    throw new AstronomicalException(sprintf(
-                        'Unable to compute Isha: the sun never reaches the angle for these coordinates and date (coordinates=%s, date=%s).',
-                        (string) $effCoords,
-                        $effDate->isoformat(),
-                    ));
-                }
-            } else {
-                $ishaTemp = $this->solar->hourAngle($effCoords, $effDate, $elev, -$ishaAngle, true);
-                $ishaSafe = $this->addSeconds($day->sunset, (int) ($portions->ishaPortion * $nightSec));
-
-                if ($ishaTemp === null || $ishaTemp > $ishaSafe) {
-                    $ishaTemp = $ishaSafe;
-                }
-            }
-
-            $isha = $this->adjusted($ishaTemp, $eff, Prayer::ISHA);
-        }
+        $isha = $this->adjusted($temps['isha'], $eff, Prayer::ISHA);
 
         if ($asr > $maghrib) {
             $asr = $maghrib;
@@ -466,16 +357,5 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
                 $parameters->method->value,
             ));
         }
-    }
-
-    private function addSeconds(\DateTimeImmutable $base, int $seconds): \DateTimeImmutable
-    {
-        $moved = $base->modify(sprintf('%+d seconds', $seconds));
-
-        if ($moved === false) {
-            throw new ValidationException('Unable to add seconds.');
-        }
-
-        return $moved;
     }
 }

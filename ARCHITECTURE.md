@@ -192,8 +192,9 @@ edge via `forZone()`. The domain never reads the clock; callers pass
    sunrise to derive night length.
 4. Resolve high-latitude portions via `HighLatitudeCorrection`, or apply
    the Moon-Sighting-Committee seasonal branch (`TwilightModel`) when that
-   method or rule is active.
-5. Compute each marker (fajr hour-angle → sunrise → dhuhr transit → Asr
+   method or rule is active — both owned by the internal `NightResolver`
+   step, which returns the unadjusted fajr/isha temps.
+5. Compute each marker (fajr/isha temps from `NightResolver` → sunrise → dhuhr transit → Asr
    shadow → maghrib angle/interval → isha angle/interval), combine
    method-plus-caller offsets (`PrayerAdjustments::combinedWith`), then
    apply a single half-up rounding (`Minutes::roundedHalfUp`) per marker.
@@ -207,7 +208,7 @@ sequenceDiagram
     participant C as PrayerTimesCalculator
     participant E as SolarDayEngine
     participant P as PolarCircleHandler
-    participant L as Latitude correction
+    participant N as NightResolver
     H->>C: calculate(coords, date, params)
     C->>E: isSolarDefined(coords, date, elev)
     alt sun undefined (polar day or night)
@@ -216,9 +217,10 @@ sequenceDiagram
     end
     C->>E: solarTime(effCoords, effDate)
     E-->>C: transit, sunrise, sunset
-    C->>L: portions() or seasonalSeconds()
-    L-->>C: night fractions or seasonal caps
-    C->>E: hourAngle() for fajr, maghrib, isha
+    C->>N: night.resolve() — portions or seasonal temps
+    N->>E: hourAngle() for fajr and isha temps
+    N-->>C: unadjusted fajr and isha temps
+    C->>E: hourAngle() for maghrib
     C->>E: afternoon() for asr
     C->>C: maghribBase() — single maghrib owner
     C-->>H: PrayerSchedule (ten UTC instants)
