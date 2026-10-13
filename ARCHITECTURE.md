@@ -104,7 +104,8 @@ Context map:
 - `src/Prayer/` — the largest context. `PrayerTimesCalculator` (single-day
   pipeline), `TimetableService` (monthly loop), `NextPrayerResolver`
   (today/tomorrow badge), `SunnahCalculator` (night fractions).
-  Strategies cover Asr (`ShafiAsr`, `HanafiAsr`), Isha (`AngleIsha`,
+  Strategies cover Asr (closed `Madhab` shadow factor: 1.0 Shafi, 2.0 Hanafi),
+  Isha (`AngleIsha`,
   `IntervalIsha`), Maghrib (`AngleMaghrib`, `MinutesAfterSunsetMaghrib`),
   high-latitude corrections (`MiddleOfNightCorrection`,
   `SeventhOfNightCorrection`, `TwilightAngleCorrection`), twilight
@@ -222,7 +223,7 @@ or WGS84/Karney), wrap the bearing/distance in an immutable `QiblaResult`.
 - **Ports and adapters.** Service contracts (`PrayerTimesCalculatorInterface`,
   `TimetableServiceInterface`, `NextPrayerResolverInterface`) are driving
   ports, each implemented once in `Services/`. Strategy contracts
-  (`AsrRule`, `IshaRule`, `MaghribRule`, `HighLatitudeCorrection`,
+  (`IshaRule`, `MaghribRule`, `HighLatitudeCorrection`,
   `PolarCircleHandler`, `TwilightModel`, `GeodesyCalculator`,
   `HijriCalendar`, `OffsetStore`, `CrescentEvaluator`) are driven ports with
   one or more `Strategies/` implementations or caller-supplied doubles.
@@ -323,7 +324,7 @@ no HTML.
 
 **Implement or select these (driven ports — extension points):**
 
-- Prayer behaviour: `AsrRule`, `IshaRule`, `MaghribRule`,
+- Prayer behaviour: `IshaRule`, `MaghribRule`,
   `HighLatitudeCorrection`, `PolarCircleHandler`, `TwilightModel`.
 - Qibla precision: `GeodesyCalculator` (`default()` = spherical,
   `wgs84()` = Karney).

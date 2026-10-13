@@ -275,7 +275,7 @@ final class PrayerTimesCalculatorTest extends TestCase
         self::assertGreaterThan(
             $shafiAsr->getTimestamp(),
             $hanafiAsr->getTimestamp(),
-            'Hanafi asr must be strictly later than Shafi asr via the AsrRule strategy seam.',
+            'Hanafi asr must be strictly later than Shafi asr via the Madhab shadow factor.',
         );
     }
 

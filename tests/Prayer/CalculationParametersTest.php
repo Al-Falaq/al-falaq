@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Tests\Prayer;
 
+use AlFalaq\AlFalaq\Prayer\Contracts\IshaRule;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
@@ -555,6 +556,59 @@ final class CalculationParametersTest extends TestCase
     {
         $this->expectException(ValidationException::class);
         self::qatarBase()->withIshaRule(new IntervalIsha(0));
+    }
+
+    public function testCustomIshaRuleValidatedThroughInterface(): void
+    {
+        // Third-party adapters validate through IshaRule::validate(), never
+        // through instanceof on shipped concretes (an angle-based custom with
+        // a null interval used to be misreported as an invalid interval).
+        $custom = new class implements IshaRule {
+            public function minutesAfterMaghrib(): ?int
+            {
+                return null;
+            }
+
+            public function angle(): float
+            {
+                return 17.0;
+            }
+
+            public function validate(): void
+            {
+                if ($this->angle() < 0.0 || $this->angle() > 30.0) {
+                    throw new ValidationException('Custom isha angle out of range.');
+                }
+            }
+        };
+
+        $params = self::qatarBase()->withIshaRule($custom);
+
+        self::assertSame($custom, $params->ishaRule);
+
+        $rejecting = new class implements IshaRule {
+            public function minutesAfterMaghrib(): ?int
+            {
+                return null;
+            }
+
+            public function angle(): float
+            {
+                return 45.0;
+            }
+
+            public function validate(): void
+            {
+                throw new ValidationException('Custom isha angle out of range.');
+            }
+        };
+
+        try {
+            self::qatarBase()->withIshaRule($rejecting);
+            self::fail('expected ValidationException for custom invalid isha rule.');
+        } catch (ValidationException $e) {
+            self::assertSame('Custom isha angle out of range.', $e->getMessage());
+        }
     }
 
     public function testCreateAcceptsBoundaryAngles(): void

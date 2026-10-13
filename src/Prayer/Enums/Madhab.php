@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Enums;
 
 /**
- * Asr juristic school (drives the AsrRule shadow factor).
+ * Asr juristic school (drives the Asr shadow factor: 1.0 Shafi, 2.0 Hanafi).
  */
 enum Madhab: string
 {

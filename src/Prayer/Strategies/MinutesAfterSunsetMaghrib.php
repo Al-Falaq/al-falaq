@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\MaghribRule;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * Maghrib as fixed minutes after sunset (0 = at sunset, most methods).
@@ -36,5 +37,17 @@ final class MinutesAfterSunsetMaghrib implements MaghribRule
     public function angle(): ?float
     {
         return null;
+    }
+
+    /**
+     * Validate the interval variant (minutes after sunset >= 0).
+     *
+     * @return void Throws on invalid configuration.
+     */
+    public function validate(): void
+    {
+        if ($this->minutes < 0) {
+            throw new ValidationException('Invalid maghribRule: minutes after sunset must be >= 0.');
+        }
     }
 }

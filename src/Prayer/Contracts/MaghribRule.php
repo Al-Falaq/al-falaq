@@ -24,4 +24,11 @@ interface MaghribRule
      * @return float|null Angle; null for MinutesAfterSunsetMaghrib.
      */
     public function angle(): ?float;
+
+    /**
+     * Validate the rule variant (angle finite in [0, 30] or minutes after sunset >= 0).
+     *
+     * @return void Throws on invalid configuration.
+     */
+    public function validate(): void;
 }

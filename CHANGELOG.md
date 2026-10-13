@@ -90,6 +90,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `HijriCalendar::fromGregorian()` now takes `CivilDate` only.
+- Prayer rule validation lives behind the rule interfaces: `IshaRule` and
+  `MaghribRule` gain `validate()` (angle finite in [0, 30] or valid interval),
+  and `CalculationParameters` no longer branches on shipped concretes — custom
+  third-party rules are honored through the interface (breaking for custom
+  implementations, which must add the one method).
 - Coverage floor raised 80 → 85.
 - Coverage floor raised 85 → 95.
 - Infection MSI≥85% + covered-MSI≥85% gated in CI (`composer mutation`; `KarneyInverse` core file-excluded — survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`).
@@ -102,6 +107,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - `HijriDate::plusDays()` — use `HijriCalendar::shift()`.
+- Prayer `AsrRule` seam (`AsrRule`, `ShafiAsr`, `HanafiAsr`) — the closed
+  `Madhab` enum already carries `shadowLength()` (1.0 Shafi, 2.0 Hanafi),
+  which the pipeline now reads directly.
 
 ### Fixed
 
