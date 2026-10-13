@@ -217,8 +217,8 @@ final class CrescentCalculator
      * Run all four criteria on the sunset geometry (composition root).
      *
      * Strategies run on the same geometry bundle; the null (no-moonset)
-     * window never reaches Mabims1992Evaluator (it throws on null age) and
-     * instead takes the alt/elongation-only fallback here per spec §3.2.
+     * window is owned by Mabims1992Evaluator (alt/elongation-only fallback
+     * per spec §3.2), so every strategy is delegated to unconditionally.
      *
      * Delegates to evaluateGeometry().
      *
@@ -235,9 +235,7 @@ final class CrescentCalculator
     /**
      * Run all four criteria on an existing sunset geometry (pure scoring).
      *
-     * Same composition as evaluate(), minus the ephemeris run: the null
-     * (no-moonset) window takes the alt/elongation-only 1992 fallback per
-     * spec §3.2 instead of reaching Mabims1992Evaluator.
+     * Same composition as evaluate(), minus the ephemeris run.
      *
      * @param CrescentGeometry $geometry Sunset geometry, e.g. from atSunset().
      * @return array{yallop: CrescentVerdict, odeh: CrescentVerdict, mabims1992: CrescentVerdict, neomabims2021: CrescentVerdict} Verdicts keyed by criterion.
@@ -246,23 +244,7 @@ final class CrescentCalculator
     {
         $yallop = $this->yallop->evaluate($geometry);
         $odeh = $this->odeh->evaluate($geometry);
-
-        if ($geometry->lagMinutes === null || $geometry->ageAtMoonsetHours === null) {
-            // Composition-root fallback (spec §3.2): the 1992 age branch is
-            // undefined without a moonset, so the alt/elongation half of the
-            // rule is intentionally duplicated here instead of catching the
-            // strategy's null-window rejection.
-            $visible = $geometry->moonAltitude >= 2.0 && $geometry->elongationDeg >= 3.0;
-            $mabims1992 = new CrescentVerdict(
-                'mabims1992',
-                $visible,
-                $geometry->elongationDeg,
-                $visible ? 'visible' : 'not-visible',
-            );
-        } else {
-            $mabims1992 = $this->mabims1992->evaluate($geometry);
-        }
-
+        $mabims1992 = $this->mabims1992->evaluate($geometry);
         $neoMabims2021 = $this->neoMabims2021->evaluate($geometry);
 
         return [

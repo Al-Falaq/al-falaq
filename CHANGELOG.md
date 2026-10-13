@@ -103,6 +103,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gate prints a machine-readable `status=no-driver` marker on driverless runs
   and parses the `Lines:` summary defensively; bench documented as loose
   50ms/30000ms tripwires with the PRD 2ms/1000ms/16MB budgets as headroom.
+- Crescent null-window ownership: `Mabims1992Evaluator` owns the full rule plus
+  the no-moonset alt/elongation fallback (spec §3.2); the orchestrator
+  delegates unconditionally, retiring its inline duplication.
 
 ### Removed
 
@@ -110,6 +113,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prayer `AsrRule` seam (`AsrRule`, `ShafiAsr`, `HanafiAsr`) — the closed
   `Madhab` enum already carries `shadowLength()` (1.0 Shafi, 2.0 Hanafi),
   which the pipeline now reads directly.
+- Astro `LunarPosition` value object — test-only bundle never constructed in
+  `src/` (engines return shape-arrays; the live contract is
+  `CrescentGeometry`).
 
 ### Fixed
 

@@ -156,6 +156,25 @@ final class CrescentCalculatorTest extends TestCase
         );
     }
 
+    public function testNullWindowDelegatesToInjectedMabimsStrategy(): void
+    {
+        // The composition root no longer special-cases the null window: the
+        // injected mabims1992 strategy sees it directly.
+        $calculator = new CrescentCalculator(
+            new MeanSolarCalculator(),
+            new CrescentEphemeris(),
+            self::stub('yallop', 'A'),
+            self::stub('odeh', 'B'),
+            self::stub('mabims1992', 'null-marker'),
+            self::stub('neomabims2021', 'C'),
+        );
+
+        $geometry = new CrescentGeometry(-0.8333, 5.0, 8.0, 12.0, null, 1.0, 0.005, 8.0, 0.2, null);
+        $verdicts = $calculator->evaluateGeometry($geometry);
+
+        self::assertSame('null-marker', $verdicts['mabims1992']->zone);
+    }
+
     /**
      * Canned strategy double proving the composition root delegates.
      *
