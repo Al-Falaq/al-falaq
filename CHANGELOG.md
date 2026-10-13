@@ -90,6 +90,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `HijriCalendar::fromGregorian()` now takes `CivilDate` only.
+- Prayer wiring goes through the new `SolarDayEngine` port:
+  `PrayerTimesCalculator::__construct` takes the day engine first
+  (`default()`/`defaultFor()` supply `MeanSolarCalculator`; implement the
+  port for test doubles). `MeanSolarCalculator` is the stable default
+  adapter for explicit wiring. The shipped calculator still accepts
+  `Coordinates|array` via contravariance; the interface keeps `Coordinates`
+  so existing implementations keep loading.
 - Prayer rule validation lives behind the rule interfaces: `IshaRule` and
   `MaghribRule` gain `validate()` (angle finite in [0, 30] or valid interval),
   and `CalculationParameters` no longer branches on shipped concretes — custom

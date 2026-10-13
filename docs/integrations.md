@@ -38,6 +38,10 @@ $calculator = new PrayerTimesCalculator(
 );
 ```
 
+`MeanSolarCalculator` is the stable default `SolarDayEngine` adapter: naming
+it here for explicit wiring is supported (implement the port instead for test
+doubles).
+
 ## Qibla (M2)
 
 ```php

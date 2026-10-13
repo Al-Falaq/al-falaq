@@ -21,7 +21,9 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
  * exposed through the SolarDayEngine port; the narrow SolarModel contract
  * keeps only declination/equationOfTime.
  *
- * @internal Entry point is SolarTime, not this class.
+ * Default SolarDayEngine adapter: safe to construct for explicit service
+ * wiring per docs/integrations.md (userland otherwise goes through Moon/
+ * or the relevant Prayer service, never Astro internals).
  */
 final class MeanSolarCalculator implements SolarDayEngine
 {

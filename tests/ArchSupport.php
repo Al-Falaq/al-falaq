@@ -42,9 +42,17 @@ abstract class ArchSupport extends TestCase
                 continue;
             }
 
-            if (class_exists($fqcn) || interface_exists($fqcn) || trait_exists($fqcn) || enum_exists($fqcn)) {
-                $classes[] = $fqcn;
-            }
+            $isClassLike = class_exists($fqcn)
+                || interface_exists($fqcn)
+                || trait_exists($fqcn)
+                || enum_exists($fqcn);
+
+            self::assertTrue(
+                $isClassLike,
+                sprintf('Source file %s must declare %s.', $file->getPathname(), $fqcn),
+            );
+
+            $classes[] = $fqcn;
         }
 
         $classes = array_values(array_unique($classes));
@@ -167,6 +175,10 @@ abstract class ArchSupport extends TestCase
     /**
      * Every method parameter must have a matching @param $name tag.
      *
+     * The name is the first $identifier at bracket depth zero, so named
+     * parameters inside callable/array shapes (e.g. `callable(int $value)`)
+     * are skipped in favour of the documented parameter itself.
+     *
      * @return list<string> documented parameter names.
      */
     protected static function docParams(string|false $doc): array
@@ -175,8 +187,50 @@ abstract class ArchSupport extends TestCase
             return [];
         }
 
-        preg_match_all('/@param\s+[^\$]*\$(\w+)/', $doc, $matches);
+        $names = [];
 
-        return $matches[1];
+        foreach (explode("\n", $doc) as $line) {
+            $at = strpos($line, '@param');
+
+            if ($at === false) {
+                continue;
+            }
+
+            $name = self::docParamName(substr($line, $at + 6));
+
+            if ($name !== null) {
+                $names[] = $name;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * First $identifier at bracket depth zero on one @param line.
+     *
+     * @param string $tail Line remainder after `@param`.
+     * @return string|null Parameter name, null when the line names none.
+     */
+    protected static function docParamName(string $tail): ?string
+    {
+        $depth = 0;
+        $length = strlen($tail);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $tail[$i];
+
+            if ($char === '(' || $char === '[' || $char === '{') {
+                $depth++;
+            } elseif ($char === ')' || $char === ']' || $char === '}') {
+                $depth = max(0, $depth - 1);
+            } elseif ($char === '$' && $depth === 0) {
+                if (preg_match('/\$(\w+)/', substr($tail, $i), $matches) === 1) {
+                    return $matches[1];
+                }
+            }
+        }
+
+        return null;
     }
 }

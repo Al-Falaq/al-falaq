@@ -16,7 +16,9 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  * root consume. Services hint this port, never the engine class, so tests
  * cross the same seam callers use.
  *
- * @internal Userland must use Moon/ or Prayer/ facades, never this.
+ * Stable wiring surface: implement it for test doubles; construct
+ * MeanSolarCalculator (the default adapter) for explicit service wiring
+ * per docs/integrations.md.
  */
 interface SolarDayEngine extends SolarModel
 {

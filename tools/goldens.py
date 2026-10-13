@@ -44,6 +44,10 @@ def main() -> int:
 
     root = Path(__file__).resolve().parent.parent
     cmd, _ = TARGETS[target]
+    # Audit note (opengrep subprocess flags): cmd comes from the fixed TARGETS
+    # table above (never from argv — only the key is looked up), argv extras
+    # pass through verbatim, and the list form (no shell) means no shell
+    # interpretation. Threat model is the local maintainer's own shell.
     completed = subprocess.run(cmd + rest, cwd=root)
     return completed.returncode
 

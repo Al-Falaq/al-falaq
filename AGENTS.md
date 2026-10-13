@@ -76,7 +76,9 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - Pure domain: SPL + `\DateTimeImmutable` only (mutable `DateTime` and
   `DateTimeInterface` unions banned by ArchTest); no I/O, no network
   (`curl_`, `exec`, `shell_exec`, http URLs banned); no `Util/` namespace;
-  userland must not import `Astro/`. Clock never read inside domain —
+  userland must not import `Astro/` (stable exception: the `SolarDayEngine`
+  port + `MeanSolarCalculator` adapter for explicit Prayer wiring — see
+  `docs/integrations.md`). Clock never read inside domain —
   pass `$nowUtc` explicitly.
 - No framework types in `src/` (`Illuminate/*`, framework adapters live
   outside this repo; wiring recipes go in `docs/integrations.md` as

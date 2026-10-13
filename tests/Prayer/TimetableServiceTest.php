@@ -113,7 +113,7 @@ final class TimetableServiceTest extends TestCase
         $double = new class ($canned) implements PrayerTimesCalculatorInterface {
             public function __construct(private readonly PrayerSchedule $canned) {}
 
-            public function calculate(Coordinates|array $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule
+            public function calculate(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule
             {
                 return $this->canned;
             }
