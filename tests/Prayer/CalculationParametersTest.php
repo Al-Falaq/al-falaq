@@ -16,6 +16,7 @@ use AlFalaq\AlFalaq\Prayer\Strategies\IntervalIsha;
 use AlFalaq\AlFalaq\Prayer\Strategies\MinutesAfterSunsetMaghrib;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use PHPUnit\Framework\TestCase;
 
@@ -514,7 +515,24 @@ final class CalculationParametersTest extends TestCase
 
     public function testWithRamadanTogglesFlagOnly(): void
     {
-        $base = self::qatarBase();
+        $method = CalculationMethod::UMM_AL_QURA;
+        $base = CalculationParameters::create(
+            $method,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new IntervalIsha(90),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
 
         $changed = $base->withRamadan(true);
 
@@ -556,6 +574,43 @@ final class CalculationParametersTest extends TestCase
     {
         $this->expectException(ValidationException::class);
         self::qatarBase()->withIshaRule(new IntervalIsha(0));
+    }
+
+    public function testCreateRejectsRamadanOutsideUmmAlQura(): void
+    {
+        // Ramadan consistency fails fast at construction, never at calculate().
+        $this->expectException(ConfigurationException::class);
+
+        CalculationParameters::create(
+            CalculationMethod::MUSLIM_WORLD_LEAGUE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            true,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+    }
+
+    public function testWithRamadanRejectsNonUmmAlQura(): void
+    {
+        $this->expectException(ConfigurationException::class);
+        self::qatarBase()->withRamadan(true);
+    }
+
+    public function testWithRamadanAcceptsUmmAlQura(): void
+    {
+        $params = CalculationMethod::UMM_AL_QURA->defaultParameters()->withRamadan(true);
+
+        self::assertTrue($params->isRamadan);
     }
 
     public function testCustomIshaRuleValidatedThroughInterface(): void

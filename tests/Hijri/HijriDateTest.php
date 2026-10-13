@@ -72,7 +72,7 @@ final class HijriDateTest extends TestCase
     }
 
     /**
-     * plusDays was removed from the contract (spec §10 [A3]).
+     * plusDays was removed from the contract.
      *
      * @return void
      */

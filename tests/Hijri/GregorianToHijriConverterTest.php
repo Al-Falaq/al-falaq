@@ -11,12 +11,14 @@ use AlFalaq\AlFalaq\Hijri\Services\GregorianToHijriConverter;
 use AlFalaq\AlFalaq\Hijri\Strategies\TabularCalendar;
 use AlFalaq\AlFalaq\Hijri\Strategies\UmmAlQuraCalendar;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
@@ -188,6 +190,47 @@ final class GregorianToHijriConverterTest extends TestCase
             GregorianToHijriConverter::default()
                 ->convert($instant, $calendar, $coordinates, $this->parameters(), true)
                 ->isoformat(),
+        );
+    }
+
+    /**
+     * The sunset roll crosses the calculator interface, never the concrete class.
+     *
+     * A stub pipeline whose full schedule is undefined forces the maghribAt
+     * fallback; the rollover still resolves from the stubbed maghrib with no
+     * astronomy involved.
+     *
+     * @return void
+     */
+    public function testSunsetRollReachesCalculatorThroughInterface(): void
+    {
+        $utc = new DateTimeZone('UTC');
+        $calculator = new class implements PrayerTimesCalculatorInterface {
+            public function calculate(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule
+            {
+                throw new UndefinedScheduleException('no schedule');
+            }
+
+            public function maghribAt(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): DateTimeImmutable
+            {
+                return new DateTimeImmutable($date->isoformat() . ' 10:00:00', new DateTimeZone('UTC'));
+            }
+        };
+
+        $converter = new GregorianToHijriConverter($calculator);
+        $calendar = new TabularCalendar();
+        $coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+
+        $after = new DateTimeImmutable('2025-03-01 12:00:00', $utc);
+        $before = new DateTimeImmutable('2025-03-01 09:00:00', $utc);
+
+        self::assertSame(
+            $calendar->fromGregorian(CivilDate::fromYmd(2025, 3, 2))->isoformat(),
+            $converter->convert($after, $calendar, $coordinates, CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(), true)->isoformat(),
+        );
+        self::assertSame(
+            $calendar->fromGregorian(CivilDate::fromYmd(2025, 3, 1))->isoformat(),
+            $converter->convert($before, $calendar, $coordinates, CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(), true)->isoformat(),
         );
     }
 

@@ -13,8 +13,8 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
  * MABIMS-1992 criterion: (alt ≥ 2° and elongation ≥ 3°) or age at moonset ≥ 8 h.
  *
  * The no-moonset window (null age) takes the altitude/elongation-only
- * fallback here per spec §3.2 — the age branch is undefined without a
- * moonset, so only the alt/elongation half applies.
+ * fallback here — the age branch is undefined without a moonset, so only
+ * the alt/elongation half applies.
  */
 final class Mabims1992Evaluator implements CrescentEvaluator
 {
@@ -23,7 +23,7 @@ final class Mabims1992Evaluator implements CrescentEvaluator
      *
      * Pin Mabims.py (Task 0 refs): all comparisons are >=, age input is
      * age-at-moonset (never sunset age). A null age (no-moonset window)
-     * resolves to the alt/elongation-only fallback per spec §3.2.
+     * resolves to the alt/elongation-only fallback.
      *
      * @param CrescentGeometry $geometry Sun/moon geometry at local sunset.
      * @return CrescentVerdict 'mabims1992' verdict + elongation score.

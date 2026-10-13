@@ -56,8 +56,9 @@ checks, and the committed KL/Makkah agreement matrix — see `tools/gen_moonsigh
   `AstronomicalException` — no sunset to evaluate at.
 - Sunset with circumpolar/no moonset (Tromsø 2025-01-15 `arcl≈160.86`,
   Reykjavik 2025-04-02 `arcl≈61.26`): finite geometry, `lag = null`,
-  `age_at_moonset = null`. Never feed null age into the 1992 evaluator —
-  fall back to the altitude/elongation branch.
+  `age_at_moonset = null`. The null window resolves inside the 1992
+  evaluator (altitude/elongation-only fallback) — pass the
+  geometry through `evaluateGeometry()` unchanged; no caller-side fallback.
 - Eclipse-day ages hit the `0.1`-day floor; pre-conjunction evenings read
   ~29 d (previous lunation) and can spuriously pass the 1992 age branch —
   check `lag_hours` first.

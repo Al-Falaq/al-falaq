@@ -46,7 +46,7 @@ final class MabimsEvaluatorTest extends TestCase
 
     public function test1992NullWindowFallsBackToAltElong(): void
     {
-        // No-moonset window (spec §3.2): age branch undefined, so only the
+        // No-moonset window: age branch undefined, so only the
         // altitude/elongation half applies — same thresholds as the full rule.
         $visible = (new Mabims1992Evaluator())->evaluate($this->geometry(5.0, 8.0, null));
 

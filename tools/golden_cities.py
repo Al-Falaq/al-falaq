@@ -4,7 +4,8 @@
 The Qibla oracles (spherical + WGS84) and the moonsighting characterization
 run the same 23-city grid; the crescent grid adds the Makkah-self geometry
 (Qibla excludes it as degenerate — bearing goldens never pin it). Order is
-part of the contract: generated CSVs must stay byte-identical.
+conventional: goldens pin content per row, not sequence, so keep the grids
+stable and the diffs will stay clean.
 """
 
 CITIES_QIBLA = [
@@ -34,9 +35,26 @@ CITIES_QIBLA = [
 ]
 
 # Moon grid mirrors the Qibla grid with the Makkah-self geometry inserted
-# after Cape Town (its committed position — order is contractual).
+# after Cape Town (its committed position — keep stable so regens diff cleanly).
 CITIES_MOON = (
     CITIES_QIBLA[:15]
     + [("Makkah, SA", 21.4225, 39.8262)]
     + CITIES_QIBLA[15:]
 )
+
+
+def antipode_rows(makkah_lat: float, makkah_lon: float) -> list[tuple[str, float, float]]:
+    """Degenerate Qibla rows (Makkah-self + antipode), owned once here.
+
+    Antipode longitude unwound to [-180, 180] (robust to sign, not just
+    lon - 180). Both Qibla generators assert invariants on these rows;
+    bearing goldens never pin them.
+    """
+    return [
+        ("Makkah self", makkah_lat, makkah_lon),
+        (
+            "Antipode of Makkah",
+            -makkah_lat,
+            (makkah_lon + 180.0 + 540.0) % 360.0 - 180.0,
+        ),
+    ]

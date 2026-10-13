@@ -17,9 +17,9 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
 /**
  * Mean-sun solar calculator (Meeus transcription, M1).
  *
- * The 4 day-level methods (solarTime/hourAngle/afternoon/isSolarDefined) are
- * exposed through the SolarDayEngine port; the narrow SolarModel contract
- * keeps only declination/equationOfTime.
+ * Default SolarDayEngine adapter: the day-level methods (solarTime,
+ * hourAngle, afternoon, isSolarDefined) are the port surface, plus
+ * declination/equationOfTime/position for direct consumers.
  *
  * Default SolarDayEngine adapter: safe to construct for explicit service
  * wiring per docs/integrations.md (userland otherwise goes through Moon/

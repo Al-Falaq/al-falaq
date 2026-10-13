@@ -261,7 +261,7 @@ final class CrescentEphemeris
     }
 
     /**
-     * Topocentric altitude/azimuth with parallax (asin(R/d) form per spec).
+     * Topocentric altitude/azimuth with parallax (asin(R/d) form).
      *
      * Pin a7baa8b CrescentGeometry._altaz (hour-angle alt/az) plus the
      * parallax-in-altitude correction (crescent_geometry_at_sunset):

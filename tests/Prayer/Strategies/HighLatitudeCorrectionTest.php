@@ -8,8 +8,6 @@ use AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeventhOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\TwilightAngleCorrection;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
-use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
-use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -20,8 +18,6 @@ final class HighLatitudeCorrectionTest extends TestCase
     public function testMiddleOfNightHalves(): void
     {
         $portions = (new MiddleOfNightCorrection())->portions(
-            Coordinates::fromDegrees(59.9139, 10.7522),
-            CivilDate::fromYmd(2025, 1, 15),
             18.0,
             17.0,
         );
@@ -33,8 +29,6 @@ final class HighLatitudeCorrectionTest extends TestCase
     public function testSeventhOfNight(): void
     {
         $portions = (new SeventhOfNightCorrection())->portions(
-            Coordinates::fromDegrees(59.9139, 10.7522),
-            CivilDate::fromYmd(2025, 1, 15),
             18.0,
             17.0,
         );
@@ -46,8 +40,6 @@ final class HighLatitudeCorrectionTest extends TestCase
     public function testTwilightAngleDividesBySixty(): void
     {
         $portions = (new TwilightAngleCorrection())->portions(
-            Coordinates::fromDegrees(59.9139, 10.7522),
-            CivilDate::fromYmd(2025, 1, 15),
             18.0,
             17.0,
         );
@@ -60,8 +52,6 @@ final class HighLatitudeCorrectionTest extends TestCase
     {
         $this->expectException(ConfigurationException::class);
         (new TwilightAngleCorrection())->portions(
-            Coordinates::fromDegrees(59.9139, 10.7522),
-            CivilDate::fromYmd(2025, 1, 15),
             18.0,
             null,
         );

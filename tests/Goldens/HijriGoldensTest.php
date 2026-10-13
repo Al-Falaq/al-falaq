@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Exact pin-parity goldens for the M4 Hijri calendars.
  *
- * Sampling is compact (see the M4 plan's "Plan-time corrections" 3): tabular is
+ * Sampling is compact: tabular is
  * every 97th Gregorian day across 1900–2100, and each observational calendar
  * contributes day 1 of every supported month. Interior days, month lengths and
  * round-trips are covered by in-PHP invariants in the per-calendar test files,
@@ -48,23 +48,6 @@ final class HijriGoldensTest extends TestCase
     }
 
 
-    /**
-     * Read a required golden field.
-     *
-     * @param array<string, string> $row Parsed golden row.
-     * @param string $key Column name.
-     * @param int $line 1-based line number for diagnostics.
-     * @param string $file Golden basename for diagnostics.
-     * @return string Cell value.
-     */
-    private static function field(array $row, string $key, int $line, string $file): string
-    {
-        if (! isset($row[$key])) {
-            self::fail(sprintf('Missing column %s in %s line %d.', $key, $file, $line));
-        }
-
-        return $row[$key];
-    }
 
     /**
      * Tabular parity over the sampled 1900–2100 window.
@@ -81,14 +64,14 @@ final class HijriGoldensTest extends TestCase
 
         foreach ($golden['rows'] as $index => $row) {
             $line = $index + 2;
-            $gregorian = self::field($row, 'gregorian', $line, 'hijri_tabular.csv');
+            $gregorian = GoldenAsserts::field($row, 'gregorian', $line, 'hijri_tabular.csv');
 
             self::assertSame(
-                self::field($row, 'hijri', $line, 'hijri_tabular.csv'),
+                GoldenAsserts::field($row, 'hijri', $line, 'hijri_tabular.csv'),
                 $calendar->fromGregorian(self::civilDate($gregorian))->isoformat(),
                 sprintf('tabular %s (line %d)', $gregorian, $line),
             );
-            self::assertStringStartsWith(self::SOURCE_PREFIX, self::field($row, 'source', $line, 'hijri_tabular.csv'));
+            self::assertStringStartsWith(self::SOURCE_PREFIX, GoldenAsserts::field($row, 'source', $line, 'hijri_tabular.csv'));
         }
     }
 
@@ -107,14 +90,14 @@ final class HijriGoldensTest extends TestCase
 
         foreach ($golden['rows'] as $index => $row) {
             $line = $index + 2;
-            $gregorian = self::field($row, 'gregorian', $line, 'hijri_uqu.csv');
+            $gregorian = GoldenAsserts::field($row, 'gregorian', $line, 'hijri_uqu.csv');
 
             self::assertSame(
-                self::field($row, 'hijri', $line, 'hijri_uqu.csv'),
+                GoldenAsserts::field($row, 'hijri', $line, 'hijri_uqu.csv'),
                 $calendar->fromGregorian(self::civilDate($gregorian))->isoformat(),
                 sprintf('uqu %s (line %d)', $gregorian, $line),
             );
-            self::assertStringStartsWith(self::SOURCE_PREFIX, self::field($row, 'source', $line, 'hijri_uqu.csv'));
+            self::assertStringStartsWith(self::SOURCE_PREFIX, GoldenAsserts::field($row, 'source', $line, 'hijri_uqu.csv'));
         }
     }
 
@@ -132,15 +115,15 @@ final class HijriGoldensTest extends TestCase
 
         foreach ($golden['rows'] as $index => $row) {
             $line = $index + 2;
-            $country = MabimsCountry::fromString(self::field($row, 'country', $line, 'hijri_mabims.csv'));
-            $gregorian = self::field($row, 'gregorian', $line, 'hijri_mabims.csv');
+            $country = MabimsCountry::fromString(GoldenAsserts::field($row, 'country', $line, 'hijri_mabims.csv'));
+            $gregorian = GoldenAsserts::field($row, 'gregorian', $line, 'hijri_mabims.csv');
 
             self::assertSame(
-                self::field($row, 'hijri', $line, 'hijri_mabims.csv'),
+                GoldenAsserts::field($row, 'hijri', $line, 'hijri_mabims.csv'),
                 (new MabimsCalendar($country))->fromGregorian(self::civilDate($gregorian))->isoformat(),
                 sprintf('mabims/%s %s (line %d)', $country->value, $gregorian, $line),
             );
-            self::assertStringStartsWith(self::SOURCE_PREFIX, self::field($row, 'source', $line, 'hijri_mabims.csv'));
+            self::assertStringStartsWith(self::SOURCE_PREFIX, GoldenAsserts::field($row, 'source', $line, 'hijri_mabims.csv'));
         }
     }
 

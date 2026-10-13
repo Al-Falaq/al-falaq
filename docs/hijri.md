@@ -73,7 +73,8 @@ $hijri = $converter->convert(
 );
 ```
 
-The maghrib instant comes from `PrayerTimesCalculator`, so high-latitude and
+The maghrib instant comes through `PrayerTimesCalculatorInterface`
+(`calculate()`, falling back to `maghribAt()`), so high-latitude and
 polar behaviour is exactly the prayer pipeline's: an undefined maghrib (e.g.
 `PolarCircleRule::NONE` above the Arctic Circle in June) propagates
 `AstronomicalException` unchanged rather than guessing. When the full schedule

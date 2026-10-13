@@ -7,6 +7,7 @@ namespace AlFalaq\AlFalaq\Hijri\Services;
 use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
 use AlFalaq\AlFalaq\Hijri\Contracts\OffsetStore;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
@@ -22,16 +23,16 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  * own zone decides the civil date (a local wall-clock date); with it, the UTC
  * date is used and rolled at the observer's maghrib. The calendar itself is
  * date-only and never sees a zone. Astronomy is composed via
- * `PrayerTimesCalculator` and never reimplemented here.
+ * `PrayerTimesCalculatorInterface` and never reimplemented here.
  */
 final class GregorianToHijriConverter
 {
     /**
      * Bind the prayer calculator used for the maghrib probe.
      *
-     * @param PrayerTimesCalculator $calculator Calculator supplying maghrib.
+     * @param PrayerTimesCalculatorInterface $calculator Calculator supplying maghrib.
      */
-    public function __construct(private readonly PrayerTimesCalculator $calculator) {}
+    public function __construct(private readonly PrayerTimesCalculatorInterface $calculator) {}
 
     /**
      * Build a converter on the default prayer pipeline.

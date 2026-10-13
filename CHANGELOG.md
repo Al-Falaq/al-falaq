@@ -97,6 +97,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   adapter for explicit wiring. The shipped calculator still accepts
   `Coordinates|array` via contravariance; the interface keeps `Coordinates`
   so existing implementations keep loading.
+- `HighLatitudeCorrection::portions()` takes only the angles adapters read
+  (`float, ?float`); place/date dropped (breaking for custom implementations).
+- `PrayerTimesCalculatorInterface` gains `maghribAt()`; the Hijri converter
+  hints the interface (breaking for custom implementations, which must add
+  the method).
+- Moon age search extracted to the `ConjunctionSearch` port
+  (`EphemerisConjunctionSearch` adapter; breaking for direct
+  `CrescentCalculator` constructions, which take it as a new argument).
+- Ramadan consistency fails fast: `create()` and `withRamadan()` reject
+  `isRamadan` outside Umm al-Qura (previously thrown at `calculate()` time).
+- Wiring tests execute the documented snippets (calculate/resolve/shapes),
+  not just wiring existence.
+- Harness closure: degenerate Qibla rows owned once (`golden_cities`);
+  tool inventory single-sourced (ARCHITECTURE owns it); Rector removed
+  (configured-never-run, and its sets fight the doc gate); PHPStan scope
+  stays `src`/`tests` by explicit decision (strict max finds only working
+  idioms in maintainer scripts).
+- Night temps extracted to the internal `NightResolver` step (single owner
+  for seasonal / NONE-raw / portions fajr+isha logic; composed from the
+  injected strategies, no new port).
+- Day-engine port drops the unused `SolarModel` subdivision (folded in).
+  The `hourAngle` / `hourAngleFloat` pair stays deliberately: floored UTC
+  instants for Prayer minute parity vs raw fractional hours for sub-second
+  Julian-day math (unifying behind either precision breaks the other side's
+  gate — verified against the KL 1e-6 deg deep pin).
 - Prayer rule validation lives behind the rule interfaces: `IshaRule` and
   `MaghribRule` gain `validate()` (angle finite in [0, 30] or valid interval),
   and `CalculationParameters` no longer branches on shipped concretes — custom
@@ -111,7 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and parses the `Lines:` summary defensively; bench documented as loose
   50ms/30000ms tripwires with the PRD 2ms/1000ms/16MB budgets as headroom.
 - Crescent null-window ownership: `Mabims1992Evaluator` owns the full rule plus
-  the no-moonset alt/elongation fallback (spec §3.2); the orchestrator
+  the no-moonset alt/elongation fallback; the orchestrator
   delegates unconditionally, retiring its inline duplication.
 - Qibla normalization: `QiblaCalculator` requires its geodesy (no nullable +
   throw); Kaaba facts move to the `GeodesyCalculator` seam; `Angle` owns the

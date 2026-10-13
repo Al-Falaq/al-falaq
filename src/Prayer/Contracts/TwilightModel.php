@@ -11,6 +11,10 @@ namespace AlFalaq\AlFalaq\Prayer\Contracts;
  * `timedelta(seconds=±int(round(adjustment * 60.0)))`); the calculator
  * applies them as safe caps on every MSC row and as seventh-of-night
  * temps at high latitude.
+ *
+ * Single adapter today (`SeasonAdjustedTwilight`) by design, not by
+ * accident: the seam is reserved for future method variants with their own
+ * seasonal curves. Collapse it only when no second adapter is foreseeable.
  */
 interface TwilightModel
 {

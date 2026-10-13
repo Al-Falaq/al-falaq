@@ -23,14 +23,15 @@ Landed: composer scaffold, `SharedKernel` value objects (`Coordinates`,
 freeze + milestone amendments, Qibla (spherical + WGS84/Karney), Sunnah markers
 (incl. `nightFraction`), crescent visibility evaluators, Hijri calendars
 (tabular, Umm al-Qura, per-country MABIMS + Gregorian bridge), parity goldens
-(`tests/Goldens/`, 25 CSVs), ArchTest layering rules, coverage-ratchet gate
+(`tests/Goldens/`, 25 CSVs), arch groups (shape/docs/layering rules), coverage-ratchet gate
 (floor 85 → 95 at M5), CI matrix. No throwing stubs remain in `src/`. Outcome:
-M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed); release-ready PR, no tag.
+M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed); release-ready PR, no tag. Post-M5 architecture rounds deepened the seams (day-engine port, rule validation, single-owners) — see CHANGELOG Unreleased.
 
 ## Stack & tooling
 
 - Runtime: PHP >=8.2, no dependencies. Dev: PHPUnit 11, PHPStan max +
-  strict-rules, php-cs-fixer (`@PER`), Rector, Infection (gated in CI from M5; MSI≥85 scoped gate). Coverage via pcov.
+  strict-rules (over `src`/`tests`), php-cs-fixer (`@PER`), Infection
+  (gated in CI from M5; MSI≥85 scoped gate). Coverage via pcov.
 - Commands: `composer ci` (lint+cs+stan+test), `test-unit`, `arch`
   (`phpunit --group arch`), `bench --budget`.
 
@@ -43,8 +44,8 @@ M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed);
 - `tests/` — `SharedKernel/`, `Sweep/`, `Wiring/`, `Goldens/`,
   arch groups (`Arch{Shape,Docs,Layering}Test.php` + `ArchSupport.php`),
   `bootstrap.php`. `examples/` — runnable snippets +
-  `bench.php`. `tools/` — `coverage_gate.php`, `gen_hijri.py` (M4),
-  `export_goldens.py` (goldens from `PYTHON_PIN`).
+  `bench.php`. `tools/` — full inventory in `ARCHITECTURE.md`
+  (`composer goldens` lists the generator contracts).
 - Docs: `ARCHITECTURE.md` (layering),
   `docs/` per-context guides + `integrations.md` (plain-`new` wiring),
   `AGENTS.md` (agent instructions), `UQ_PROVENANCE.md` (M4).
@@ -61,4 +62,4 @@ M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed);
 - Coverage floor only moves up; lock stays PHP-8.2-installable via
   `config.platform`.
 - Docblocks on all public API (class + method + `@param`/`@return`) —
-  ArchTest fails without them; engine enum methods exempt.
+  ArchDocsTest fails without them; engine enum methods exempt.

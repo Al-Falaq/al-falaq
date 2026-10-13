@@ -6,6 +6,8 @@ namespace AlFalaq\AlFalaq\Tests\Moon;
 
 use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
+use AlFalaq\AlFalaq\Moon\Contracts\ConjunctionSearch;
+use AlFalaq\AlFalaq\Moon\Services\EphemerisConjunctionSearch;
 use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\Services\CrescentCalculator;
 use AlFalaq\AlFalaq\Moon\Strategies\Mabims1992Evaluator;
@@ -70,6 +72,7 @@ final class CrescentCalculatorTest extends TestCase
         $calculator = new CrescentCalculator(
             new MeanSolarCalculator(),
             new CrescentEphemeris(),
+            EphemerisConjunctionSearch::default(),
             self::stub('yallop', 'A'),
             self::stub('odeh', 'B'),
             self::stub('mabims1992', 'visible'),
@@ -93,6 +96,7 @@ final class CrescentCalculatorTest extends TestCase
         $calculator = new CrescentCalculator(
             new MeanSolarCalculator(),
             new CrescentEphemeris(),
+            EphemerisConjunctionSearch::default(),
             new YallopEvaluator(),
             new OdehEvaluator(),
             new Mabims1992Evaluator(),
@@ -163,6 +167,7 @@ final class CrescentCalculatorTest extends TestCase
         $calculator = new CrescentCalculator(
             new MeanSolarCalculator(),
             new CrescentEphemeris(),
+            EphemerisConjunctionSearch::default(),
             self::stub('yallop', 'A'),
             self::stub('odeh', 'B'),
             self::stub('mabims1992', 'null-marker'),
@@ -173,6 +178,50 @@ final class CrescentCalculatorTest extends TestCase
         $verdicts = $calculator->evaluateGeometry($geometry);
 
         self::assertSame('null-marker', $verdicts['mabims1992']->zone);
+    }
+
+    public function testAtSunsetConsumesStubbedConjunctionMath(): void
+    {
+        // Canned search replaces the ~700-offset ephemeris scan: the sunset
+        // assembly carries the stubbed age and elongation through.
+        $search = new class implements ConjunctionSearch {
+            public function ageDays(float $julianDayTt): float
+            {
+                return 5.0;
+            }
+
+            public function separation(float $ra1Deg, float $dec1Deg, float $ra2Deg, float $dec2Deg): float
+            {
+                return 4.0;
+            }
+        };
+        $calculator = new CrescentCalculator(
+            new MeanSolarCalculator(),
+            new CrescentEphemeris(),
+            $search,
+            self::stub('yallop', 'A'),
+            self::stub('odeh', 'B'),
+            self::stub('mabims1992', 'visible'),
+            self::stub('neomabims2021', 'C'),
+        );
+
+        $geometry = $calculator->atSunset(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 2, 28),
+        );
+
+        self::assertSame(5.0 * 24.0, $geometry->moonAgeHours);
+        self::assertSame(4.0, $geometry->elongationDeg);
+    }
+
+    public function testConjunctionSearchPinsLiveRecordedValues(): void
+    {
+        // Live-recorded characterization (same philosophy as the moon
+        // goldens): the search is a pure function of the TT Julian day.
+        $search = EphemerisConjunctionSearch::default();
+
+        self::assertEqualsWithDelta(0.4583333333, $search->ageDays(2460735.0), 1e-9);
+        self::assertEqualsWithDelta(26.3266075256, $search->separation(10.0, 20.0, 30.0, 40.0), 1e-9);
     }
 
     /**

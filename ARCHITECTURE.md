@@ -25,8 +25,9 @@ contexts with a ports-and-adapters (hexagonal) layout:
 
 **Tech stack summary.** PHP `>= 8.2` (64-bit), zero runtime dependencies
 (`require: php` only). SPL plus `DateTimeImmutable` for all time math.
-Dev tooling: PHPUnit 11, PHPStan (max + strict rules), php-cs-fixer
-(`@PER`), Rector, Infection. Coverage via pcov with a ratchet gate.
+Dev tooling: PHPUnit 11, PHPStan (max + strict rules over `src`/`tests`),
+php-cs-fixer
+(`@PER`), Infection. Coverage via pcov with a ratchet gate.
 
 ## 2. Architecture diagram
 
@@ -145,16 +146,17 @@ flowchart TB
 - `src/Astro/` — `@internal` engine: `MeanSolarCalculator` (day-level solar
   geometry), `CrescentEphemeris` (sun/moon positions, sidereal time,
   moonset), `GeodesyEngine` / `KarneyInverse` (ellipsoidal geodesy),
-  `DeltaTProvider`, plus engine-local `Contracts/` (`SolarModel`,
-  `SolarDayEngine`) and `ValueObjects/` (`SolarPosition`, `SolarTime`).
+  `DeltaTProvider`, plus engine-local `Contracts/` (`SolarDayEngine`, one
+  instant-based port) and `ValueObjects/` (`SolarPosition`, `SolarTime`).
   Shared Meeus theory lives once in `Traits/SharesSolarTheory`.
 
 Supporting directories:
 
 - `tests/` — mirrors `src/` per context, plus `Sweep/` (seeded property
   sweeps), `Wiring/` (smoke tests for every `docs/integrations.md`
-  snippet), `Goldens/` (pinned-Python parity vectors, 25 CSVs +
-  `Comparator.php` with minute equality), and the arch groups
+  snippet), `Goldens/` (pinned-Python parity vectors, 25 CSVs;
+  `GoldenLoader.php` loads, `GoldenAsserts.php` asserts, `Comparator.php`
+  compares minutes), and the arch groups
   (`tests/Arch{Shape,Docs,Layering}Test.php` + `ArchSupport.php`: layering and
   shape rules, `#[Group('arch')]`).
 - `examples/` — runnable snippets plus `bench.php` (performance-tripwire
@@ -192,8 +194,9 @@ edge via `forZone()`. The domain never reads the clock; callers pass
    sunrise to derive night length.
 4. Resolve high-latitude portions via `HighLatitudeCorrection`, or apply
    the Moon-Sighting-Committee seasonal branch (`TwilightModel`) when that
-   method or rule is active.
-5. Compute each marker (fajr hour-angle → sunrise → dhuhr transit → Asr
+   method or rule is active — both owned by the internal `NightResolver`
+   step, which returns the unadjusted fajr/isha temps.
+5. Compute each marker (fajr/isha temps from `NightResolver` → sunrise → dhuhr transit → Asr
    shadow → maghrib angle/interval → isha angle/interval), combine
    method-plus-caller offsets (`PrayerAdjustments::combinedWith`), then
    apply a single half-up rounding (`Minutes::roundedHalfUp`) per marker.
@@ -207,7 +210,7 @@ sequenceDiagram
     participant C as PrayerTimesCalculator
     participant E as SolarDayEngine
     participant P as PolarCircleHandler
-    participant L as Latitude correction
+    participant N as NightResolver
     H->>C: calculate(coords, date, params)
     C->>E: isSolarDefined(coords, date, elev)
     alt sun undefined (polar day or night)
@@ -216,9 +219,10 @@ sequenceDiagram
     end
     C->>E: solarTime(effCoords, effDate)
     E-->>C: transit, sunrise, sunset
-    C->>L: portions() or seasonalSeconds()
-    L-->>C: night fractions or seasonal caps
-    C->>E: hourAngle() for fajr, maghrib, isha
+    C->>N: night.resolve() — portions or seasonal temps
+    N->>E: hourAngle() for fajr and isha temps
+    N-->>C: unadjusted fajr and isha temps
+    C->>E: hourAngle() for maghrib
     C->>E: afternoon() for asr
     C->>C: maghribBase() — single maghrib owner
     C-->>H: PrayerSchedule (ten UTC instants)
@@ -278,7 +282,8 @@ sequenceDiagram
    fractional-hour sunset, Julian Day anchored on the UTC sunset instant
    (TT for the ephemeris, UT for sidereal time), parallax-corrected
    topocentric moon against geocentric sun, elongation (ARCL), moon age via
-   30-day hourly ARCL-minimum search, analytic moonset and lag. Returns an
+   the `ConjunctionSearch` port (30-day hourly ARCL-minimum search, tests
+   substitute canned geometry math), analytic moonset and lag. Returns an
    immutable `CrescentGeometry`.
 2. `evaluate()` / `evaluateGeometry()` fans that single geometry bundle out
    to the four criterion strategies and returns verdicts keyed by
@@ -321,8 +326,8 @@ sequenceDiagram
 
 1. Resolve the civil date. Default frame: the caller's own zone decides the
    date. With `changeAtSunset: true`, use the UTC date and roll it at the
-   observer's maghrib (probed through `PrayerTimesCalculator`, never
-   reimplemented).
+   observer's maghrib (probed through `PrayerTimesCalculatorInterface`,
+   `calculate()` with `maghribAt()` fallback — never reimplemented).
 2. Convert the civil date via the selected `HijriCalendar` (tabular
    arithmetic or month-start table lookup).
 3. Optionally apply an `OffsetStore` day correction via `shift()`. The
@@ -566,4 +571,7 @@ flowchart TB
   `composer arch`, coverage ratchet (`tools/coverage_gate.php`, floor only
   moves up, currently 95), and the bench budget. Mutation testing
   (`composer mutation`, MSI ≥ 85 configured in `infection.json.dist`)
-  runs in CI.
+  runs in CI. Scope is deliberate: PHPStan max + strict rules cover
+  `src`/`tests` (shipped code); `examples/` + `tools/` get lint + cs plus
+  golden-regen verification instead — strict max flags only working
+  idioms there (exhaustive matches, I/O guards), never defects.

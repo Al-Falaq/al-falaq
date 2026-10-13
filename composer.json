@@ -15,7 +15,6 @@
         "phpstan/phpstan": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
         "friendsofphp/php-cs-fixer": "^3.0",
-        "rector/rector": "^2.0",
         "infection/infection": "^0.29"
     },
     "autoload": {
