@@ -102,6 +102,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Night temps extracted to the internal `NightResolver` step (single owner
   for seasonal / NONE-raw / portions fajr+isha logic; composed from the
   injected strategies, no new port).
+- Day-engine port drops the unused `SolarModel` subdivision (folded in).
+  The `hourAngle` / `hourAngleFloat` pair stays deliberately: floored UTC
+  instants for Prayer minute parity vs raw fractional hours for sub-second
+  Julian-day math (unifying behind either precision breaks the other side's
+  gate — verified against the KL 1e-6 deg deep pin).
 - Prayer rule validation lives behind the rule interfaces: `IshaRule` and
   `MaghribRule` gain `validate()` (angle finite in [0, 30] or valid interval),
   and `CalculationParameters` no longer branches on shipped concretes — custom

@@ -11,16 +11,20 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 /**
  * Day-level solar engine port: transit/rise/set plus angle events.
  *
- * Extends the narrow SolarModel (declination + equation of time) with the
- * concrete day-level surface the Prayer schedule and the Crescent composition
- * root consume. Services hint this port, never the engine class, so tests
- * cross the same seam callers use.
+ * Two precision paths over one geometry, kept deliberately: `hourAngle()`
+ * returns pin-floored UTC instants for Prayer minute parity, while
+ * `hourAngleFloat()` returns raw fractional hours for sub-second Julian-day
+ * math (the crescent deep pins gate at 1e-6 deg, where the sun's 15 deg/hour
+ * motion makes flooring cost ~0.004 deg). Unifying behind either precision
+ * breaks the other side's gate — verified against the KL deep pin.
+ * Services hint this port, never the engine class, so tests cross the same
+ * seam callers use.
  *
  * Stable wiring surface: implement it for test doubles; construct
  * MeanSolarCalculator (the default adapter) for explicit service wiring
  * per docs/integrations.md.
  */
-interface SolarDayEngine extends SolarModel
+interface SolarDayEngine
 {
     /**
      * Core solar day: transit, sunrise, sunset in UTC (Meeus Ch.15).
@@ -34,6 +38,10 @@ interface SolarDayEngine extends SolarModel
 
     /**
      * Fractional hours since midnight UTC for a solar depression angle, or null when unreachable.
+     *
+     * Raw twin of hourAngle() without the whole-second floor: the crescent
+     * pipeline anchors its Julian-day math on this value (1e-6 deg deep
+     * pins); prayer keeps the DateTime path untouched.
      *
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date owning the event.

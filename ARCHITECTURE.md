@@ -145,8 +145,8 @@ flowchart TB
 - `src/Astro/` — `@internal` engine: `MeanSolarCalculator` (day-level solar
   geometry), `CrescentEphemeris` (sun/moon positions, sidereal time,
   moonset), `GeodesyEngine` / `KarneyInverse` (ellipsoidal geodesy),
-  `DeltaTProvider`, plus engine-local `Contracts/` (`SolarModel`,
-  `SolarDayEngine`) and `ValueObjects/` (`SolarPosition`, `SolarTime`).
+  `DeltaTProvider`, plus engine-local `Contracts/` (`SolarDayEngine`, one
+  instant-based port) and `ValueObjects/` (`SolarPosition`, `SolarTime`).
   Shared Meeus theory lives once in `Traits/SharesSolarTheory`.
 
 Supporting directories:
