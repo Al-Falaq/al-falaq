@@ -131,12 +131,17 @@ Supporting directories:
 - `tests/` — mirrors `src/` per context, plus `Sweep/` (seeded property
   sweeps), `Wiring/` (smoke tests for every `docs/integrations.md`
   snippet), `Goldens/` (pinned-Python parity vectors, 25 CSVs +
-  `Comparator.php` with dual tolerances), and `ArchTest.php` (layering and
+  `Comparator.php` with minute equality), and `ArchTest.php` (layering and
   shape rules, `#[Group('arch')]`).
-- `examples/` — runnable snippets plus `bench.php` (performance-budget
-  harness).
-- `tools/` — `export_goldens.py` (regenerate parity vectors from
-  `PYTHON_PIN`), `gen_hijri.py` (month-start tables + goldens),
+- `examples/` — runnable snippets plus `bench.php` (performance-tripwire
+  harness: loose 50ms/30000ms gates, PRD 2ms/1000ms/16MB budgets as headroom).
+- `tools/` — `export_goldens.py` (pin-parity prayer vectors from `PYTHON_PIN`,
+  `--pin/--path/--out`), `gen_hijri.py` (month-start tables + goldens,
+  `--path/--pin/--out`, writes in place), `gen_self_prayer_goldens.php`
+  (drift-gated Tehran/Morocco/UOIF goldens, regenerate + diff-review in place),
+  `gen_qibla_spherical.py` / `gen_qibla_wgs84.py` (CSV to stdout, diff against
+  committed; diagnostics to stderr), `gen_moonsighting.py` (crescent
+  characterization goldens, regenerate + diff-review),
   `coverage_gate.php` (coverage ratchet).
 - `docs/` — per-context guides (`prayer.md`, `qibla.md`, `moon.md`,
   `hijri.md`, `sunnah.md`, `polar.md`), `integrations.md` (wiring recipes),

@@ -93,6 +93,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Coverage floor raised 80 → 85.
 - Coverage floor raised 85 → 95.
 - Infection MSI≥85% + covered-MSI≥85% gated in CI (`composer mutation`; `KarneyInverse` core file-excluded — survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`).
+- Harness truth fixes: removed dead `Comparator::floatsEqual()` (plus its two
+  tolerance constants) — the live golden story is minute equality; the coverage
+  gate prints a machine-readable `status=no-driver` marker on driverless runs
+  and parses the `Lines:` summary defensively; bench documented as loose
+  50ms/30000ms tripwires with the PRD 2ms/1000ms/16MB budgets as headroom.
 
 ### Removed
 
