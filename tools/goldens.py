@@ -47,8 +47,9 @@ def main() -> int:
     # Audit note (opengrep subprocess flags): cmd comes from the fixed TARGETS
     # table above (never from argv — only the key is looked up), argv extras
     # pass through verbatim, and the list form (no shell) means no shell
-    # interpretation. Threat model is the local maintainer's own shell.
-    completed = subprocess.run(cmd + rest, cwd=root)
+    # interpretation. Threat model is the local maintainer's own shell, so the
+    # two audit rules below are suppressed as inapplicable by construction.
+    completed = subprocess.run(cmd + rest, cwd=root)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit,python.lang.security.audit.dangerous-subprocess-use-tainted-env-args
     return completed.returncode
 
 

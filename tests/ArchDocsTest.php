@@ -84,8 +84,9 @@ final class ArchDocsTest extends ArchSupport
     public function testDocParamsSkipsCallableInnerNames(): void
     {
         // Named parameters inside callable shapes belong to the shape, not
-        // the documented parameter (regression probe for the extractor).
-        $doc = "/**\n * @param callable(int \$value): void \$callback Probe.\n */";
+        // the documented parameter; @param-out never satisfies @param.
+        // (Regression probes for the extractor.)
+        $doc = "/**\n * @param callable(int \$value): void \$callback Probe.\n * @param-out string \$onlyOut.\n */";
 
         self::assertSame(['callback'], self::docParams($doc));
     }

@@ -190,13 +190,12 @@ abstract class ArchSupport extends TestCase
         $names = [];
 
         foreach (explode("\n", $doc) as $line) {
-            $at = strpos($line, '@param');
-
-            if ($at === false) {
+            // Whitespace after the tag: @param-out must never satisfy @param.
+            if (preg_match('/@param\s+(.*)$/', $line, $matches) !== 1) {
                 continue;
             }
 
-            $name = self::docParamName(substr($line, $at + 6));
+            $name = self::docParamName($matches[1]);
 
             if ($name !== null) {
                 $names[] = $name;
