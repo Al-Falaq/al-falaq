@@ -32,15 +32,15 @@ final class MoonGoldensTest extends TestCase
             $line = $index + 2;
             [$y, $m, $d] = array_map('intval', explode('-', '2025-02-28'));
             $geometry = $calculator->atSunset(
-                Coordinates::fromDegrees((float) self::field($row, 'latitude', $line, $file), (float) self::field($row, 'longitude', $line, $file)),
+                Coordinates::fromDegrees((float) GoldenAsserts::field($row, 'latitude', $line, $file), (float) GoldenAsserts::field($row, 'longitude', $line, $file)),
                 CivilDate::fromYmd($y, $m, $d),
             );
 
-            self::assertTrue(abs($geometry->elongationDeg - (float) self::field($row, 'arcl_deg', $line, $file)) <= 0.01, 'arcl line ' . $line);
-            self::assertTrue(abs($geometry->moonAltitude - (float) self::field($row, 'moon_alt_topo_deg', $line, $file)) <= 0.01, 'malt line ' . $line);
-            self::assertTrue(abs($geometry->arcvGeoDeg - (float) self::field($row, 'arcv_geo_deg', $line, $file)) <= 0.01, 'ageo line ' . $line);
-            self::assertTrue(abs(($geometry->moonAltitude - $geometry->sunAltitude) - (float) self::field($row, 'arcv_topo_deg', $line, $file)) <= 0.01, 'atopo line ' . $line);
-            self::assertTrue(abs($geometry->widthArcmin - (float) self::field($row, 'width_arcmin', $line, $file)) <= 0.01, 'width line ' . $line);
+            self::assertTrue(abs($geometry->elongationDeg - (float) GoldenAsserts::field($row, 'arcl_deg', $line, $file)) <= 0.01, 'arcl line ' . $line);
+            self::assertTrue(abs($geometry->moonAltitude - (float) GoldenAsserts::field($row, 'moon_alt_topo_deg', $line, $file)) <= 0.01, 'malt line ' . $line);
+            self::assertTrue(abs($geometry->arcvGeoDeg - (float) GoldenAsserts::field($row, 'arcv_geo_deg', $line, $file)) <= 0.01, 'ageo line ' . $line);
+            self::assertTrue(abs(($geometry->moonAltitude - $geometry->sunAltitude) - (float) GoldenAsserts::field($row, 'arcv_topo_deg', $line, $file)) <= 0.01, 'atopo line ' . $line);
+            self::assertTrue(abs($geometry->widthArcmin - (float) GoldenAsserts::field($row, 'width_arcmin', $line, $file)) <= 0.01, 'width line ' . $line);
             $lagCell = $row['lag_hours'] ?? '';
             if ($lagCell === '') {
                 self::assertNull($geometry->lagMinutes, 'lag null line ' . $line);
@@ -48,7 +48,7 @@ final class MoonGoldensTest extends TestCase
                 self::assertNotNull($geometry->lagMinutes, 'lag null line ' . $line);
                 self::assertTrue(abs($geometry->lagMinutes / 60.0 - (float) $lagCell) <= 0.01, 'lag line ' . $line);
             }
-            self::assertTrue(abs($geometry->moonAgeHours / 24.0 - (float) self::field($row, 'moon_age_days', $line, $file)) <= 0.01, 'age line ' . $line);
+            self::assertTrue(abs($geometry->moonAgeHours / 24.0 - (float) GoldenAsserts::field($row, 'moon_age_days', $line, $file)) <= 0.01, 'age line ' . $line);
             $agemCell = $row['moon_age_at_moonset_days'] ?? '';
             if ($agemCell === '') {
                 self::assertNull($geometry->ageAtMoonsetHours, 'agem null line ' . $line);
@@ -59,12 +59,12 @@ final class MoonGoldensTest extends TestCase
 
             $verdicts = $calculator->evaluateGeometry($geometry);
 
-            self::assertSame(self::field($row, 'yallop_zone', $line, $file), $verdicts['yallop']->zone, 'yallop zone line ' . $line);
-            self::assertTrue(abs($verdicts['yallop']->score - (float) self::field($row, 'yallop_q', $line, $file)) <= 0.01, 'q line ' . $line);
-            self::assertSame(self::field($row, 'odeh_class', $line, $file), $verdicts['odeh']->zone, 'odeh class line ' . $line);
-            self::assertTrue(abs($verdicts['odeh']->score - (float) self::field($row, 'odeh_v', $line, $file)) <= 0.01, 'V line ' . $line);
-            self::assertSame(self::field($row, 'neo_mabims_2021', $line, $file), $verdicts['neomabims2021']->visible ? 'true' : 'false', 'neo line ' . $line);
-            self::assertSame(self::field($row, 'mabims_1992', $line, $file), $verdicts['mabims1992']->visible ? 'true' : 'false', 'old92 line ' . $line);
+            self::assertSame(GoldenAsserts::field($row, 'yallop_zone', $line, $file), $verdicts['yallop']->zone, 'yallop zone line ' . $line);
+            self::assertTrue(abs($verdicts['yallop']->score - (float) GoldenAsserts::field($row, 'yallop_q', $line, $file)) <= 0.01, 'q line ' . $line);
+            self::assertSame(GoldenAsserts::field($row, 'odeh_class', $line, $file), $verdicts['odeh']->zone, 'odeh class line ' . $line);
+            self::assertTrue(abs($verdicts['odeh']->score - (float) GoldenAsserts::field($row, 'odeh_v', $line, $file)) <= 0.01, 'V line ' . $line);
+            self::assertSame(GoldenAsserts::field($row, 'neo_mabims_2021', $line, $file), $verdicts['neomabims2021']->visible ? 'true' : 'false', 'neo line ' . $line);
+            self::assertSame(GoldenAsserts::field($row, 'mabims_1992', $line, $file), $verdicts['mabims1992']->visible ? 'true' : 'false', 'old92 line ' . $line);
         }
     }
 
@@ -78,23 +78,23 @@ final class MoonGoldensTest extends TestCase
 
         foreach ($loaded['rows'] as $index => $row) {
             $line = $index + 2;
-            [$y, $m, $d] = array_map('intval', explode('-', self::field($row, 'date', $line, $file)));
+            [$y, $m, $d] = array_map('intval', explode('-', GoldenAsserts::field($row, 'date', $line, $file)));
             $coordinates = Coordinates::fromDegrees(
-                (float) self::field($row, 'latitude', $line, $file),
-                (float) self::field($row, 'longitude', $line, $file),
+                (float) GoldenAsserts::field($row, 'latitude', $line, $file),
+                (float) GoldenAsserts::field($row, 'longitude', $line, $file),
             );
             $date = CivilDate::fromYmd($y, $m, $d);
             $geometry = $calculator->atSunset($coordinates, $date);
             $verdicts = $calculator->evaluateGeometry($geometry);
 
-            self::assertTrue(abs($geometry->elongationDeg - (float) self::field($row, 'arcl_deg', $line, $file)) <= 0.01, 'arcl line ' . $line);
-            self::assertTrue(abs($geometry->moonAltitude - (float) self::field($row, 'moon_alt_topo_deg', $line, $file)) <= 0.01, 'malt line ' . $line);
+            self::assertTrue(abs($geometry->elongationDeg - (float) GoldenAsserts::field($row, 'arcl_deg', $line, $file)) <= 0.01, 'arcl line ' . $line);
+            self::assertTrue(abs($geometry->moonAltitude - (float) GoldenAsserts::field($row, 'moon_alt_topo_deg', $line, $file)) <= 0.01, 'malt line ' . $line);
             self::assertSame('F', $verdicts['yallop']->zone, 'yallop line ' . $line);
             self::assertSame('D', $verdicts['odeh']->zone, 'odeh line ' . $line);
             self::assertFalse($verdicts['neomabims2021']->visible, 'neo line ' . $line);
             self::assertFalse($verdicts['mabims1992']->visible, 'old92 line ' . $line);
 
-            if (str_contains(self::field($row, 'city', $line, $file), 'Kuala Lumpur')) {
+            if (str_contains(GoldenAsserts::field($row, 'city', $line, $file), 'Kuala Lumpur')) {
                 // Pre-conjunction sunset: the moon sets before the sun, so the
                 // lag is negative; conjunction falls between sunset and the
                 // first hourly age sample, so the age reports the floor.
@@ -207,23 +207,4 @@ final class MoonGoldensTest extends TestCase
     }
 
 
-    /**
-     * Require a non-empty string cell.
-     *
-     * @param array<string, string> $row Assoc row.
-     * @param string $key Column name.
-     * @param int $line CSV line number for failure messages.
-     * @param string $file CSV basename for failure messages.
-     * @return string Cell value.
-     */
-    private static function field(array $row, string $key, int $line, string $file): string
-    {
-        $value = $row[$key] ?? null;
-
-        if (! is_string($value) || $value === '') {
-            self::fail(sprintf('Missing %s in golden file %s line %d.', $key, $file, $line));
-        }
-
-        return $value;
-    }
 }

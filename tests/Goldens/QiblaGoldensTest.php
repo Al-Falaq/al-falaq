@@ -14,12 +14,10 @@ use PHPUnit\Framework\TestCase;
  *
  * Gates CSV shape (header, 23 rows, ranges, precision, source tags, no
  * degenerate rows) plus magneticHeading vectors for the spherical goldens,
- * and the WGS84-ellipsoidal goldens alongside. The two oracles use
- * different source tags and constants, so the structural tests are
- * per-file rather than shared.
- *
- * Numeric engine parity of bearings/distances against the wired PHP
- * calculators is gated per file.
+ * and the WGS84-ellipsoidal goldens alongside. Row shape and parity checks
+ * are shared across both files (only source tags differ); numeric engine
+ * parity of bearings/distances against the wired PHP calculators is gated
+ * per file.
  */
 final class QiblaGoldensTest extends TestCase
 {
@@ -33,53 +31,21 @@ final class QiblaGoldensTest extends TestCase
     {
         $loaded = GoldenLoader::load(__DIR__ . '/' . self::GOLDEN_FILE);
 
-        self::assertSame(
+        GoldenAsserts::headerAndRowCount(
+            $loaded,
             ['city', 'latitude', 'longitude', 'bearing_deg', 'distance_km', 'source'],
-            $loaded['header'],
+            self::ROW_COUNT,
+            self::GOLDEN_FILE,
         );
-        self::assertCount(self::ROW_COUNT, $loaded['rows']);
     }
 
     public function testRowsHaveValidRangesPrecisionAndSourceTags(): void
     {
-        $seen = [];
-
-        foreach (GoldenLoader::load(__DIR__ . '/' . self::GOLDEN_FILE)['rows'] as $index => $row) {
-            $line = $index + 2;
-            $latRaw = self::field($row, 'latitude', $line, self::GOLDEN_FILE);
-            $lonRaw = self::field($row, 'longitude', $line, self::GOLDEN_FILE);
-            $bearingRaw = self::field($row, 'bearing_deg', $line, self::GOLDEN_FILE);
-            $distanceRaw = self::field($row, 'distance_km', $line, self::GOLDEN_FILE);
-            $source = self::field($row, 'source', $line, self::GOLDEN_FILE);
-
-            self::assertMatchesRegularExpression('/^-?\d+\.\d{4}$/', $latRaw, 'latitude precision line ' . $line);
-            self::assertMatchesRegularExpression('/^-?\d+\.\d{4}$/', $lonRaw, 'longitude precision line ' . $line);
-            self::assertMatchesRegularExpression('/^\d+\.\d{6}$/', $bearingRaw, 'bearing precision line ' . $line);
-            self::assertMatchesRegularExpression('/^\d+\.\d{3}$/', $distanceRaw, 'distance precision line ' . $line);
-
-            $lat = (float) $latRaw;
-            $lon = (float) $lonRaw;
-            $bearing = (float) $bearingRaw;
-            $distance = (float) $distanceRaw;
-
-            self::assertGreaterThanOrEqual(-90.0, $lat, 'latitude range line ' . $line);
-            self::assertLessThanOrEqual(90.0, $lat, 'latitude range line ' . $line);
-            self::assertGreaterThanOrEqual(-180.0, $lon, 'longitude range line ' . $line);
-            self::assertLessThanOrEqual(180.0, $lon, 'longitude range line ' . $line);
-            self::assertGreaterThanOrEqual(0.0, $bearing, 'bearing range line ' . $line);
-            self::assertLessThan(360.0, $bearing, 'bearing range line ' . $line);
-            self::assertGreaterThanOrEqual(0.0, $distance, 'distance range line ' . $line);
-
-            self::assertStringStartsWith('py:alfalak-spherical-2026-10-10;', $source, 'source tag line ' . $line);
-            self::assertStringContainsString('MAKKAH=21.4225241,39.8261818', $source, 'source pin line ' . $line);
-            self::assertStringContainsString('R=6371.0088', $source, 'source pin line ' . $line);
-
-            $key = $latRaw . ',' . $lonRaw;
-
-            self::assertArrayNotHasKey($key, $seen, 'duplicate coordinates line ' . $line);
-
-            $seen[$key] = true;
-        }
+        self::checkRowRanges(
+            self::GOLDEN_FILE,
+            'py:alfalak-spherical-2026-10-10;',
+            ['MAKKAH=21.4225241,39.8261818', 'R=6371.0088'],
+        );
     }
 
     public function testExcludesDegenerateBearingGoldens(): void
@@ -87,9 +53,9 @@ final class QiblaGoldensTest extends TestCase
         foreach ([self::GOLDEN_FILE, self::WGS84_GOLDEN_FILE] as $file) {
             foreach (GoldenLoader::load(__DIR__ . '/' . $file)['rows'] as $index => $row) {
                 $line = $index + 2;
-                $lat = (float) self::field($row, 'latitude', $line, $file);
-                $lon = (float) self::field($row, 'longitude', $line, $file);
-                $distance = (float) self::field($row, 'distance_km', $line, $file);
+                $lat = (float) GoldenAsserts::field($row, 'latitude', $line, $file);
+                $lon = (float) GoldenAsserts::field($row, 'longitude', $line, $file);
+                $distance = (float) GoldenAsserts::field($row, 'distance_km', $line, $file);
 
                 self::assertGreaterThan(1.0, $distance, sprintf('no Makkah-self row in %s line %d.', $file, $line));
                 self::assertGreaterThan(
@@ -140,48 +106,63 @@ final class QiblaGoldensTest extends TestCase
      */
     public function testEngineParityAgainstPhpSphericalImplementation(): void
     {
-        $calculator = QiblaCalculator::default();
-
-        foreach (GoldenLoader::load(__DIR__ . '/' . self::GOLDEN_FILE)['rows'] as $index => $row) {
-            $line = $index + 2;
-            $result = $calculator->calculate(Coordinates::fromDegrees(
-                (float) self::field($row, 'latitude', $line, self::GOLDEN_FILE),
-                (float) self::field($row, 'longitude', $line, self::GOLDEN_FILE),
-            ));
-
-            self::assertTrue(
-                abs($result->direction - (float) self::field($row, 'bearing_deg', $line, self::GOLDEN_FILE)) <= 1e-6,
-                'bearing line ' . $line,
-            );
-            self::assertTrue(
-                abs($result->distanceKm - (float) self::field($row, 'distance_km', $line, self::GOLDEN_FILE)) <= 1e-3,
-                'distance line ' . $line,
-            );
-        }
+        self::checkParity(QiblaCalculator::default(), self::GOLDEN_FILE);
     }
 
     public function testWgs84GoldenFileHasExpectedHeaderAndRowCount(): void
     {
         $loaded = GoldenLoader::load(__DIR__ . '/' . self::WGS84_GOLDEN_FILE);
 
-        self::assertSame(
+        GoldenAsserts::headerAndRowCount(
+            $loaded,
             ['city', 'latitude', 'longitude', 'bearing_deg', 'distance_km', 'source'],
-            $loaded['header'],
+            self::ROW_COUNT,
+            self::WGS84_GOLDEN_FILE,
         );
-        self::assertCount(self::ROW_COUNT, $loaded['rows']);
     }
 
     public function testWgs84RowsHaveValidRangesPrecisionAndSourceTags(): void
     {
+        self::checkRowRanges(
+            self::WGS84_GOLDEN_FILE,
+            'py:alfalak-a7baa8b;wgs84-karney;',
+            ['MAKKAH=21.4225241,39.8261818', 'a=6378137.0', 'f=1/298.257223563'],
+        );
+    }
+
+    /**
+     * Numeric parity: wired WGS84 strategy vs committed CSV goldens.
+     *
+     * Routed through QiblaCalculator::wgs84() rather than the raw engine so
+     * the strategy's unwind / re-clamp / degenerate clamp is gated too.
+     * Gates are the same fixed 1e-6 bearing / 1e-3 distance as the
+     * spherical file because committed CSV rounding (6dp/3dp) dominates
+     * float noise.
+     */
+    public function testWgs84EngineParityAgainstWiredImplementation(): void
+    {
+        self::checkParity(QiblaCalculator::wgs84(), self::WGS84_GOLDEN_FILE);
+    }
+
+    /**
+     * Ranges, precision, source tags, and duplicate coordinates for one file.
+     *
+     * @param string $file CSV basename under this directory.
+     * @param non-empty-string $sourcePrefix Required source-tag prefix.
+     * @param list<string> $sourceContains Required source-tag fragments.
+     * @return void
+     */
+    private static function checkRowRanges(string $file, string $sourcePrefix, array $sourceContains): void
+    {
         $seen = [];
 
-        foreach (GoldenLoader::load(__DIR__ . '/' . self::WGS84_GOLDEN_FILE)['rows'] as $index => $row) {
+        foreach (GoldenLoader::load(__DIR__ . '/' . $file)['rows'] as $index => $row) {
             $line = $index + 2;
-            $latRaw = self::field($row, 'latitude', $line, self::WGS84_GOLDEN_FILE);
-            $lonRaw = self::field($row, 'longitude', $line, self::WGS84_GOLDEN_FILE);
-            $bearingRaw = self::field($row, 'bearing_deg', $line, self::WGS84_GOLDEN_FILE);
-            $distanceRaw = self::field($row, 'distance_km', $line, self::WGS84_GOLDEN_FILE);
-            $source = self::field($row, 'source', $line, self::WGS84_GOLDEN_FILE);
+            $latRaw = GoldenAsserts::field($row, 'latitude', $line, $file);
+            $lonRaw = GoldenAsserts::field($row, 'longitude', $line, $file);
+            $bearingRaw = GoldenAsserts::field($row, 'bearing_deg', $line, $file);
+            $distanceRaw = GoldenAsserts::field($row, 'distance_km', $line, $file);
+            $source = GoldenAsserts::field($row, 'source', $line, $file);
 
             self::assertMatchesRegularExpression('/^-?\d+\.\d{4}$/', $latRaw, 'latitude precision line ' . $line);
             self::assertMatchesRegularExpression('/^-?\d+\.\d{4}$/', $lonRaw, 'longitude precision line ' . $line);
@@ -201,10 +182,11 @@ final class QiblaGoldensTest extends TestCase
             self::assertLessThan(360.0, $bearing, 'bearing range line ' . $line);
             self::assertGreaterThanOrEqual(0.0, $distance, 'distance range line ' . $line);
 
-            self::assertStringStartsWith('py:alfalak-a7baa8b;wgs84-karney;', $source, 'source tag line ' . $line);
-            self::assertStringContainsString('MAKKAH=21.4225241,39.8261818', $source, 'source pin line ' . $line);
-            self::assertStringContainsString('a=6378137.0', $source, 'source pin line ' . $line);
-            self::assertStringContainsString('f=1/298.257223563', $source, 'source pin line ' . $line);
+            self::assertStringStartsWith($sourcePrefix, $source, 'source tag line ' . $line);
+
+            foreach ($sourceContains as $fragment) {
+                self::assertStringContainsString($fragment, $source, 'source pin line ' . $line);
+            }
 
             $key = $latRaw . ',' . $lonRaw;
 
@@ -215,53 +197,33 @@ final class QiblaGoldensTest extends TestCase
     }
 
     /**
-     * Numeric parity: wired WGS84 strategy vs committed CSV goldens.
+     * Numeric parity of bearings/distances against one wired calculator.
      *
-     * Routed through QiblaCalculator::wgs84() rather than the raw engine so
-     * the strategy's unwind / re-clamp / degenerate clamp is gated too.
-     * Gates are the same fixed 1e-6 bearing / 1e-3 distance as the
-     * spherical file because committed CSV rounding (6dp/3dp) dominates
-     * float noise.
+     * Gates are fixed (1e-6 bearing / 1e-3 distance) because committed CSV
+     * rounding (6dp/3dp) dominates float noise; see docs/qibla.md lock-in.
+     *
+     * @param QiblaCalculator $calculator Wired spherical or WGS84 calculator.
+     * @param string $file CSV basename under this directory.
+     * @return void
      */
-    public function testWgs84EngineParityAgainstWiredImplementation(): void
+    private static function checkParity(QiblaCalculator $calculator, string $file): void
     {
-        $calculator = QiblaCalculator::wgs84();
-
-        foreach (GoldenLoader::load(__DIR__ . '/' . self::WGS84_GOLDEN_FILE)['rows'] as $index => $row) {
+        foreach (GoldenLoader::load(__DIR__ . '/' . $file)['rows'] as $index => $row) {
             $line = $index + 2;
             $result = $calculator->calculate(Coordinates::fromDegrees(
-                (float) self::field($row, 'latitude', $line, self::WGS84_GOLDEN_FILE),
-                (float) self::field($row, 'longitude', $line, self::WGS84_GOLDEN_FILE),
+                (float) GoldenAsserts::field($row, 'latitude', $line, $file),
+                (float) GoldenAsserts::field($row, 'longitude', $line, $file),
             ));
 
             self::assertTrue(
-                abs($result->direction - (float) self::field($row, 'bearing_deg', $line, self::WGS84_GOLDEN_FILE)) <= 1e-6,
+                abs($result->direction - (float) GoldenAsserts::field($row, 'bearing_deg', $line, $file)) <= 1e-6,
                 'bearing line ' . $line,
             );
             self::assertTrue(
-                abs($result->distanceKm - (float) self::field($row, 'distance_km', $line, self::WGS84_GOLDEN_FILE)) <= 1e-3,
+                abs($result->distanceKm - (float) GoldenAsserts::field($row, 'distance_km', $line, $file)) <= 1e-3,
                 'distance line ' . $line,
             );
         }
     }
 
-    /**
-     * Require a non-empty string cell.
-     *
-     * @param array<string, string> $row Assoc row.
-     * @param string $key Column name.
-     * @param int $line CSV line number for failure messages.
-     * @param string $file CSV basename for failure messages.
-     * @return string Cell value.
-     */
-    private static function field(array $row, string $key, int $line, string $file): string
-    {
-        $value = $row[$key] ?? null;
-
-        if (! is_string($value) || $value === '') {
-            self::fail(sprintf('Missing %s in golden file %s line %d.', $key, $file, $line));
-        }
-
-        return $value;
-    }
 }
