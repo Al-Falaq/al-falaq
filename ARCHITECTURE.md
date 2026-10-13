@@ -280,7 +280,8 @@ sequenceDiagram
    fractional-hour sunset, Julian Day anchored on the UTC sunset instant
    (TT for the ephemeris, UT for sidereal time), parallax-corrected
    topocentric moon against geocentric sun, elongation (ARCL), moon age via
-   30-day hourly ARCL-minimum search, analytic moonset and lag. Returns an
+   the `ConjunctionSearch` port (30-day hourly ARCL-minimum search, tests
+   substitute canned geometry math), analytic moonset and lag. Returns an
    immutable `CrescentGeometry`.
 2. `evaluate()` / `evaluateGeometry()` fans that single geometry bundle out
    to the four criterion strategies and returns verdicts keyed by

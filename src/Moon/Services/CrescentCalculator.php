@@ -9,6 +9,7 @@ use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
 use AlFalaq\AlFalaq\Astro\Services\DeltaTProvider;
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
 use AlFalaq\AlFalaq\Astro\Traits\SharesSolarTheory;
+use AlFalaq\AlFalaq\Moon\Contracts\ConjunctionSearch;
 use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\Strategies\Mabims1992Evaluator;
 use AlFalaq\AlFalaq\Moon\Strategies\NeoMabims2021Evaluator;
@@ -34,27 +35,23 @@ final class CrescentCalculator
     use SharesSolarTheory;
 
     /**
-     * Moon-age backward search window in days (pin CrescentGeometry.py:38).
-     */
-    private const MOON_AGE_SEARCH_DAYS = 30.0;
-
-    /**
-     * Moon-age reporting floor in days (pin CrescentGeometry.py:39).
-     */
-    private const MOON_AGE_MIN_DAYS = 0.1;
-
-    /**
-     * Moon-age search step in days: hourly (pin CrescentGeometry.py:40).
-     */
-    private const MOON_AGE_STEP_DAYS = 1.0 / 24.0;
-
-    /**
      * Crescent semi-diameter factor: 0.27245 × parallax (pin line 252).
+     *
+     * Moon-age search bounds live on the search adapter with the search.
      */
     private const SEMI_DIAMETER_FACTOR = 0.27245;
 
     /**
-     * Wire the solar day engine, the lunar/solar ephemeris, and the four criterion strategies explicitly (no container).
+     * Moon-age reporting floor in days (pin CrescentGeometry.py:39).
+     *
+     * Same pin value as the search adapter's floor: both cite the pin, which
+     * stays the single source of truth.
+     */
+    private const MOON_AGE_MIN_DAYS = 0.1;
+
+    /**
+     * Wire the solar day engine, the lunar/solar ephemeris, the conjunction
+     * search, and the four criterion strategies explicitly (no container).
      *
      * Strategies are typed to the shared CrescentEvaluator contract so
      * doubles can substitute in tests; default() wires the specified
@@ -62,6 +59,7 @@ final class CrescentCalculator
      *
      * @param SolarDayEngine $solar Day-level solar geometry (sunset instants).
      * @param CrescentEphemeris $ephemeris Sun/moon ephemeris + sidereal time.
+     * @param ConjunctionSearch $conjunctionSearch Moon-age search + separation.
      * @param CrescentEvaluator $yallop Yallop q-criterion strategy.
      * @param CrescentEvaluator $odeh Odeh V-criterion strategy.
      * @param CrescentEvaluator $mabims1992 MABIMS-1992 strategy.
@@ -70,6 +68,7 @@ final class CrescentCalculator
     public function __construct(
         private readonly SolarDayEngine $solar,
         private readonly CrescentEphemeris $ephemeris,
+        private readonly ConjunctionSearch $conjunctionSearch,
         private readonly CrescentEvaluator $yallop,
         private readonly CrescentEvaluator $odeh,
         private readonly CrescentEvaluator $mabims1992,
@@ -83,9 +82,12 @@ final class CrescentCalculator
      */
     public static function default(): self
     {
+        $ephemeris = new CrescentEphemeris();
+
         return new self(
             new MeanSolarCalculator(),
-            new CrescentEphemeris(),
+            $ephemeris,
+            new EphemerisConjunctionSearch($ephemeris),
             new YallopEvaluator(),
             new OdehEvaluator(),
             new Mabims1992Evaluator(),
@@ -170,7 +172,7 @@ final class CrescentCalculator
             $moonGeo['ra'],
             $moonGeo['dec'],
         );
-        $arcl = $this->angularSeparation($sunGeo['ra'], $sunGeo['dec'], $moonGeo['ra'], $moonGeo['dec']);
+        $arcl = $this->conjunctionSearch->separation($sunGeo['ra'], $sunGeo['dec'], $moonGeo['ra'], $moonGeo['dec']);
 
         $parallax = rad2deg(asin($this->clamp(
             CrescentEphemeris::PARALLAX_RADIUS_KM / max($moonGeo['distanceKm'], 1.0),
@@ -183,7 +185,7 @@ final class CrescentCalculator
         $illumination = (1.0 - cos(deg2rad($arcl))) / 2.0;
 
         $moonsetJdUt = $this->ephemeris->moonsetJulianDay($jdMidnightUt, $deltaT, $coordinates);
-        $ageDays = $this->moonAgeDays($jdSunsetTt);
+        $ageDays = $this->conjunctionSearch->ageDays($jdSunsetTt);
 
         if (is_nan($moonsetJdUt)) {
             // No moonset on this civil date (e.g. circumpolar Moon): no
@@ -255,62 +257,7 @@ final class CrescentCalculator
         ];
     }
 
-    /**
-     * Elapsed days since the previous new moon (pin _moon_age_days verbatim).
-     *
-     * Youngest hourly local minimum of geocentric ARCL over the prior
-     * month: sampling starts at sunset itself so a conjunction hours
-     * before sunset is still caught; a sunset sample at/below its
-     * neighbours plus a non-shrinking forward sample reports the floor
-     * (waxing), otherwise the search falls through to the older minimum.
-     *
-     * @param float $julianDayTt TT Julian day of sunset.
-     * @return float Age in days.
-     */
-    private function moonAgeDays(float $julianDayTt): float
-    {
-        $offsets = [];
-        $offset = 0.0;
 
-        while ($offset <= self::MOON_AGE_SEARCH_DAYS + 1e-12) {
-            $offsets[] = $offset;
-            $offset += self::MOON_AGE_STEP_DAYS;
-        }
-
-        $arcls = [];
-
-        foreach ($offsets as $back) {
-            $arcls[] = $this->arclAt($julianDayTt - $back);
-        }
-
-        if ($arcls[0] <= $arcls[1] && $this->arclAt($julianDayTt + self::MOON_AGE_STEP_DAYS) >= $arcls[0]) {
-            return self::MOON_AGE_MIN_DAYS;
-        }
-
-        $count = count($arcls);
-
-        for ($i = 1; $i < $count - 1; $i++) {
-            if ($arcls[$i] <= $arcls[$i - 1] && $arcls[$i] <= $arcls[$i + 1]) {
-                return max(self::MOON_AGE_MIN_DAYS, $offsets[$i]);
-            }
-        }
-
-        return self::MOON_AGE_SEARCH_DAYS;
-    }
-
-    /**
-     * Geocentric elongation (ARCL) at one TT instant.
-     *
-     * @param float $julianDayTt Terrestrial-time Julian day.
-     * @return float Sun–moon separation in degrees.
-     */
-    private function arclAt(float $julianDayTt): float
-    {
-        $sun = $this->ephemeris->solarGeocentric($julianDayTt);
-        $moon = $this->ephemeris->lunarGeocentric($julianDayTt);
-
-        return $this->angularSeparation($sun['ra'], $sun['dec'], $moon['ra'], $moon['dec']);
-    }
 
     /**
      * Geocentric altitude for equatorial (ra, dec) at LST (pin _altaz).
@@ -332,21 +279,5 @@ final class CrescentCalculator
         return rad2deg(asin($this->clamp($sinAlt)));
     }
 
-    /**
-     * Great-circle separation of two equatorial positions (pin verbatim).
-     *
-     * @param float $ra1Deg First right ascension in degrees.
-     * @param float $dec1Deg First declination in degrees.
-     * @param float $ra2Deg Second right ascension in degrees.
-     * @param float $dec2Deg Second declination in degrees.
-     * @return float Separation in degrees.
-     */
-    private function angularSeparation(float $ra1Deg, float $dec1Deg, float $ra2Deg, float $dec2Deg): float
-    {
-        $cosSep = sin(deg2rad($dec1Deg)) * sin(deg2rad($dec2Deg))
-            + cos(deg2rad($dec1Deg)) * cos(deg2rad($dec2Deg)) * cos(deg2rad($ra2Deg - $ra1Deg));
-
-        return rad2deg(acos($this->clamp($cosSep)));
-    }
 
 }

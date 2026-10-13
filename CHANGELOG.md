@@ -102,6 +102,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PrayerTimesCalculatorInterface` gains `maghribAt()`; the Hijri converter
   hints the interface (breaking for custom implementations, which must add
   the method).
+- Moon age search extracted to the `ConjunctionSearch` port
+  (`EphemerisConjunctionSearch` adapter; breaking for direct
+  `CrescentCalculator` constructions, which take it as a new argument).
 - Night temps extracted to the internal `NightResolver` step (single owner
   for seasonal / NONE-raw / portions fajr+isha logic; composed from the
   injected strategies, no new port).
