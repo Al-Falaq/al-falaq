@@ -41,7 +41,8 @@ M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed);
   `Services/`, `Strategies/`, `Traits/`, `Exceptions/`); `src/Astro/`
   `@internal` engine.
 - `tests/` — `SharedKernel/`, `Sweep/`, `Wiring/`, `Goldens/`,
-  `ArchTest.php`, `bootstrap.php`. `examples/` — runnable snippets +
+  arch groups (`Arch{Shape,Docs,Layering}Test.php` + `ArchSupport.php`),
+  `bootstrap.php`. `examples/` — runnable snippets +
   `bench.php`. `tools/` — `coverage_gate.php`, `gen_hijri.py` (M4),
   `export_goldens.py` (goldens from `PYTHON_PIN`).
 - Docs: `ARCHITECTURE.md` (layering),

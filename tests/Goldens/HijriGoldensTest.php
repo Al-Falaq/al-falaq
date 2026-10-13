@@ -47,82 +47,6 @@ final class HijriGoldensTest extends TestCase
         );
     }
 
-    /**
-     * Load a golden CSV as header + assoc rows.
-     *
-     * @param string $file CSV basename under this directory.
-     * @return array{header: list<string>, rows: list<array<string, string>>}
-     */
-    private static function loadGolden(string $file): array
-    {
-        $path = __DIR__ . '/' . $file;
-        $handle = fopen($path, 'r');
-
-        if ($handle === false) {
-            self::fail('Cannot open golden file ' . $path);
-        }
-
-        $headerRow = fgetcsv($handle, escape: '');
-
-        if (! is_array($headerRow)) {
-            fclose($handle);
-            self::fail('Empty golden file ' . $path);
-        }
-
-        $header = [];
-
-        foreach ($headerRow as $cell) {
-            if (! is_string($cell)) {
-                fclose($handle);
-                self::fail('Empty header cell in golden file ' . $path);
-            }
-
-            $header[] = $cell;
-        }
-
-        $rows = [];
-        $line = 1;
-
-        while (true) {
-            $row = fgetcsv($handle, escape: '');
-
-            if (! is_array($row)) {
-                break;
-            }
-
-            $line++;
-
-            if (count($header) !== count($row)) {
-                fclose($handle);
-                self::fail(sprintf(
-                    'Column-count mismatch in golden file %s line %d: header has %d columns, row has %d.',
-                    $path,
-                    $line,
-                    count($header),
-                    count($row),
-                ));
-            }
-
-            $data = [];
-
-            foreach ($header as $index => $key) {
-                $value = $row[$index] ?? null;
-
-                if (! is_string($value)) {
-                    fclose($handle);
-                    self::fail(sprintf('Non-string cell in golden file %s line %d.', $path, $line));
-                }
-
-                $data[$key] = $value;
-            }
-
-            $rows[] = $data;
-        }
-
-        fclose($handle);
-
-        return ['header' => $header, 'rows' => $rows];
-    }
 
     /**
      * Read a required golden field.
@@ -150,7 +74,7 @@ final class HijriGoldensTest extends TestCase
     public function testTabularParity(): void
     {
         $calendar = new TabularCalendar();
-        $golden = self::loadGolden('hijri_tabular.csv');
+        $golden = GoldenLoader::load(__DIR__ . '/hijri_tabular.csv');
 
         self::assertSame(['gregorian', 'hijri', 'source'], $golden['header']);
         self::assertCount(self::TABULAR_ROWS, $golden['rows']);
@@ -176,7 +100,7 @@ final class HijriGoldensTest extends TestCase
     public function testUquParity(): void
     {
         $calendar = new UmmAlQuraCalendar();
-        $golden = self::loadGolden('hijri_uqu.csv');
+        $golden = GoldenLoader::load(__DIR__ . '/hijri_uqu.csv');
 
         self::assertSame(['gregorian', 'hijri', 'source'], $golden['header']);
         self::assertCount(self::UQU_ROWS, $golden['rows']);
@@ -201,7 +125,7 @@ final class HijriGoldensTest extends TestCase
      */
     public function testMabimsParity(): void
     {
-        $golden = self::loadGolden('hijri_mabims.csv');
+        $golden = GoldenLoader::load(__DIR__ . '/hijri_mabims.csv');
 
         self::assertSame(['country', 'gregorian', 'hijri', 'source'], $golden['header']);
         self::assertCount(self::MABIMS_ROWS, $golden['rows']);

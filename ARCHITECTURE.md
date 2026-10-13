@@ -64,7 +64,7 @@ flowchart TB
     ASTRO -.->|"may use Domain VOs only,<br/>never Services"| KERNEL
 ```
 
-Dependency rule, enforced by `tests/ArchTest.php`:
+Dependency rule, enforced by `tests/ArchLayeringTest.php`:
 
 ```
 Domain (Contracts, ValueObjects, Enums, Exceptions) has ZERO inward dependencies.
@@ -135,7 +135,8 @@ Supporting directories:
 - `tests/` — mirrors `src/` per context, plus `Sweep/` (seeded property
   sweeps), `Wiring/` (smoke tests for every `docs/integrations.md`
   snippet), `Goldens/` (pinned-Python parity vectors, 25 CSVs +
-  `Comparator.php` with minute equality), and `ArchTest.php` (layering and
+  `Comparator.php` with minute equality), and the arch groups
+  (`tests/Arch{Shape,Docs,Layering}Test.php` + `ArchSupport.php`: layering and
   shape rules, `#[Group('arch')]`).
 - `examples/` — runnable snippets plus `bench.php` (performance-tripwire
   harness: loose 50ms/30000ms gates, PRD 2ms/1000ms/16MB budgets as headroom).
@@ -146,6 +147,9 @@ Supporting directories:
   `gen_qibla_spherical.py` / `gen_qibla_wgs84.py` (CSV to stdout, diff against
   committed; diagnostics to stderr), `gen_moonsighting.py` (crescent
   characterization goldens, regenerate + diff-review),
+  `golden_cities.py` (shared 23-city Qibla / 24-city Moon grids),
+  `goldens.py` (single entrypoint: `--list` contracts, delegating regen per
+  target; `composer goldens`),
   `coverage_gate.php` (coverage ratchet).
 - `docs/` — per-context guides (`prayer.md`, `qibla.md`, `moon.md`,
   `hijri.md`, `sunnah.md`, `polar.md`), `integrations.md` (wiring recipes),

@@ -43,8 +43,8 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   fixes UTC; `Sweep/` seeds `mt_srand(1234)` inline per test.
 - Layout mirrors `src/` as contexts land (M1: `SharedKernel`, `Sweep`,
   `Wiring`, `Prayer`, `Astro`, `Goldens`); `tests/Goldens/` holds pinned-Python parity vectors +
-  `Comparator.php` (minute equality); `tests/ArchTest.php` enforces layering
-  via reflection (`#[Group('arch')]`).
+  `Comparator.php` (minute equality); arch groups (`tests/Arch{Shape,Docs,Layering}Test.php`,
+  shared `tests/ArchSupport.php`) enforce layering via reflection (`#[Group('arch')]`).
 - Coverage floor is a ratchet (`tools/coverage_gate.php --min=N`): M0
   baseline 20, raised per milestone, 95 at M5. Never lower the floor; raise
   it when a context lands. Without pcov/xdebug the gate passes on green
@@ -57,7 +57,7 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - `declare(strict_types=1)` everywhere; PER style via php-cs-fixer
   (`.php-cs-fixer.php`, `@PER` — a strict superset of PSR-12); PHPStan max +
   strict-rules clean.
-- Inline docs are a hard gate (`tests/ArchTest.php`, `#[Group('arch')]`):
+- Inline docs are a hard gate (`tests/ArchDocsTest.php`, `#[Group('arch')]`):
   every class-like and public/protected method in `src/` needs a docblock
   summary; every parameter needs `@param $name`; every declared non-void
   return needs `@return`. Engine-provided enum methods (`cases/from/tryFrom`)

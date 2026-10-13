@@ -110,6 +110,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   throw); Kaaba facts move to the `GeodesyCalculator` seam; `Angle` owns the
   unwind (incl. the 360.0 ulp guard) and one shared self-clamp serves both
   adapters (breaking: `new QiblaCalculator()` without an argument).
+- Harness structure: arch god-test split by concern (`ArchShape/Docs/Layering`
+  + shared `ArchSupport`, same 14 tests); one `GoldenLoader` serves all four
+  golden suites (Qibla/Moon/Hijri/Prayer `checkFile` included); city grids
+  shared via `tools/golden_cities.py` (Qibla regens proven byte-identical);
+  `composer goldens` lists/delegates generator targets.
 
 ### Removed
 
