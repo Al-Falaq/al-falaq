@@ -242,8 +242,6 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         $portions = match ($parameters->highLatitudeRule) {
             HighLatitudeRule::NONE => null,
             default => $this->highLatitudeCorrection->portions(
-                $effCoords,
-                $effDate,
                 $parameters->fajrAngle,
                 $parameters->ishaRule->angle(),
             ),

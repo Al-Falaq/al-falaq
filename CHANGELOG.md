@@ -97,6 +97,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   adapter for explicit wiring. The shipped calculator still accepts
   `Coordinates|array` via contravariance; the interface keeps `Coordinates`
   so existing implementations keep loading.
+- `HighLatitudeCorrection::portions()` takes only the angles adapters read
+  (`float, ?float`); place/date dropped (breaking for custom implementations).
 - Prayer rule validation lives behind the rule interfaces: `IshaRule` and
   `MaghribRule` gain `validate()` (angle finite in [0, 30] or valid interval),
   and `CalculationParameters` no longer branches on shipped concretes — custom
