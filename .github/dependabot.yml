@@ -1,0 +1,19 @@
+version: 2
+
+updates:
+  # GitHub Actions are pinned to full commit SHAs in the workflows (see the
+  # headers of docs.yml and pre-release.yml). Without a refresher those pins
+  # silently rot — the runner images move on and a stale action breaks the
+  # build. Dependabot reads the `# vX.Y.Z` comment beside each pin, so keep
+  # that comment intact when bumping by hand.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - '*'

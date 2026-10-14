@@ -19,24 +19,37 @@ on:
       - 'composer.json'
   workflow_dispatch:
 
+# Least privilege by default: only the deploy job needs to write to Pages.
+# Pull-request builds run untrusted code and must never hold those scopes.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
+# One deployment per ref. Pull-request builds get their own group so a
+# contributor's build can never displace a pending `main` deployment.
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: false
 
+# Actions are pinned to full commit SHAs (the resolved release is kept in a
+# trailing comment): this workflow mints a Pages OIDC token, so a retargeted
+# mutable tag upstream could otherwise run arbitrary code with that identity.
+# The build job also drops the checkout credential. Dependabot refreshes the
+# pins weekly — do not "simplify" them back to tags.
 jobs:
   build-docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # Full history: Starlight's `lastUpdated` reads the git log of each
+          # page, which a shallow clone cannot provide.
+          fetch-depth: 0
+          # The build needs no credentials; do not leave the token in .git/config.
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: npm
@@ -51,12 +64,17 @@ jobs:
         working-directory: docs_site
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: docs_site/dist
 
   deploy:
-    if: github.event_name != 'pull_request'
+    # Push to main, or a manual dispatch explicitly run on main. Never a
+    # pull_request ref (which has its own ref) and never a feature branch.
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -65,4 +83,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

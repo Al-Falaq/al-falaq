@@ -34,8 +34,13 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   `composer test` (coverage ratchet gate), `composer arch`
 - CI (`.github/workflows/test.yml`, ubuntu-only): lint/cs/stan once on PHP 8.4,
   then test + bench on PHP 8.2/8.3/8.4 × UTC plus one America/New_York leg on
-  8.4. Windows gate lives in `.github/workflows/pre-release.yml` (manual
-  dispatch + `v*` tags) and runs as a pre-release check.
+  8.4. `.github/workflows/pre-release.yml` holds the Windows gate (manual
+  dispatch + `v*` tags) and, on a tag, creates the GitHub Release after that
+  gate passes (CHANGELOG header + docs snapshot validated first) —
+  `release.yml` is gone; do not reintroduce a second tag-triggered workflow.
+- Actions are pinned to full commit SHAs with a `# vX.Y.Z` comment; Dependabot
+  (`.github/dependabot.yml`, github-actions, weekly) refreshes them. Keep the
+  comment when bumping by hand — it is what Dependabot tracks.
 
 ## Testing Instructions
 
