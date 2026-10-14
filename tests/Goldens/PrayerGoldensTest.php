@@ -33,7 +33,9 @@ final class PrayerGoldensTest extends TestCase
      *
      * Every per-cell empty in the prayer goldens appears here with its
      * reason; checkFile() fails any empty cell not on this list so future
-     * gaps cannot land silently (issue #29). Fully-empty rows stay owned by
+     * gaps cannot land silently, and testAllowedEmptyCellsAreExactlyTheActualEmpties()
+     * fails any allow-list entry with no matching empty cell so stale pins
+     * cannot linger (issue #29). Fully-empty rows stay owned by
      * testOnlyDocumentedRowsAreEmpty. Reasons cite docs/prayer.md
      * (Emptied golden cells) and the linked follow-up issues.
      *
@@ -79,6 +81,24 @@ final class PrayerGoldensTest extends TestCase
         'kemenag|2025-12-15|maghrib' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
         'kemenag|2025-12-15|isha' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
     ];
+
+    /**
+     * Build the allow-list key for one golden cell.
+     *
+     * Single owner for the method|date|marker shape so checkFile() and
+     * testAllowedEmptyCellsAreExactlyTheActualEmpties() cannot drift apart.
+     * The method segment is the filename-derived CalculationMethod value,
+     * matching checkFile()'s $method source.
+     *
+     * @param CalculationMethod $method Method derived from the golden filename.
+     * @param string $dateRaw YYYY-MM-DD date from the golden row.
+     * @param Prayer $prayer Marker column.
+     * @return string Allow-list key.
+     */
+    private static function emptyCellKey(CalculationMethod $method, string $dateRaw, Prayer $prayer): string
+    {
+        return sprintf('%s|%s|%s', $method->value, $dateRaw, $prayer->value);
+    }
 
     /** @return list<string> */
     private static function expectedFiles(): array
@@ -193,6 +213,67 @@ final class PrayerGoldensTest extends TestCase
     }
 
     /**
+     * Allow-list matches actual per-cell empties exactly: no new gaps, no stale pins.
+     *
+     * checkFile() already fails new gaps during parity; this scan fails stale
+     * pins (an allow-list entry with no matching empty cell, e.g. a golden
+     * that later fills in) by comparing the full sorted key sets. Mirrors
+     * checkFile()'s guards: fully-empty rows stay owned by
+     * testOnlyDocumentedRowsAreEmpty and date-less rows are skipped.
+     */
+    public function testAllowedEmptyCellsAreExactlyTheActualEmpties(): void
+    {
+        $actual = [];
+
+        foreach (self::expectedFiles() as $file) {
+            $path = self::GOLDEN_DIR . '/' . $file;
+
+            $loaded = GoldenLoader::load($path);
+
+            $method = CalculationMethod::from(substr(basename($path, '.csv'), 7));
+
+            foreach ($loaded['rows'] as $data) {
+                $hasExpectation = false;
+
+                foreach (Prayer::cases() as $prayer) {
+                    if (($data[$prayer->value] ?? '') !== '') {
+                        $hasExpectation = true;
+
+                        break;
+                    }
+                }
+
+                if (! $hasExpectation) {
+                    continue;
+                }
+
+                $dateRaw = $data['date'] ?? null;
+
+                if (! is_string($dateRaw) || $dateRaw === '') {
+                    continue;
+                }
+
+                foreach (Prayer::cases() as $prayer) {
+                    if (($data[$prayer->value] ?? '') === '') {
+                        $actual[self::emptyCellKey($method, $dateRaw, $prayer)] = true;
+                    }
+                }
+            }
+        }
+
+        $actualKeys = array_keys($actual);
+        sort($actualKeys);
+        $expectedKeys = array_keys(self::ALLOWED_EMPTY_CELLS);
+        sort($expectedKeys);
+
+        self::assertSame(
+            $expectedKeys,
+            $actualKeys,
+            'Prayer golden empty cells drifted from ALLOWED_EMPTY_CELLS: missing entries are new gaps, extra entries are stale pins (issue #29).',
+        );
+    }
+
+    /**
      * Check one golden file row by row.
      *
      * @param string $path CSV path.
@@ -247,11 +328,11 @@ final class PrayerGoldensTest extends TestCase
 
                 if ($expected === '') {
                     self::assertArrayHasKey(
-                        sprintf('%s|%s|%s', $method->value, $dateRaw, $prayer->value),
+                        self::emptyCellKey($method, $dateRaw, $prayer),
                         self::ALLOWED_EMPTY_CELLS,
                         sprintf(
                             'Golden cell %s %s %s is empty but not allow-listed in PrayerGoldensTest::ALLOWED_EMPTY_CELLS (issue #29).',
-                            $data['method'],
+                            $method->value,
                             $dateRaw,
                             $prayer->value,
                         ),
