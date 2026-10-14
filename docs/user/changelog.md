@@ -13,6 +13,14 @@ Versioned snapshots of the whole documentation site are kept per release — use
 
 No changes yet — see the repo `CHANGELOG.md` for work in progress.
 
+## [0.1.1] - 2026-10-14
+
+Patch release with no library change. The docs site chrome now repairs
+Starlight edit links and last-updated dates for symlinked sources (#37),
+drops the version selector from the 404 page (#38), and brands the header
+and favicon from the repository artwork (#39); CI action pins move with the
+github-actions group bump (#36).
+
 ## [0.1.0] - 2026-10-14
 
 First tagged release. Everything below ships in it.
