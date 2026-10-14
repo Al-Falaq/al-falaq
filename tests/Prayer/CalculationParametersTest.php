@@ -570,6 +570,36 @@ final class CalculationParametersTest extends TestCase
         self::assertSame(1, $method->for(Prayer::DHUHR));
     }
 
+    public function testAdjustmentsCombineAcceptsAggregateBoundaries(): void
+    {
+        self::assertSame(
+            -60,
+            PrayerAdjustments::empty()->with(Prayer::FAJR, -30)
+                ->combinedWith(PrayerAdjustments::empty()->with(Prayer::FAJR, -30))
+                ->for(Prayer::FAJR),
+        );
+        self::assertSame(
+            60,
+            PrayerAdjustments::empty()->with(Prayer::FAJR, 30)
+                ->combinedWith(PrayerAdjustments::empty()->with(Prayer::FAJR, 30))
+                ->for(Prayer::FAJR),
+        );
+    }
+
+    public function testAdjustmentsCombineRejectsAggregateOutsideRange(): void
+    {
+        foreach ([[-30, -31], [30, 31]] as [$first, $second]) {
+            try {
+                PrayerAdjustments::empty()->with(Prayer::FAJR, $first)
+                    ->combinedWith(PrayerAdjustments::empty()->with(Prayer::FAJR, $second));
+
+                self::fail(sprintf('combined adjustment %d must reject sum %d.', $first, $first + $second));
+            } catch (ValidationException $e) {
+                self::assertNotSame('', $e->getMessage());
+            }
+        }
+    }
+
     public function testWithIshaRuleRejectsZeroInterval(): void
     {
         $this->expectException(ValidationException::class);

@@ -110,7 +110,7 @@ Nothing saturates and nothing wraps.
 | Impossible day for a real month (e.g. day 30 of a 29-day month) | `ValidationException` |
 | `changeAtSunset` without coordinates or parameters | `ConfigurationException` |
 | `changeAtSunset` where the full schedule is undefined but maghrib is defined | converts using the maghrib-only fallback |
-| `changeAtSunset` on 2100-12-31 (last supported civil day) | Maghrib resolves via the maghrib-only fallback (`calculate()` throws `UndefinedScheduleException` at the edge, caught internally); only an instant at/after maghrib still throws `ValidationException` from the `plusDays(1)` rollover past 1900–2100 |
+| `changeAtSunset` on 2100-12-31 (last supported civil day) | Maghrib resolves via the maghrib-only fallback (`calculate()` throws `UndefinedScheduleException` at the edge, caught internally); only an instant at/after maghrib still throws `ValidationException` from the `plusDays(1)` rollover past 1900–2100. With `PolarCircleRule::NEAREST_DAY` the pipeline may instead resolve to the prior solvable date (e.g. 2100-12-30) and use that schedule's maghrib — when the calculator is wired via `PrayerTimesCalculator::defaultFor()`; under the converter's default wiring the `NEAREST_DAY` rule still takes the maghrib-only fallback above |
 | Non-int argument to a typed contract parameter | `TypeError` |
 
 `HijriOutOfRangeException` extends `ValidationException`, so a `catch (ValidationException)` catches both; catch the former first when the distinction matters.
