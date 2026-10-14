@@ -50,11 +50,21 @@ $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
 **`UndefinedScheduleException` — the polar specialisation.** Carries the coordinates, date, and active rule, and its message names the rule and points at [Polar Regions](polar-regions/):
 
 ```php
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
+use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+
+$coords = Coordinates::fromDegrees(78.2232, 15.6267); // Longyearbyen
+$date = CivilDate::fromYmd(2025, 6, 21);
+$params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
+    ->withPolarCircleRule(PolarCircleRule::NONE); // presets otherwise substitute a solvable day
 
 try {
-    $schedule = $calculator->calculate($coords, $date, $params);
+    $schedule = PrayerTimesCalculator::default()->calculate($coords, $date, $params);
 } catch (UndefinedScheduleException $e) {
     // Offer a polar-strategy switcher or show "no times today".
 } catch (ValidationException $e) {

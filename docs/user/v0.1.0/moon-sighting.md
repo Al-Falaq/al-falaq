@@ -31,7 +31,7 @@ al-falaq bundles all of these into one immutable `CrescentGeometry` per evening.
 
 **Who and when.** Bernard Yallop was an astronomer at HM Nautical Almanac Office in the United Kingdom. In 1997 he published *"A Method for Predicting the First Sighting of the New Crescent Moon"* (NAO Technical Note No. 69) — the first widely adopted criterion built by fitting mathematics to a large catalogue of real sighting reports, both positive and negative, rather than reasoning from optics alone.
 
-**The idea.** Yallop asked: given the moon's width (which encodes age, distance, and illumination in one number) and the topocentric arc of vision, can we draw boundary curves separating evenings when people *did* see the crescent from evenings when they *did not*? His answer is a single number, `q`:
+**The idea.** Yallop asked: given the moon's width (which encodes age, distance, and illumination in one number) and the geocentric arc of vision, can we draw boundary curves separating evenings when people *did* see the crescent from evenings when they *did not*? His answer is a single number, `q`:
 
 ```
 limit  = -0.1018·w³ + 0.7319·w² − 6.3226·w + 11.8371   (w = crescent width, arcmin)

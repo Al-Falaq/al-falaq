@@ -9,7 +9,7 @@ This page collects the changes that require your attention when upgrading. Every
 
 ## 0.1.0
 
-The guiding promise: `default()` / `defaultFor()` factories keep working across these changes — only explicit construction and custom strategy implementations need attention. Bugfixes that need no action are marked as such.
+The guiding promise for the architecture changes: `default()` / `defaultFor()` factories keep working across them — only explicit construction and custom strategy implementations need attention there. The [Hijri surface changes](#hijri-surface-changes) are the exception: they remove or narrow three public methods, so callers of those methods must update even when everything else is built through factories. Bugfixes that need no action are marked as such.
 
 ### Architecture deepening
 

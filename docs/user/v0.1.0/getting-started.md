@@ -113,15 +113,20 @@ Elevation matters because the horizon dips as you climb — at 1,000 m, sunrise 
 
 ## What to do when the sky has no answer
 
-Above the Arctic Circle in summer, the sun may never set; in winter, it may never rise. When no sunrise or sunset exists for your inputs, the calculator does not invent one — it throws `UndefinedScheduleException`, and you choose a fallback strategy ([Polar Regions](polar-regions/)):
+Above the Arctic Circle in summer, the sun may never set; in winter, it may never rise — no transit, no sunrise, no sunset, so there is no solar day to compute from. Every shipped preset substitutes one (`NEAREST_LATITUDE`); asking for `NONE` instead makes the library refuse rather than estimate, and `UndefinedScheduleException` is how it refuses ([Polar Regions](polar-regions/)):
 
 ```php
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
 
 try {
-    $schedule = $calculator->calculate($coords, $date, $params);
+    $calculator->calculate(
+        Coordinates::fromDegrees(78.2232, 15.6267), // Longyearbyen
+        CivilDate::fromYmd(2025, 6, 21),            // midnight sun
+        $params->withPolarCircleRule(PolarCircleRule::NONE),
+    );
 } catch (UndefinedScheduleException $e) {
-    // Switch strategy, show a notice, or fall back to the nearest solvable day.
+    // No solar day here — show "no times today", or switch to a polar strategy.
 }
 ```
 

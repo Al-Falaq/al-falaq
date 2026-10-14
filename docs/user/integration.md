@@ -88,15 +88,16 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 public function show(PrayerTimesCalculator $calculator)
 {
+    $zone = new DateTimeZone($this->mosque->timezone);
     $params = CalculationMethod::JAKIM->defaultParameters();
     $schedule = $calculator->calculate(
         Coordinates::fromDegrees((float) $this->mosque->lat, (float) $this->mosque->lng),
-        CivilDate::fromYmd(...explode('-', now()->toDateString())),
+        CivilDate::fromDateTime(now($zone)->toImmutable()), // today *at the mosque*, not in the app's zone
         $params,
     );
 
     return response()->json(
-        $schedule->forZone(new DateTimeZone($this->mosque->timezone))->toArray(),
+        $schedule->forZone($zone)->toArray(),
     );
 }
 ```

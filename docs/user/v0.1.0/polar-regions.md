@@ -35,19 +35,24 @@ $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
 When the sky has no answer and the rule is `NONE` — or when even a substitute cannot be solved (exactly at the poles, `NEAREST_DAY` finds no solvable date) — the calculator throws `UndefinedScheduleException`. This is not a bug to suppress; it is the library telling the truth. Design your UI around it:
 
 ```php
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
+$params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
+    ->withPolarCircleRule(PolarCircleRule::NONE);
+
 try {
     $schedule = PrayerTimesCalculator::default()->calculate(
         Coordinates::fromDegrees(78.2232, 15.6267), // Longyearbyen
-        CivilDate::fromYmd(2025, 6, 21),
+        CivilDate::fromYmd(2025, 6, 21),            // midnight sun
         $params,
     );
 } catch (UndefinedScheduleException $e) {
-    // Show "polar day — times follow <strategy>" or offer a strategy switcher.
+    // No solar day — show "no times today", or offer a strategy switcher.
 }
 ```
 
