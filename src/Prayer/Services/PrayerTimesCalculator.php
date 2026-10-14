@@ -29,6 +29,7 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
@@ -245,7 +246,14 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         }
 
         $day = $this->solar->solarTime($effCoords, $effDate, $elev);
-        $tomorrowSunrise = $this->solar->solarTime($effCoords, $effDate->plusDays(1), $elev)->sunrise;
+
+        try {
+            $tomorrowDate = $effDate->plusDays(1);
+        } catch (ValidationException) {
+            throw UndefinedScheduleException::polar($effCoords, $effDate, $parameters->polarCircleRule->value);
+        }
+
+        $tomorrowSunrise = $this->solar->solarTime($effCoords, $tomorrowDate, $elev)->sunrise;
         $nightSec = $tomorrowSunrise->getTimestamp() - $day->sunset->getTimestamp();
 
         $eff = $parameters->methodAdjustments->combinedWith($parameters->adjustments);

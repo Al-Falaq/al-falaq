@@ -21,6 +21,7 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use DateTimeImmutable;
@@ -472,5 +473,49 @@ final class GregorianToHijriConverterTest extends TestCase
         // 20:00 UTC is past the ~10:36 UTC maghrib, so the UTC civil day
         // 2025-11-27 rolls to 2025-11-28 -> 1447-06-07 (tabular).
         self::assertSame('1447-06-07', $hijri->isoformat());
+    }
+
+    /**
+     * At 2100-12-31 the full schedule is undefined at the range edge while
+     * maghrib itself is defined, so the bridge resolves maghrib alone; an
+     * instant at/after maghrib still fails on the plusDays(1) rollover.
+     *
+     * @return void
+     */
+    public function testUpperBoundaryFallsBackToMaghribOnly(): void
+    {
+        $coordinates = $this->kualaLumpur();
+        $parameters = $this->parameters();
+        $date = CivilDate::fromYmd(2100, 12, 31);
+        $calendar = new TabularCalendar();
+
+        try {
+            PrayerTimesCalculator::default()->calculate($coordinates, $date, $parameters);
+            self::fail('full schedule must be undefined at 2100-12-31.');
+        } catch (UndefinedScheduleException) {
+            // expected: the fallback path is under test
+        }
+
+        $maghrib = PrayerTimesCalculator::default()->maghribAt($coordinates, $date, $parameters);
+
+        $converter = GregorianToHijriConverter::default();
+
+        self::assertSame(
+            $calendar->fromGregorian($date)->isoformat(),
+            $converter->convert(
+                $maghrib->sub(new \DateInterval('PT1S')),
+                $calendar,
+                $coordinates,
+                $parameters,
+                true,
+            )->isoformat(),
+        );
+
+        try {
+            $converter->convert($maghrib, $calendar, $coordinates, $parameters, true);
+            self::fail('post-maghrib rollover past 2100 must throw ValidationException.');
+        } catch (ValidationException $e) {
+            self::assertNotSame('', $e->getMessage());
+        }
     }
 }

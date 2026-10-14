@@ -308,8 +308,8 @@ final class MeanSolarCalculator implements SolarDayEngine
      * Exact mirror of pin PrayerTimes._schedule_defined: today rise+set
      * non-null AND tomorrow rise non-null. Probes strictly less than full
      * solarTime (no transit), hence this separate method, not try/catch.
-     * Dates at the 1900/2100 edges propagate ValidationException from
-     * plusDays() when probing tomorrow — acceptable, not swallowed.
+     * At the 2100-12-31 edge plusDays() leaves the supported range; that
+     * counts as undefined (false), never a ValidationException.
      *
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date to probe.
@@ -366,7 +366,12 @@ final class MeanSolarCalculator implements SolarDayEngine
             return false;
         }
 
-        $tomorrow = $date->plusDays(1);
+        try {
+            $tomorrow = $date->plusDays(1);
+        } catch (ValidationException) {
+            return false;
+        }
+
         $m0Tomorrow = $this->approximateTransit($coordinates->longitude, $next['ra'], $next['st']);
         $tomorrowRiseHours = $this->hourAngleHours(
             $m0Tomorrow,
