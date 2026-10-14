@@ -1,6 +1,8 @@
 ---
 title: Timezones & Display
-description: The UTC-inside, display-at-the-edge discipline — how to render times without corrupting them.
+description: The UTC-inside, display-at-the-edge discipline — how to render
+  times without corrupting them.
+slug: v0.1.0/timezone
 ---
 
 # Timezones & Display
@@ -9,9 +11,9 @@ Every timezone bug in prayer software has the same shape: zone arithmetic leaks 
 
 ## The rule, stated plainly
 
-- **Inputs** are zone-free: `Coordinates` (degrees) and `CivilDate` (year/month/day). There is no timezone to get wrong.
-- **Outputs** are UTC: every `PrayerSchedule` and `SunnahTimes` marker is a `DateTimeImmutable` in `+00:00`.
-- **Display** converts last: `forZone()` maps each instant to the user's zone without recomputing anything.
+* **Inputs** are zone-free: `Coordinates` (degrees) and `CivilDate` (year/month/day). There is no timezone to get wrong.
+* **Outputs** are UTC: every `PrayerSchedule` and `SunnahTimes` marker is a `DateTimeImmutable` in `+00:00`.
+* **Display** converts last: `forZone()` maps each instant to the user's zone without recomputing anything.
 
 ```php
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
@@ -51,7 +53,7 @@ Store and cache the UTC form; render the display form per request. The same sche
 
 ## "Now" is yours to pass
 
-The resolver and the Hijri sunset bridge both take the current instant as an argument — and both require it in UTC:
+The resolver takes the current instant as an argument, and requires it in UTC:
 
 ```php
 $nowUtc = new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -60,12 +62,14 @@ $next = (new NextPrayerResolver())->resolve($today, $tomorrow, $nowUtc);
 
 Passing a zone-stamped "now" throws `ValidationException` immediately. That strictness catches the most common integration bug (a server-local `new DateTimeImmutable('now')` inheriting `date.timezone`) at the call site instead of shifting every badge by your UTC offset. If you use `psr/clock`, call `$clock->now()` at the edge and normalise to UTC before passing it in — the library never type-hints the interface, so any implementation works. Details are in [Framework Integration](integration/).
 
+The Hijri bridge takes an instant too, but it is looser by design: it accepts any zone-aware `DateTimeImmutable` and reads whichever frame you asked for. Do not pre-normalise a wall-clock instant to UTC before handing it over — the default frame reads the civil date in the *instant's own zone*, so a needless `setTimezone()` near midnight changes the date it reports. Pass the instant your user's clock produced and let `changeAtSunset` choose the frame.
+
 ## Hijri frames revisited
 
-The Hijri bridge's two frames are timezone decisions in disguise: the default frame reads the civil date in the instant's own zone (wall-clock semantics), while `changeAtSunset: true` reads it in UTC and rolls at the observer's Maghrib. If your datetimes arrive naive (no zone), treat them as UTC explicitly — a naive datetime carrying *local* wall-clock time misplaces the rollover by your UTC offset. Prefer aware datetimes everywhere; the [Hijri Converter](hijri-converter/) page has examples.
+The Hijri bridge's two frames are timezone decisions in disguise: the default frame reads the civil date in the instant's own zone (wall-clock semantics), while `changeAtSunset: true` reads it in UTC and rolls at the observer's Maghrib. If your datetimes arrive naive (no zone), give them the zone they were written in — PHP otherwise stamps them with `date.timezone`, and a local wall-clock time silently treated as UTC misplaces the rollover by your UTC offset. Prefer aware datetimes everywhere; the [Hijri Converter](hijri-converter/) page has examples.
 
 ## See also
 
-- [Prayer Times](prayer-times/) — `forZone()` and the single-rounding pipeline
-- [Timetable & Next Prayer](timetable/) — why both days matter for UTC-date boundaries
-- [Framework Integration](integration/) — per-request zone handling in Laravel and Symfony
+* [Prayer Times](prayer-times/) — `forZone()` and the single-rounding pipeline
+* [Timetable & Next Prayer](timetable/) — why both days matter for UTC-date boundaries
+* [Framework Integration](integration/) — per-request zone handling in Laravel and Symfony

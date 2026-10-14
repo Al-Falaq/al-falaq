@@ -1,6 +1,8 @@
 ---
 title: Framework Integration
-description: Wire al-falaq into plain PHP, Laravel, Symfony, and WordPress with plain-new construction.
+description: Wire al-falaq into plain PHP, Laravel, Symfony, and WordPress with
+  plain-new construction.
+slug: v0.1.0/integration
 ---
 
 # Framework Integration
@@ -51,18 +53,22 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 $calculator = PrayerTimesCalculator::default();
 $params = CalculationMethod::JAKIM->defaultParameters();
+$zone = new DateTimeZone('Asia/Kuala_Lumpur');
+
+// Which civil day is it *there*? Never PHP's default timezone.
+$today = CivilDate::fromDateTime(new DateTimeImmutable('now', $zone));
 
 $schedule = $calculator->calculate(
     Coordinates::fromDegrees(3.1390, 101.6869),
-    CivilDate::fromYmd((int) date('Y'), (int) date('m'), (int) date('d')),
+    $today,
     $params,
 );
 
 header('Content-Type: application/json');
-echo json_encode($schedule->forZone(new DateTimeZone('Asia/Kuala_Lumpur'))->toArray());
+echo json_encode($schedule->forZone($zone)->toArray());
 ```
 
-No extensions beyond `date`, no network — it runs on the most restricted shared host.
+No extensions beyond `date`, no network — it runs on the most restricted shared host. Note how the date is derived: `date('Y-m-d')` would read PHP's `date.timezone`, which on most hosts is UTC, so at 00:30 in Kuala Lumpur it would still report the *previous* civil day and you would serve yesterday's timetable. Deriving "today" from the publishing zone — or from the request's own timezone parameter — keeps the schedule and its rendering in agreement.
 
 ## Laravel
 
@@ -104,7 +110,7 @@ $nowUtc = now('UTC')->toImmutable();
 $next = (new NextPrayerResolver())->resolve($today, $tomorrow, $nowUtc);
 ```
 
-Cache monthly timetables per mosque per method (they are deterministic), and refresh on method change rather than on a timer.
+Cache monthly timetables (they are deterministic), keyed by the *complete* input — coordinates, year, month, and every field of `CalculationParameters` (method, madhab, high-latitude rule, polar rule, elevation, per-prayer adjustments) — or by a hash of those values. A changed input is a new cache key, so a seasonal rule tweak or a corrected method can never serve a stale row, and no TTL is needed.
 
 ## Symfony
 
@@ -124,17 +130,29 @@ Then type-hint `PrayerTimesCalculator` in your service or controller, build `Cal
 Shortcodes and REST endpoints both work; the constraints are old PHP habits, not the library. Guard the minimum version, keep computation out of the render path (transients for timetables), and always escape on output:
 
 ```php
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
+use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+
 add_shortcode('prayer_times', function ($atts) {
     if (version_compare(PHP_VERSION, '8.2', '<')) {
         return '';
     }
+
+    // The site's timezone — not PHP's — decides which civil day it is.
+    $today = CivilDate::fromDateTime(current_datetime());
+
     $schedule = PrayerTimesCalculator::default()->calculate(
         Coordinates::fromDegrees(3.1390, 101.6869),
-        CivilDate::fromYmd((int) date('Y'), (int) date('m'), (int) date('d')),
+        $today,
         CalculationMethod::JAKIM->defaultParameters(),
     );
-    $fajr = $schedule->forZone(wp_timezone())->timeFor(Prayer::FAJR)->format('H:i');
-    return esc_html($fajr);
+
+    return esc_html(
+        $schedule->forZone(wp_timezone())->timeFor(Prayer::FAJR)->format('H:i'),
+    );
 });
 ```
 
@@ -144,6 +162,6 @@ add_shortcode('prayer_times', function ($atts) {
 
 ## See also
 
-- [Getting Started](getting-started/) — the three inputs in plain PHP
-- [Timezones & Display](timezone/) — the UTC discipline behind every snippet here
-- [Errors](errors/) — what to catch at framework boundaries
+* [Getting Started](getting-started/) — the three inputs in plain PHP
+* [Timezones & Display](timezone/) — the UTC discipline behind every snippet here
+* [Errors](errors/) — what to catch at framework boundaries

@@ -35,7 +35,7 @@ $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
 
 The rule engages only when the angle computation would fall outside its allowed portion of the night. On ordinary days at ordinary latitudes, your choice of rule changes nothing — the angles occur well within bounds and pass through untouched. That is why switching rules is safe to experiment with: it only affects the days that need it.
 
-Two details matter for correctness. First, the seventh-of-night temperature replaces the angle time only at signed latitudes at or above 55° — below that, the seasonal safe caps apply to every method without replacing anything. Second, the Moonsighting Committee method (and `SEASONAL_TWILIGHT` generally) uses whole-second seasonal adjustments with safe caps at *all* latitudes, not just the far north.
+Two details are worth knowing. First, the seasonal safe caps — and the seventh-of-night estimate that replaces the angle time above signed latitude 55° — belong to the seasonal paths only: the Moonsighting Committee method, or an explicit `SEASONAL_TWILIGHT` rule. Every other method uses its night-fraction portions instead, so choosing `SEVENTH_OF_NIGHT` or `MIDDLE_OF_NIGHT` under a non-seasonal method changes nothing about the caps. Second, the seasonal adjustments are whole-second and apply at *all* latitudes, not just the far north — a Moonsighting Committee timetable in Kuala Lumpur is shaped by the season too.
 
 ## Which rule should you use?
 

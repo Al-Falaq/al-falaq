@@ -103,7 +103,11 @@ final class OfficialOffsets implements OffsetStore
     }
 }
 
-$hijri = $converter->convert($instant, $calendar, offsets: new OfficialOffsets());
+$hijri = $converter->convert(
+    new DateTimeImmutable('2025-03-01 12:00:00', new DateTimeZone('UTC')),
+    new UmmAlQuraCalendar(),
+    offsets: new OfficialOffsets(),
+);
 ```
 
 The store is asked once with the already-converted date, and its answer is applied as a single `shift()` — so a correction crosses month boundaries correctly, and a missing entry (return `0`) costs nothing.

@@ -1,6 +1,8 @@
 ---
 title: Prayer Times
-description: What each of the ten daily markers means, how al-falaq computes them, and how to adjust them.
+description: What each of the ten daily markers means, how al-falaq computes
+  them, and how to adjust them.
+slug: v0.1.0/prayer-times
 ---
 
 # Prayer Times
@@ -107,7 +109,7 @@ If the sun never rises or never sets and your polar rule is `NONE`, `calculate()
 
 ## See also
 
-- [Calculation Methods](calculation-methods/) — the 19 presets and their provenance
-- [Madhab](madhab/) — how Asr shadows work
-- [Timetable & Next Prayer](timetable/) — month loops and "next prayer in…" badges
-- [API Reference](api-reference/) — `PrayerTimesCalculator`, `PrayerSchedule`, `CalculationParameters`
+* [Calculation Methods](calculation-methods/) — the 19 presets and their provenance
+* [Madhab](madhab/) — how Asr shadows work
+* [Timetable & Next Prayer](timetable/) — month loops and "next prayer in…" badges
+* [API Reference](api-reference/) — `PrayerTimesCalculator`, `PrayerSchedule`, `CalculationParameters`

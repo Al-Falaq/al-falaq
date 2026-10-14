@@ -21,7 +21,11 @@ It requires PHP `>= 8.2` on a 64-bit build.
 
 ## Your first calculation
 
-Prayer times answer a simple question: *for this place, on this day, by this community's convention, when does each prayer begin?* Three inputs, one schedule out:
+Prayer times answer a simple question: *for this place, on this day, by this community's convention, when does each prayer begin?* Three inputs, one schedule out. Every snippet on this page continues one file, so load Composer's autoloader once at the top:
+
+```php
+require __DIR__ . '/vendor/autoload.php';
+```
 
 ```php
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;

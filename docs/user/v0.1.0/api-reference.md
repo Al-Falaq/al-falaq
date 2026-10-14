@@ -1,6 +1,7 @@
 ---
 title: API Reference
 description: Every public class, method, and contract in al-falaq, grouped by context.
+slug: v0.1.0/api-reference
 ---
 
 # API Reference

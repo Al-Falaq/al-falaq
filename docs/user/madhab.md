@@ -27,7 +27,7 @@ use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 $params = CalculationMethod::KARACHI->defaultParameters()
     ->withMadhab(Madhab::HANAFI);
 
-$madhab->shadowLength(); // 1.0 for Shafi, 2.0 for Hanafi
+Madhab::HANAFI->shadowLength(); // 2.0 — Shafi is 1.0
 ```
 
 Every shipped preset defaults to `Madhab::SHAFI` — including Karachi, despite the name, matching the pinned reference. Switching is a one-word change (`withMadhab(Madhab::HANAFI)`), and the rest of the pipeline — transit, angles, offsets, rounding — is untouched. Older designs exposed an `AsrRule` seam with separate classes; the current design deleted it, because a two-valued multiple needs no polymorphism.

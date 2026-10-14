@@ -1,6 +1,8 @@
 ---
 title: Sunnah Times
-description: Divide the night into its Sunnah markers — middle, thirds, and the tahajjud window.
+description: Divide the night into its Sunnah markers — middle, thirds, and the
+  tahajjud window.
+slug: v0.1.0/sunnah-times
 ---
 
 # Sunnah Times
@@ -11,9 +13,9 @@ Between Maghrib and the next dawn, the night carries its own devotional geograph
 
 The night runs from **today's Maghrib to tomorrow's Fajr**, computed in UTC so daylight-saving transitions cannot stretch or shrink it. From that single interval come three markers:
 
-- **Middle of the night** — the halfway point (½).
-- **First third** — one third of the way through (⅓).
-- **Last third** — two thirds of the way through (⅔); the tahajjud window runs from here until Fajr.
+* **Middle of the night** — the halfway point (½).
+* **First third** — one third of the way through (⅓).
+* **Last third** — two thirds of the way through (⅔); the tahajjud window runs from here until Fajr.
 
 ```php
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
@@ -51,7 +53,7 @@ $display = $sunnah->forZone(new DateTimeZone('Asia/Kuala_Lumpur'));
 
 ## Arbitrary fractions
 
-Beyond the named thirds, `nightFraction()` returns the instant at any strictly interior fraction — `0.5` is the middle, `1/3` and `2/3` are the thirds, and anything else in `(0, 1)` is yours to name. The result is clamped strictly inside the night, so very short nights can never return exactly Maghrib or Fajr after minute-rounding:
+Beyond the named thirds, `nightFraction()` returns the instant at any strictly interior fraction — `0.5` is the middle, `1/3` and `2/3` are the thirds, and anything else in `(0, 1)` is yours to name. The result is minute-rounded and then clamped strictly inside the night, so `maghrib < result < fajr` holds for every valid fraction on nights longer than two minutes. A night shorter than that has no minute-aligned instant strictly inside it at all, and the clamp then returns the minute-aligned instant one minute past the nearer anchor rather than inventing a sub-minute time between them:
 
 ```php
 $moment = $sunnah->nightFraction(0.5); // === middleOfNight
@@ -63,6 +65,6 @@ If either endpoint is polar-undefined, the prayer pipeline throws first — `Sun
 
 ## See also
 
-- [Prayer Times](prayer-times/) — Maghrib and Fajr, the night's anchors
-- [Timezones & Display](timezone/) — why night math is UTC and display is last
-- [API Reference](api-reference/) — `SunnahCalculator`, `SunnahTimes::nightFraction()`
+* [Prayer Times](prayer-times/) — Maghrib and Fajr, the night's anchors
+* [Timezones & Display](timezone/) — why night math is UTC and display is last
+* [API Reference](api-reference/) — `SunnahCalculator`, `SunnahTimes::nightFraction()`

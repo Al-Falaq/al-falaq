@@ -90,6 +90,7 @@ Unlike every other method, `MOON_SIGHTING_COMMITTEE` does not use night-fraction
 Override any preset's defaults immutably. When you pass both, be aware the method's built-ins are the starting point and your `with*()` calls replace them wholesale per field:
 
 ```php
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 
 $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()

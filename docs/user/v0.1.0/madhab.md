@@ -1,6 +1,8 @@
 ---
 title: Madhab
-description: How Shafi and Hanafi Asr differ, why shadows define the afternoon prayer, and how to choose.
+description: How Shafi and Hanafi Asr differ, why shadows define the afternoon
+  prayer, and how to choose.
+slug: v0.1.0/madhab
 ---
 
 # Madhab
@@ -11,8 +13,8 @@ Asr is the only prayer defined by shadows rather than by the sun's height. Both 
 
 At solar noon the sun stands highest and shadows are shortest. As the afternoon wears on, shadows lengthen. Classical jurisprudence defines Asr as the moment the shadow exceeds that noon minimum by a fixed amount:
 
-- **Shafi (and Maliki, Hanbali):** shadow = noon shadow + **1×** the object's height.
-- **Hanafi:** shadow = noon shadow + **2×** the object's height.
+* **Shafi (and Maliki, Hanbali):** shadow = noon shadow + **1×** the object's height.
+* **Hanafi:** shadow = noon shadow + **2×** the object's height.
 
 Hanafi Asr therefore always falls later than Shafi Asr on the same day — sometimes by tens of minutes in summer. Neither is "more correct" astronomically; they are different readings of the same texts, and your community will already have one.
 
@@ -27,7 +29,7 @@ use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 $params = CalculationMethod::KARACHI->defaultParameters()
     ->withMadhab(Madhab::HANAFI);
 
-$madhab->shadowLength(); // 1.0 for Shafi, 2.0 for Hanafi
+Madhab::HANAFI->shadowLength(); // 2.0 — Shafi is 1.0
 ```
 
 Every shipped preset defaults to `Madhab::SHAFI` — including Karachi, despite the name, matching the pinned reference. Switching is a one-word change (`withMadhab(Madhab::HANAFI)`), and the rest of the pipeline — transit, angles, offsets, rounding — is untouched. Older designs exposed an `AsrRule` seam with separate classes; the current design deleted it, because a two-valued multiple needs no polymorphism.
@@ -40,6 +42,6 @@ If you publish for a mixed community, label which Asr you show. Timetables that 
 
 ## See also
 
-- [Calculation Methods](calculation-methods/) — the preset table (all default to Shafi)
-- [Prayer Times](prayer-times/) — where Asr sits in the pipeline
-- [API Reference](api-reference/) — `Madhab::shadowLength()`
+* [Calculation Methods](calculation-methods/) — the preset table (all default to Shafi)
+* [Prayer Times](prayer-times/) — where Asr sits in the pipeline
+* [API Reference](api-reference/) — `Madhab::shadowLength()`

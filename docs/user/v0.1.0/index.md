@@ -1,6 +1,8 @@
 ---
 title: al-falaq
-description: An offline PHP library for Islamic astronomy — prayer times, Qibla, Sunnah markers, crescent visibility, and Hijri conversion.
+description: An offline PHP library for Islamic astronomy — prayer times, Qibla,
+  Sunnah markers, crescent visibility, and Hijri conversion.
+slug: v0.1.0
 ---
 
 # al-falaq
@@ -85,8 +87,8 @@ Three ideas carry the whole design, and they are worth learning once:
 
 ## Requirements
 
-- PHP `>= 8.2` (64-bit), no runtime dependencies
-- Install with Composer: `composer require al-falaq/al-falaq`
+* PHP `>= 8.2` (64-bit), no runtime dependencies
+* Install with Composer: `composer require al-falaq/al-falaq`
 
 ## License
 

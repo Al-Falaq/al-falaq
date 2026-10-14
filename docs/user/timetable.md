@@ -34,7 +34,7 @@ The service builds its calculator via `defaultFor($parameters)`, so your high-la
 
 ## Next prayer: "Isha in 42 minutes"
 
-Badges and notifications need a pure function of three things: today's schedule, tomorrow's schedule, and the current instant. The resolver scans both days in canonical order and returns the first marker after now:
+Badges and notifications need a pure function of three things: today's schedule, tomorrow's schedule, and the current instant. The resolver walks both days in canonical order and returns the first *marker* after now — not the first obligatory prayer. Because `all()` carries all ten entries, the answer can be an auxiliary marker (`imsak`, `sunrise`, `syuruk`, `ishraq`, `dhuha`) or one of the five prayers, so check `$next->prayer` and decide what your UI should show. That is usually a feature: "Ishraq in 20 minutes" is exactly what a sunrise widget wants:
 
 ```php
 use AlFalaq\AlFalaq\Prayer\Services\NextPrayerResolver;

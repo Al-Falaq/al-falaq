@@ -1,6 +1,8 @@
 ---
 title: Calculation Methods
-description: Compare all 19 prayer calculation methods, understand angles versus intervals, and pick the right preset.
+description: Compare all 19 prayer calculation methods, understand angles versus
+  intervals, and pick the right preset.
+slug: v0.1.0/calculation-methods
 ---
 
 # Calculation Methods
@@ -56,15 +58,15 @@ $params = CalculationMethod::UOIF->defaultParameters();
 
 Pick the method your community already follows — this is a question of trust, not mathematics:
 
-- **Malaysia:** `JAKIM` (20°/18°, the e-solat baseline; official tables may add minute-level administrative tweaks on top).
-- **Singapore:** `SINGAPORE` or `MUIS` (same 20°/18° computation; separate presets exist for operational naming).
-- **Indonesia:** `KEMENAG` (20°/18° with the Kemenag ihtiyat offsets baked in).
-- **Brunei:** `BRUNEI`.
-- **France (UOIF mosques):** `UOIF` — a pure 12°/12° preset with sunset Maghrib and zero offsets.
-- **Makkah and Saudi Arabia:** `UMM_AL_QURA`, with `withRamadan(true)` during Ramadan for the 120-minute Isha.
-- **Gulf:** `DUBAI` or `QATAR` depending on emirate and convention.
-- **North America:** `NORTH_AMERICA` (ISNA 15°/15°).
-- **General default when unsure:** `MUSLIM_WORLD_LEAGUE`.
+* **Malaysia:** `JAKIM` (20°/18°, the e-solat baseline; official tables may add minute-level administrative tweaks on top).
+* **Singapore:** `SINGAPORE` or `MUIS` (same 20°/18° computation; separate presets exist for operational naming).
+* **Indonesia:** `KEMENAG` (20°/18° with the Kemenag ihtiyat offsets baked in).
+* **Brunei:** `BRUNEI`.
+* **France (UOIF mosques):** `UOIF` — a pure 12°/12° preset with sunset Maghrib and zero offsets.
+* **Makkah and Saudi Arabia:** `UMM_AL_QURA`, with `withRamadan(true)` during Ramadan for the 120-minute Isha.
+* **Gulf:** `DUBAI` or `QATAR` depending on emirate and convention.
+* **North America:** `NORTH_AMERICA` (ISNA 15°/15°).
+* **General default when unsure:** `MUSLIM_WORLD_LEAGUE`.
 
 JAKIM, Singapore, MUIS, and Brunei share the same 20°/18° twilight computation by design — the separate presets exist for Malaysian, Singaporean, and Bruneian operations (naming, zone handling, timetable alignment), not because the sky differs.
 
@@ -72,12 +74,12 @@ JAKIM, Singapore, MUIS, and Brunei share the same 20°/18° twilight computation
 
 A timetable is a claim about what an authority publishes, so al-falaq records where each preset's numbers come from — and where the evidence runs out:
 
-- **Dubai's 18.2° angles and minute offsets** are app-level tuning carried over from BatoulApps research, not an official IACAD specification. Treat them as conventional.
-- **Qatar follows the library-canonical 18° + 90-minute definition.** Some current Doha publications cite 18.5°; that conflict is recorded and left unresolved pending a primary source.
-- **Turkey's offsets** (sunrise −7 through Maghrib +7) encode the Diyanet temkin convention, confirmed against official tables.
-- **Tehran (17.7°/14°, Maghrib 4.5° angle)** is cross-checked against the BatoulApps reference implementation and drift-gated; the 14° Isha is a convention, not a published official rule.
-- **Morocco (19°/17°)** is the Habous convention with Fajr 18-vs-19 undecided in the sources — the preset records the 19° reading.
-- **UOIF (12°/12°)** is cited to the 1994 Dar el-Fatwa text, the 2012 UOIF presidential statement, and ECFR Dublin 2004 toleration, communally confirmed as current in 2026. The 14°/15° compromise proposal from 2015 never landed, so the preset carries no ±5-minute adjustments.
+* **Dubai's 18.2° angles and minute offsets** are app-level tuning carried over from BatoulApps research, not an official IACAD specification. Treat them as conventional.
+* **Qatar follows the library-canonical 18° + 90-minute definition.** Some current Doha publications cite 18.5°; that conflict is recorded and left unresolved pending a primary source.
+* **Turkey's offsets** (sunrise −7 through Maghrib +7) encode the Diyanet temkin convention, confirmed against official tables.
+* **Tehran (17.7°/14°, Maghrib 4.5° angle)** is cross-checked against the BatoulApps reference implementation and drift-gated; the 14° Isha is a convention, not a published official rule.
+* **Morocco (19°/17°)** is the Habous convention with Fajr 18-vs-19 undecided in the sources — the preset records the 19° reading.
+* **UOIF (12°/12°)** is cited to the 1994 Dar el-Fatwa text, the 2012 UOIF presidential statement, and ECFR Dublin 2004 toleration, communally confirmed as current in 2026. The 14°/15° compromise proposal from 2015 never landed, so the preset carries no ±5-minute adjustments.
 
 Every numeric behaviour is pinned against golden vectors with cited sources (Meeus page or official-table URL plus date). If a future official table contradicts a preset, the docs and goldens move together — code wins, docs follow.
 
@@ -90,6 +92,7 @@ Unlike every other method, `MOON_SIGHTING_COMMITTEE` does not use night-fraction
 Override any preset's defaults immutably. When you pass both, be aware the method's built-ins are the starting point and your `with*()` calls replace them wholesale per field:
 
 ```php
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 
 $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
@@ -101,7 +104,7 @@ $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
 
 ## See also
 
-- [Prayer Times](prayer-times/) — how each marker is derived and adjusted
-- [Madhab](madhab/) — the Asr shadow factor
-- [High Latitude Rules](high-latitude/) — night fractions and seasonal twilight
-- [Citations](citations/) — every source behind the table
+* [Prayer Times](prayer-times/) — how each marker is derived and adjusted
+* [Madhab](madhab/) — the Asr shadow factor
+* [High Latitude Rules](high-latitude/) — night fractions and seasonal twilight
+* [Citations](citations/) — every source behind the table

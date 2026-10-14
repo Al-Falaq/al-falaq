@@ -5,9 +5,13 @@ description: Upgrade between al-falaq versions — what changed, what breaks, an
 
 # Migration
 
-This page collects the changes that require your attention when upgrading. The guiding promise: `default()` / `defaultFor()` factories keep working across these changes — only explicit construction and custom strategy implementations need attention. Bugfixes that need no action are marked as such.
+This page collects the changes that require your attention when upgrading. Everything below ships in 0.1.0 — the first tagged release.
 
-## Unreleased — architecture deepening
+## 0.1.0
+
+The guiding promise: `default()` / `defaultFor()` factories keep working across these changes — only explicit construction and custom strategy implementations need attention. Bugfixes that need no action are marked as such.
+
+### Architecture deepening
 
 One batch of seam-clarifying changes. If you wire with factories (as the [Framework Integration](integration/) page recommends), skip to the next section — nothing here touches you.
 
@@ -40,7 +44,7 @@ One batch of seam-clarifying changes. If you wire with factories (as the [Framew
 
 7. **Ramadan consistency fails fast.** `isRamadan` outside Umm al-Qura now throws in `create()` / `withRamadan()`, not at `calculate()` time. Move any rescue logic to parameter construction.
 
-## `nightFraction` strictly-interior clamp (pure bugfix)
+### `nightFraction` strictly-interior clamp (pure bugfix)
 
 `SunnahTimes::nightFraction()` now clamps the minute-rounded result strictly inside the night. Before, on very short nights the rounded output could equal an anchor; after, `maghrib < result < fajr` always holds (for nights longer than two minutes). No caller changes needed:
 
@@ -50,7 +54,7 @@ $night->nightFraction(0.001);
 // After: clamped one minute inside the anchor.
 ```
 
-## Hijri surface changes
+### Hijri surface changes
 
 Three intentional breaks, all SemVer-minor justified because the previous shapes could not express the required behaviour:
 

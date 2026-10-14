@@ -51,7 +51,7 @@ $display = $sunnah->forZone(new DateTimeZone('Asia/Kuala_Lumpur'));
 
 ## Arbitrary fractions
 
-Beyond the named thirds, `nightFraction()` returns the instant at any strictly interior fraction — `0.5` is the middle, `1/3` and `2/3` are the thirds, and anything else in `(0, 1)` is yours to name. The result is clamped strictly inside the night, so very short nights can never return exactly Maghrib or Fajr after minute-rounding:
+Beyond the named thirds, `nightFraction()` returns the instant at any strictly interior fraction — `0.5` is the middle, `1/3` and `2/3` are the thirds, and anything else in `(0, 1)` is yours to name. The result is minute-rounded and then clamped strictly inside the night, so `maghrib < result < fajr` holds for every valid fraction on nights longer than two minutes. A night shorter than that has no minute-aligned instant strictly inside it at all, and the clamp then returns the minute-aligned instant one minute past the nearer anchor rather than inventing a sub-minute time between them:
 
 ```php
 $moment = $sunnah->nightFraction(0.5); // === middleOfNight

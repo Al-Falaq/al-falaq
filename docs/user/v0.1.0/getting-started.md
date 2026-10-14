@@ -1,6 +1,7 @@
 ---
 title: Getting Started
 description: Install al-falaq and run your first prayer time calculation in plain PHP.
+slug: v0.1.0/getting-started
 ---
 
 # Getting Started
@@ -21,7 +22,11 @@ It requires PHP `>= 8.2` on a 64-bit build.
 
 ## Your first calculation
 
-Prayer times answer a simple question: *for this place, on this day, by this community's convention, when does each prayer begin?* Three inputs, one schedule out:
+Prayer times answer a simple question: *for this place, on this day, by this community's convention, when does each prayer begin?* Three inputs, one schedule out. Every snippet on this page continues one file, so load Composer's autoloader once at the top:
+
+```php
+require __DIR__ . '/vendor/autoload.php';
+```
 
 ```php
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
@@ -124,8 +129,8 @@ This is deliberate. A wrong prayer time presented confidently is worse than an h
 
 ## Next steps
 
-- [Prayer Times](prayer-times/) — what each of the ten markers means and how it is computed
-- [Calculation Methods](calculation-methods/) — compare all 19 methods and pick yours
-- [Timezones & Display](timezone/) — the UTC-in, display-at-the-edge discipline
-- [Errors](errors/) — the full exception hierarchy and how to catch well
-- [Framework Integration](integration/) — wiring this into Laravel, Symfony, and WordPress
+* [Prayer Times](prayer-times/) — what each of the ten markers means and how it is computed
+* [Calculation Methods](calculation-methods/) — compare all 19 methods and pick yours
+* [Timezones & Display](timezone/) — the UTC-in, display-at-the-edge discipline
+* [Errors](errors/) — the full exception hierarchy and how to catch well
+* [Framework Integration](integration/) — wiring this into Laravel, Symfony, and WordPress

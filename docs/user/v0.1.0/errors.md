@@ -1,6 +1,7 @@
 ---
 title: Errors
 description: The typed exception hierarchy, when each failure fires, and how to catch well.
+slug: v0.1.0/errors
 ---
 
 # Errors
@@ -27,6 +28,7 @@ Catch `AlFalaqException` (or the `DomainException` marker) as your catch-all at 
 **`ValidationException` — "you gave me bad data."** Out-of-range coordinates, impossible dates (`CivilDate` covers 1900–2100), non-UTC instants where UTC is required, per-prayer adjustments outside ±60 minutes, degenerate Sunnah nights, non-finite geometry. The message names the value and the valid range:
 
 ```php
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\InvalidCoordinatesException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 try {
@@ -36,7 +38,7 @@ try {
 }
 ```
 
-**`ConfigurationException` — "your wiring contradicts itself."** `CalculationMethod::NONE->defaultParameters()` (NONE has no defaults — build `CalculationParameters::create()` by hand), `isRamadan` on any method but Umm al-Qura, `changeAtSunset: true` without coordinates *and* parameters. These throw at setup time — parameter construction, never deep inside `calculate()` — so misconfiguration surfaces in your bootstrap, not at dawn:
+**`ConfigurationException` — "your wiring contradicts itself."** Two flavours. `CalculationMethod::NONE->defaultParameters()` (NONE has no defaults — build `CalculationParameters::create()` by hand) and `isRamadan` on any method but Umm al-Qura throw while you *build* the parameters, before any astronomy runs. `changeAtSunset: true` without coordinates *and* parameters throws when you call `GregorianToHijriConverter::convert()`, which is the earliest it can be detected — the call itself supplies the place. Either way the failure lands in your setup or request edge, never at dawn:
 
 ```php
 $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
@@ -49,6 +51,7 @@ $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
 
 ```php
 use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 try {
     $schedule = $calculator->calculate($coords, $date, $params);
@@ -73,6 +76,6 @@ Non-integer arguments to typed parameters surface as PHP `TypeError`, not librar
 
 ## See also
 
-- [Polar Regions](polar-regions/) — designing around `UndefinedScheduleException`
-- [Hijri Converter](hijri-converter/) — the range table for every calendar
-- [API Reference](api-reference/) — the full exception list with factories
+* [Polar Regions](polar-regions/) — designing around `UndefinedScheduleException`
+* [Hijri Converter](hijri-converter/) — the range table for every calendar
+* [API Reference](api-reference/) — the full exception list with factories

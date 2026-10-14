@@ -69,7 +69,7 @@ First, Odeh takes **topocentric** ARCV (measured from the observer, parallax-cor
 **The algorithms, plainly.** These are threshold rules, not fitted curves — deliberately simple enough for a committee to apply from tables:
 
 - **1992:** visible if `(altitude ≥ 2° AND elongation ≥ 3°) OR (age at moonset ≥ 8 h)`. Note *altitude*, never ARCV — the committee judged height above the horizon, not height above the sun. And note *age at moonset*, not at sunset: an old moon that lingers counts even if it was low at sunset.
-- **2021:** visible if `(altitude ≥ 3° AND elongation ≥ 6.4°)` — both must hold, no age fallback. The 6.4° elongation floor склад with the Danjon physics; the 3° altitude floor clears the horizon haze that produced false positives under the old 2°.
+- **2021:** visible if `(altitude ≥ 3° AND elongation ≥ 6.4°)` — both must hold, no age fallback. The 6.4° elongation floor matches the Danjon physics; the 3° altitude floor clears the horizon haze that produced false positives under the old 2°.
 
 al-falaq transcribes both exactly (`>=` on every threshold), with the 1992 evaluator owning the no-moonset window: when the moon never sets, age-at-moonset is null and the verdict falls back to the altitude/elongation branch alone.
 

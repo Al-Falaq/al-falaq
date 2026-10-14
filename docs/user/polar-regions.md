@@ -26,7 +26,7 @@ $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
     ->withPolarCircleRule(PolarCircleRule::MAKKAH);
 ```
 
-`NearestLatitude` works by 60-iteration bisection toward the equator: it walks your latitude south (or north, in the southern hemisphere) until sunrise exists, then steps 0.5° back so the substitute day is safely solvable rather than knife-edge. `NearestDay` scans day offsets nearest-first (`−0, +0` per offset) across a full leap year. `Makkah` substitutes the canonical Kaaba coordinates verbatim and keeps your date. `None` short-circuits before any dispatch and echoes your inputs into the exception, so the error message can name the rule that refused.
+`NearestLatitude` works by 60-iteration bisection toward the equator: it walks your latitude south (or north, in the southern hemisphere) until sunrise exists, then steps 0.5° back so the substitute day is safely solvable rather than knife-edge. `NearestDay` scans day offsets outward from your date, testing the earlier date before the later one at each distance (`−1`, then `+1`, then `−2`, `+2`, up to ±366 days), so the substitute is always the nearest solvable date. `Makkah` substitutes the canonical Kaaba coordinates verbatim and keeps your date. `None` short-circuits before any dispatch and echoes your inputs into the exception, so the error message can name the rule that refused.
 
 ## Handling the exception well
 
