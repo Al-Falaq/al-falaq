@@ -106,6 +106,24 @@ final class PrayerGoldensTest extends TestCase
         return sprintf('%s|%s|%s|%s|%s', $method->value, $dateRaw, $latRaw, $lonRaw, $prayer->value);
     }
 
+    /**
+     * Build the row identity for duplicate detection.
+     *
+     * Single owner for the method|date|latitude|longitude shape so uniqueness
+     * checks cannot drift from the cell-key prefix. Uses the same
+     * filename-derived method and raw CSV strings as emptyCellKey().
+     *
+     * @param CalculationMethod $method Method derived from the golden filename.
+     * @param string $dateRaw Date string from the golden row.
+     * @param string $latRaw Latitude string from the golden row.
+     * @param string $lonRaw Longitude string from the golden row.
+     * @return string Row identity.
+     */
+    private static function goldenRowKey(CalculationMethod $method, string $dateRaw, string $latRaw, string $lonRaw): string
+    {
+        return sprintf('%s|%s|%s|%s', $method->value, $dateRaw, $latRaw, $lonRaw);
+    }
+
     /** @return list<string> */
     private static function expectedFiles(): array
     {
@@ -158,6 +176,47 @@ final class PrayerGoldensTest extends TestCase
             $rows = $this->checkFile(self::GOLDEN_DIR . '/' . $file);
 
             self::assertGreaterThan(0, $rows, sprintf('Golden file %s contributed 0 rows.', $file));
+        }
+    }
+
+    /**
+     * No duplicate golden vectors: each method|date|location row is unique per file.
+     *
+     * A duplicate row with the same allow-listed empties would collapse in the
+     * $actual keyed set and pass parity twice, so row uniqueness is enforced
+     * here to keep the exact-match comparison sound. Covers all rows,
+     * including fully-empty ones owned by testOnlyDocumentedRowsAreEmpty.
+     */
+    public function testGoldenRowsAreUnique(): void
+    {
+        foreach (self::expectedFiles() as $file) {
+            $path = self::GOLDEN_DIR . '/' . $file;
+
+            $loaded = GoldenLoader::load($path);
+
+            $method = CalculationMethod::from(substr(basename($path, '.csv'), 7));
+
+            $seen = [];
+
+            foreach ($loaded['rows'] as $data) {
+                $dateRaw = $data['date'] ?? '';
+                $latRaw = $data['latitude'] ?? '';
+                $lonRaw = $data['longitude'] ?? '';
+
+                if (! is_string($dateRaw) || ! is_string($latRaw) || ! is_string($lonRaw)) {
+                    self::fail(sprintf('Golden row in %s has non-string identity cells.', $file));
+                }
+
+                $rowKey = self::goldenRowKey($method, $dateRaw, $latRaw, $lonRaw);
+
+                self::assertArrayNotHasKey(
+                    $rowKey,
+                    $seen,
+                    sprintf('Duplicate golden row %s in %s; duplicate vectors must not land silently.', $rowKey, $file),
+                );
+
+                $seen[$rowKey] = true;
+            }
         }
     }
 
@@ -226,7 +285,8 @@ final class PrayerGoldensTest extends TestCase
      * that later fills in) by comparing the full sorted key sets. Fully-empty
      * rows stay owned by testOnlyDocumentedRowsAreEmpty. Rows with expectations
      * but missing date/coordinates fail loudly instead of being skipped so
-     * unlisted gaps cannot hide there.
+     * unlisted gaps cannot hide there. Duplicate rows cannot collapse the
+     * keyed set silently: testGoldenRowsAreUnique() forbids them per file.
      */
     public function testAllowedEmptyCellsAreExactlyTheActualEmpties(): void
     {
