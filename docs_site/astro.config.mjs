@@ -117,6 +117,13 @@ export default defineConfig({
             starlightVersions({
               versions: versionsConfig.versions,
               current: { label: versionsConfig.latest.label },
+              // `404.md` does not exist in `docs/user/` — Starlight serves its
+              // synthetic not-found page for arbitrary URLs. The version
+              // selector builds its links as "this page in the other version",
+              // so on the 404 page they become `/404/` and `/v0.1.0/404/`,
+              // neither of which is a real page. Excluding it drops the
+              // selector there; every real page keeps it.
+              exclude: ['404.md'],
             }),
           ]
         : [],
