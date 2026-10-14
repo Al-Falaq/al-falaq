@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 
 /**
- * Starlight derives two things from `entry.filePath`:
+ * Repairs the two things Starlight derives from `entry.filePath`:
  *
  * - the “Edit page” link, built as `editLink.baseUrl + filePath`;
  * - the “Last updated” date, looked up in the git-history map the Starlight
@@ -33,33 +33,64 @@ const EDIT_BASE = 'https://github.com/Al-Falaq/al-falaq/edit/main/docs/user/';
 /** The symlinked content directory, as Starlight reports it in `filePath`. */
 const SYMLINKED_DOCS = 'src/content/docs/';
 
-/** The real docs directory, resolved from the docs site rather than the symlink. */
-const DOCS_DIR = resolve(process.cwd(), 'src/content/docs');
+/**
+ * The real `docs/user` directory, or `undefined` when it cannot be located.
+ *
+ * `import.meta.url` is not usable here: Vite bundles route middleware into
+ * `dist/.prerender/chunks/`, so it resolves to the bundle rather than to this
+ * file. `process.cwd()` depends on how the build was started, so both supported
+ * entry points are tried — the docs site itself (`npm run build`, as CI does)
+ * and the repository root (`astro build --root docs_site`).
+ */
+const DOCS_DIR = [resolve(process.cwd(), 'docs/user'), resolve(process.cwd(), '../docs/user')].find(
+  (dir) => existsSync(dir),
+);
 
-/** Last-commit dates by page, so each page shells out to git at most once. */
-const commitDates = new Map<string, Date | undefined>();
+if (DOCS_DIR === undefined) {
+  console.warn(
+    '[starlightRouteData] could not locate the repository docs/user directory — ' +
+      'leaving edit links and update dates as Starlight built them.',
+  );
+}
+
+/** Warn about a broken git environment once per build, not once per page. */
+let warnedAboutGit = false;
 
 /** The commit date of `page` (relative to `docs/user/`), or `undefined` if unknown. */
 function lastCommitDate(page: string): Date | undefined {
-  const cached = commitDates.get(page);
-  if (cached !== undefined || commitDates.has(page)) return cached;
+  if (DOCS_DIR === undefined) return undefined;
 
-  let date: Date | undefined;
+  let output: string;
   try {
-    const seconds = Number.parseInt(
-      execFileSync('git', ['-C', DOCS_DIR, 'log', '--format=%ct', '--max-count=1', '--', page], {
-        encoding: 'utf-8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim(),
-      10,
-    );
-    if (Number.isFinite(seconds)) date = new Date(seconds * 1000);
-  } catch {
-    date = undefined; // No git, or no history for this page: leave the date hidden.
+    output = execFileSync('git', ['-C', DOCS_DIR, 'log', '--format=%ct', '--max-count=1', '--', page], {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch (error) {
+    // A failing `git` run is an environment problem (no git, no repository, an
+    // unreadable checkout), not a page without history. Say so once, instead of
+    // dropping every date silently.
+    if (!warnedAboutGit) {
+      warnedAboutGit = true;
+      // `execFileSync` appends git's own stderr to `message`; collapse it so the
+      // warning stays one greppable line.
+      const detail = (error instanceof Error ? error.message : String(error)).replace(/\s+/g, ' ').trim();
+      console.warn(`[starlightRouteData] could not read git history, so update dates will be missing: ${detail}`);
+    }
+    return undefined;
   }
 
-  commitDates.set(page, date);
-  return date;
+  // Empty output means the page simply has no history yet (a new or untracked
+  // file): an expected outcome, and an expected missing date.
+  if (output === '') return undefined;
+
+  const seconds = Number.parseInt(output, 10);
+  return Number.isFinite(seconds) ? new Date(seconds * 1000) : undefined;
+}
+
+/** `page` as URL path segments, so URL-significant filename characters survive. */
+function pageUrl(page: string): string {
+  return page.split('/').map(encodeURIComponent).join('/');
 }
 
 export const onRequest = defineRouteMiddleware((context) => {
@@ -67,17 +98,7 @@ export const onRequest = defineRouteMiddleware((context) => {
   const filePath = route.entry.filePath.replaceAll('\\', '/');
 
   // An unexpected layout means Starlight's own values are the better guess.
-  if (!filePath.startsWith(SYMLINKED_DOCS)) return;
-
-  // The symlink is what makes Starlight's default content directory exist. If it
-  // is missing, the site is being built from somewhere this middleware cannot
-  // map back to the repo: say so instead of quietly dropping every link and date.
-  if (!existsSync(DOCS_DIR)) {
-    console.warn(
-      `[starlightRouteData] ${DOCS_DIR} does not exist — leaving edit links and update dates as Starlight built them.`,
-    );
-    return;
-  }
+  if (!filePath.startsWith(SYMLINKED_DOCS) || DOCS_DIR === undefined) return;
 
   const page = filePath.slice(SYMLINKED_DOCS.length);
 
@@ -89,7 +110,12 @@ export const onRequest = defineRouteMiddleware((context) => {
     return;
   }
 
-  route.editUrl = new URL(EDIT_BASE + page);
+  // A page-level `editUrl` wins: `false` opts the page out of an edit link and a
+  // string is the page's own URL. Only Starlight's schema default (`true`) is
+  // rebuilt here, from the real repo path.
+  if (route.entry.data.editUrl === true) {
+    route.editUrl = new URL(EDIT_BASE + pageUrl(page));
+  }
 
   // Only fill in what Starlight could not resolve, so a frontmatter
   // `lastUpdated` date still wins.
