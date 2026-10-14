@@ -7,8 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No changes yet.
+
+## [0.1.0] - 2026-10-14
+
 ### Added
 
+- Versioned user documentation (Astro Starlight, GitHub Pages): `docs/user/`
+  concept-first guides (prayer, methods, madhab, high-latitude, polar,
+  timetable, Qibla, Sunnah, moon, Hijri, timezones, framework integration,
+  errors, API reference, migration, changelog, citations) snapshotted per
+  release under `docs/user/vX.Y.Z/`, built via `docs_site/` with the
+  `starlight-versions` switcher.
 - UOIF 12/12 preset (Wave 2, issue #7): `CalculationMethod::UOIF` with
   fajr 12°, isha `AngleIsha(12°)`, sunset maghrib, zero offsets and no
   method adjustments (the single-source ±5 min claim rejected). Cited to

@@ -49,6 +49,30 @@ composer bench
 
 ## Docs
 
+- User documentation (versioned, GitHub Pages, Astro Starlight): [`docs/user/`](docs/user/) — built via `docs_site/` (see `docs_site/astro.config.mjs`, `docs_site/versions.json`). Local preview: `cd docs_site && npm install && npm run dev`.
 - `ARCHITECTURE.md` — layering summary
-- `docs/` — per-context guides (M1–M5)
+- `docs/` — per-context guides (M1–M5, contributor-facing) plus `docs/user/` (user-facing, versioned)
 - `UQ_PROVENANCE.md` — Umm al-Qura + MABIMS table provenance, digests, regeneration
+
+### Freezing docs for a release
+
+The versioning plugin generates the snapshot — never copy `docs/user/*.md` by hand.
+Hand-copied pages lack the `slug:` frontmatter the plugin injects, so they build at the
+wrong route and the version switcher links 404.
+
+1. Add the tag to `docs_site/versions.json` (`{ "slug": "vX.Y.Z", "label": "vX.Y.Z" }`).
+2. Run the build; the plugin copies the current docs into `docs/user/vX.Y.Z/`,
+   injects the versioned `slug`, and writes `docs_site/src/content/versions/vX.Y.Z.json`:
+   `cd docs_site && npm run build`.
+3. Commit the generated snapshot, the version JSON, and `versions.json`, then tag.
+
+The plugin only regenerates a version whose directory is *missing* (`checkForNewVersion`
+skips any slug already present under `docs/user/`). So to re-freeze a version you have
+not tagged yet — after a review round, say — delete `docs/user/vX.Y.Z/` and
+`docs_site/src/content/versions/vX.Y.Z.json` and rebuild. Never hand-edit a generated
+`docs/user/vX.Y.Z/` page: the next regeneration overwrites it, and its `slug:` frontmatter
+is what routes the page under the version prefix.
+
+`.github/workflows/pre-release.yml` refuses to publish a release whose docs snapshot,
+version JSON, or `versions.json` entry is missing, and only runs after the Windows gate
+passes, so the released docs always reach the version switcher.
