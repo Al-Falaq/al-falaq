@@ -110,7 +110,7 @@ Nothing saturates and nothing wraps.
 | Impossible day for a real month (e.g. day 30 of a 29-day month) | `ValidationException` |
 | `changeAtSunset` without coordinates or parameters | `ConfigurationException` |
 | `changeAtSunset` where the full schedule is undefined but maghrib is defined | converts using the maghrib-only fallback |
-| `changeAtSunset` on 2100-12-31 (last supported civil day) | `ValidationException` from the pipeline's tomorrow-probe stepping outside `CivilDate` 1900–2100 (pre-existing M1 boundary; pipeline follow-up) |
+| `changeAtSunset` on 2100-12-31 (last supported civil day) | Maghrib resolves via the maghrib-only fallback (`calculate()` throws `UndefinedScheduleException` at the edge, caught internally); only an instant at/after maghrib still throws `ValidationException` from the `plusDays(1)` rollover past 1900–2100 |
 | Non-int argument to a typed contract parameter | `TypeError` |
 
 `HijriOutOfRangeException` extends `ValidationException`, so a `catch (ValidationException)` catches both; catch the former first when the distinction matters.

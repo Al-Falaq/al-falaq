@@ -36,7 +36,9 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   before dispatch.
 - **Adjustments:** effective offset = method + caller
   (`PrayerAdjustments::combinedWith`), applied via `Minutes::add` BEFORE a
-  single half-up rounding (`Minutes::roundedHalfUp`) per marker. `syuruk` is a
+  single half-up rounding (`Minutes::roundedHalfUp`) per marker. Each layer is
+  `[-60, 60]` and the summed effective offset keeps that invariant (sums
+  outside throw `ValidationException`). `syuruk` is a
   sunrise alias (same instant object; no syuruk slot — sunrise adjustments flow
   through to the syuruk/ishraq/dhuha bases). `imsak` = final fajr −
   `imsakOffsetMinutes` (then the IMSAK slot + rounding); ishraq/dhuha = adjusted
