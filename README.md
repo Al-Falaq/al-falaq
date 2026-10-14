@@ -49,6 +49,7 @@ composer bench
 
 ## Docs
 
+- User documentation (versioned, GitHub Pages, Astro Starlight): [`docs/user/`](docs/user/) — built via `docs_site/` (see `docs_site/astro.config.mjs`, `docs_site/versions.json`). Local preview: `cd docs_site && npm install && npm run dev`. Releases snapshot the docs under `docs/user/vX.Y.Z/` with a sidebar snapshot in `docs_site/src/content/versions/`.
 - `ARCHITECTURE.md` — layering summary
-- `docs/` — per-context guides (M1–M5)
+- `docs/` — per-context guides (M1–M5, contributor-facing) plus `docs/user/` (user-facing, versioned)
 - `UQ_PROVENANCE.md` — Umm al-Qura + MABIMS table provenance, digests, regeneration

@@ -11,3 +11,8 @@ __pycache__/
 
 # Development-only brainstorming artifacts (specs/plans) — never merged
 /docs/superpowers/
+
+# Docs site build outputs (mirrors nexusnv/al-falak)
+docs_site/dist/
+docs_site/node_modules/
+docs_site/.astro/
