@@ -14,9 +14,12 @@ use PHPUnit\Framework\TestCase;
 /**
  * Pinned-Python parity: minute-rounded UTC equality on golden vectors.
  *
- * Empty marker fields must appear in ALLOWED_EMPTY_CELLS with their reason
- * (unpublished markers in T2 tables, documented no-fit residuals, or a
- * pending-issue link); any other empty cell fails the build. Ramadan rows are exactly
+ * Empty marker fields in rows with at least one expectation must appear in
+ * ALLOWED_EMPTY_CELLS with their reason (unpublished markers in T2 tables,
+ * documented no-fit residuals, or a pending-issue link); any other empty
+ * cell fails the build. The single fully-empty Tehran polar-day row is not
+ * allow-listed: it is owned separately by testOnlyDocumentedRowsAreEmpty.
+ * Ramadan rows are exactly
  * the UMM_AL_QURA rows dated 2025-03-02 (exporter sets Ramadan mode
  * only there). Expected file set is explicit: 18 present (11 pin + 4
  * provisional + tehran/morocco/uoif drift-gated by tools/gen_self_prayer_goldens.php:
@@ -149,6 +152,35 @@ final class PrayerGoldensTest extends TestCase
         ];
     }
 
+    /**
+     * Expected golden header shared by every prayer CSV.
+     *
+     * @return list<string>
+     */
+    private static function expectedHeader(): array
+    {
+        return ['method', 'date', 'latitude', 'longitude', 'imsak', 'fajr', 'sunrise', 'syuruk', 'ishraq', 'dhuha', 'dhuhr', 'asr', 'maghrib', 'isha', 'source'];
+    }
+
+    /**
+     * Assert a loaded golden header carries the full schema.
+     *
+     * A removed marker column would otherwise read as '' via ?? '' and pass
+     * whenever the affected cells are already allow-listed empties, so the
+     * schema is checked before any row logic.
+     *
+     * @param array<array-key, mixed> $header Header row from the golden file.
+     * @param string $file Golden filename for failure messages.
+     */
+    private static function assertGoldenHeader(array $header, string $file): void
+    {
+        self::assertSame(
+            self::expectedHeader(),
+            array_values($header),
+            sprintf('Golden file %s header drifted; marker columns must not be added or removed silently.', $file),
+        );
+    }
+
     public function testGoldenFileSetIsComplete(): void
     {
         $found = [];
@@ -168,6 +200,21 @@ final class PrayerGoldensTest extends TestCase
         sort($expected);
 
         self::assertSame($expected, $found);
+    }
+
+    /**
+     * Every prayer golden carries the full marker schema.
+     *
+     * Guards the ?? '' row logic: without this, dropping a marker column
+     * already covered by allow-listed empties would read as empty and pass.
+     */
+    public function testGoldenHeadersAreComplete(): void
+    {
+        foreach (self::expectedFiles() as $file) {
+            $loaded = GoldenLoader::load(self::GOLDEN_DIR . '/' . $file);
+
+            self::assertGoldenHeader($loaded['header'], $file);
+        }
     }
 
     public function testAllGoldenRowsMatchPinMinutes(): void
@@ -193,6 +240,8 @@ final class PrayerGoldensTest extends TestCase
             $path = self::GOLDEN_DIR . '/' . $file;
 
             $loaded = GoldenLoader::load($path);
+
+            self::assertGoldenHeader($loaded['header'], $file);
 
             $method = CalculationMethod::from(substr(basename($path, '.csv'), 7));
 
@@ -242,6 +291,8 @@ final class PrayerGoldensTest extends TestCase
                 fclose($handle);
                 self::fail('Empty golden file ' . $file);
             }
+
+            self::assertGoldenHeader($header, $file);
 
             while (is_array($row = fgetcsv($handle, escape: ''))) {
                 $data = [];
@@ -305,6 +356,8 @@ final class PrayerGoldensTest extends TestCase
 
             $loaded = GoldenLoader::load($path);
 
+            self::assertGoldenHeader($loaded['header'], $file);
+
             $method = CalculationMethod::from(substr(basename($path, '.csv'), 7));
 
             foreach ($loaded['rows'] as $data) {
@@ -359,6 +412,8 @@ final class PrayerGoldensTest extends TestCase
     private function checkFile(string $path): int
     {
         $loaded = GoldenLoader::load($path);
+
+        self::assertGoldenHeader($loaded['header'], basename($path));
 
         $method = CalculationMethod::from(substr(basename($path, '.csv'), 7));
 
