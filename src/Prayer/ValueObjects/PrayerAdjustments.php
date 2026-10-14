@@ -60,6 +60,8 @@ final readonly class PrayerAdjustments
     /**
      * Add two layers together (method + caller = effective offset).
      *
+     * The sum keeps the per-prayer [-60, 60] invariant documented on $offsets.
+     *
      * @param self $other Layer to add on top.
      * @return self Merged set; neither input changes.
      */
@@ -68,7 +70,13 @@ final readonly class PrayerAdjustments
         $merged = $this->offsets;
 
         foreach ($other->offsets as $key => $value) {
-            $merged[$key] = ($merged[$key] ?? 0) + $value;
+            $sum = ($merged[$key] ?? 0) + $value;
+
+            if ($sum < -60 || $sum > 60) {
+                throw new ValidationException(sprintf('Adjustment for %s must be in [-60, 60], got %d.', $key, $sum));
+            }
+
+            $merged[$key] = $sum;
         }
 
         return new self($merged);
