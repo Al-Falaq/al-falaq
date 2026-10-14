@@ -22,10 +22,13 @@ export default defineConfig({
       social: [
         { label: 'GitHub', href: 'https://github.com/Al-Falaq/al-falaq', icon: 'github' },
       ],
-      editLink: {
-        baseUrl: 'https://github.com/Al-Falaq/al-falaq/edit/main/docs/user/',
-      },
       lastUpdated: true,
+      // The content directory is the `docs/user` symlink, so Starlight's
+      // path-derived edit links and update dates point at the symlinked path
+      // (which exists in neither git nor GitHub). The middleware rebuilds both
+      // from the real repo path and owns the edit URL, so there is deliberately
+      // no `editLink.baseUrl` here — see src/starlightRouteData.ts.
+      routeMiddleware: ['./src/starlightRouteData.ts'],
       expressiveCode: {
         styleOverrides: {
           borderRadius: '0.375rem',
