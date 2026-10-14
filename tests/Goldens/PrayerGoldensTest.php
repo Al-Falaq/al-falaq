@@ -14,7 +14,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * Pinned-Python parity: minute-rounded UTC equality on golden vectors.
  *
- * Skips empty marker fields (unpublished markers in T2 tables). Ramadan rows are exactly
+ * Empty marker fields must appear in ALLOWED_EMPTY_CELLS with their reason
+ * (unpublished markers in T2 tables, documented no-fit residuals, or a
+ * pending-issue link); any other empty cell fails the build. Ramadan rows are exactly
  * the UMM_AL_QURA rows dated 2025-03-02 (exporter sets Ramadan mode
  * only there). Expected file set is explicit: 18 present (11 pin + 4
  * provisional + tehran/morocco/uoif drift-gated by tools/gen_self_prayer_goldens.php:
@@ -25,6 +27,58 @@ use PHPUnit\Framework\TestCase;
 final class PrayerGoldensTest extends TestCase
 {
     private const GOLDEN_DIR = __DIR__;
+
+    /**
+     * Allow-listed empty cells, keyed by method|date|marker.
+     *
+     * Every per-cell empty in the prayer goldens appears here with its
+     * reason; checkFile() fails any empty cell not on this list so future
+     * gaps cannot land silently (issue #29). Fully-empty rows stay owned by
+     * testOnlyDocumentedRowsAreEmpty. Reasons cite docs/prayer.md
+     * (Emptied golden cells) and the linked follow-up issues.
+     *
+     * @var array<string, string>
+     */
+    private const ALLOWED_EMPTY_CELLS = [
+        // Turkey (Diyanet publishes no ishraq/dhuha; Dec maghrib +1 no-fit).
+        'turkey|2025-06-21|ishraq' => 'unpublished by Diyanet table',
+        'turkey|2025-06-21|dhuha' => 'unpublished by Diyanet table',
+        'turkey|2025-12-15|ishraq' => 'unpublished by Diyanet table',
+        'turkey|2025-12-15|dhuha' => 'unpublished by Diyanet table',
+        'turkey|2025-12-15|maghrib' => 'no-fit +1 seasonal dusk-side (docs/prayer.md)',
+        // Brunei (KHEU publishes no ishraq and no citable Doha rule, issue #11).
+        'brunei|2025-06-21|ishraq' => 'unpublished by KHEU table',
+        'brunei|2025-06-21|dhuha' => 'pending issue #11 (KHEU Doha +24 structural, no citable rule)',
+        'brunei|2025-12-15|imsak' => 'no-fit +/-1 model noise (issue #11)',
+        'brunei|2025-12-15|fajr' => 'no-fit +/-1 model noise (issue #11)',
+        'brunei|2025-12-15|ishraq' => 'unpublished by KHEU table',
+        'brunei|2025-12-15|dhuha' => 'pending issue #11 (KHEU Doha +24 structural, no citable rule)',
+        'brunei|2025-12-15|maghrib' => 'no-fit +/-1 model noise (issue #11)',
+        // Singapore/MUIS (publishes no imsak/ishraq/dhuha; June fajr -1 rounding).
+        'muis|2025-06-21|imsak' => 'unpublished by MUIS table',
+        'muis|2025-06-21|fajr' => 'no-fit -1 single-cell rounding (docs/prayer.md)',
+        'muis|2025-06-21|ishraq' => 'unpublished by MUIS table',
+        'muis|2025-06-21|dhuha' => 'unpublished by MUIS table',
+        'muis|2025-12-15|imsak' => 'unpublished by MUIS table',
+        'muis|2025-12-15|ishraq' => 'unpublished by MUIS table',
+        'muis|2025-12-15|dhuha' => 'unpublished by MUIS table',
+        // Indonesia/Kemenag (publishes no ishraq; the rest +/-1-2 mixed-sign wobble).
+        'kemenag|2025-06-21|sunrise' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|syuruk' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|ishraq' => 'unpublished by Kemenag table',
+        'kemenag|2025-06-21|dhuha' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|asr' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|maghrib' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|isha' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|imsak' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|fajr' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|sunrise' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|syuruk' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|ishraq' => 'unpublished by Kemenag table',
+        'kemenag|2025-12-15|dhuhr' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|maghrib' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|isha' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+    ];
 
     /** @return list<string> */
     private static function expectedFiles(): array
@@ -192,6 +246,17 @@ final class PrayerGoldensTest extends TestCase
                 $expected = $data[$prayer->value] ?? '';
 
                 if ($expected === '') {
+                    self::assertArrayHasKey(
+                        sprintf('%s|%s|%s', $method->value, $dateRaw, $prayer->value),
+                        self::ALLOWED_EMPTY_CELLS,
+                        sprintf(
+                            'Golden cell %s %s %s is empty but not allow-listed in PrayerGoldensTest::ALLOWED_EMPTY_CELLS (issue #29).',
+                            $data['method'],
+                            $dateRaw,
+                            $prayer->value,
+                        ),
+                    );
+
                     continue;
                 }
 

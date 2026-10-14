@@ -80,4 +80,6 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   Brunei Dec imsak/fajr/maghrib (±1 model noise). Residual tables live on
   issues #8/#10/#23/#11. Cells unpublished by the official tables (Diyanet
   ishraq/dhuha, Kemenag/MUIS/KHEU ishraq, MUIS imsak/dhuha) are
-  correctly-empty, not gaps.
+  correctly-empty, not gaps. Every emptied cell is allow-listed with its
+  reason in `PrayerGoldensTest::ALLOWED_EMPTY_CELLS`; any other empty cell
+  fails the build (issue #29).
