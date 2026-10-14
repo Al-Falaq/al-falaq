@@ -16,9 +16,18 @@ export default defineConfig({
     starlight({
       title: 'al-falaq',
       description: 'An offline PHP library for Islamic astronomy: prayer times, Qibla, Sunnah markers, crescent visibility, and Hijri conversion.',
+      // Both variants are generated from `al-falaq-logo.png` at the repository
+      // root by `npm run build:logo` (scripts/build-logo.mjs). The pair matters:
+      // the mark is a navy disc, which all but disappears against Starlight's
+      // near-black dark sidebar, so dark mode renders a colour-negated copy.
+      // `alt` is deliberately left at its "" default: the artwork sits beside
+      // the site title, which already names the link, so the image is
+      // decorative — giving it alt text would announce the link twice.
       logo: {
-        src: './public/favicon.svg',
+        light: './src/assets/logo.png',
+        dark: './src/assets/logo-dark.png',
       },
+      favicon: '/favicon.png',
       social: [
         { label: 'GitHub', href: 'https://github.com/Al-Falaq/al-falaq', icon: 'github' },
       ],
