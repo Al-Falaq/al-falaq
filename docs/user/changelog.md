@@ -11,7 +11,16 @@ Versioned snapshots of the whole documentation site are kept per release — use
 
 ## [Unreleased]
 
+No changes yet — see the repo `CHANGELOG.md` for work in progress.
+
+## [0.1.0] - 2026-10-14
+
+First tagged release. Everything below ships in it.
+
 ### Added
+
+- Versioned user documentation: these guides, published to GitHub Pages with
+  Astro Starlight and snapshotted per release (this page, frozen as v0.1.0).
 
 - UOIF 12/12 preset: `CalculationMethod::UOIF` with Fajr 12°, Isha `AngleIsha(12°)`, sunset Maghrib, and zero offsets — cited to the 1994 Dar el-Fatwa text, the 2012 UOIF presidential statement, and ECFR Dublin 2004 toleration, communally confirmed current (2026). Drift-gated golden (`tests/Goldens/prayer_uoif.csv`).
 - Sunnah Maghrib anchor + Tehran/Morocco provenance verdicts: `SunnahTimes` gains the fifth `maghrib` anchor with dual degenerate guards and a zone-agnostic `nightFraction()`; Tehran 17.7/14/Maghrib-4.5 cross-checked against the BatoulApps reference and re-pinned as a drift gate; Morocco 19/17 kept as the labelled Habous convention.

@@ -1,0 +1,31 @@
+name: Release
+
+# First release ran for v0.1.0: pushing a `v*` tag runs the Windows gate
+# (pre-release.yml), then this workflow creates the GitHub Release. Packagist
+# picks up the tag automatically once the package is submitted (one-time
+# setup on packagist.org) — Composer needs no build artifact from us.
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write # create the GitHub Release
+
+jobs:
+  github-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Verify tag matches the CHANGELOG release header
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          if ! grep -q "^## \[$VERSION\] - " CHANGELOG.md; then
+            echo "::error::Tag $TAG has no matching '## [$VERSION] - YYYY-MM-DD' header in CHANGELOG.md."
+            exit 1
+          fi
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true

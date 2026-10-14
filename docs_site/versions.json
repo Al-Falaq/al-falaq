@@ -1,5 +1,5 @@
 {
-  "versions": [],
+  "versions": [{ "slug": "v0.1.0", "label": "v0.1.0" }],
   "latest": {
     "slug": "latest",
     "label": "Latest",

@@ -1,0 +1,81 @@
+{
+  "sidebar": [
+    {
+      "label": "Home",
+      "link": "/"
+    },
+    {
+      "label": "Getting Started",
+      "link": "/getting-started/"
+    },
+    {
+      "label": "Prayer Times",
+      "link": "/prayer-times/"
+    },
+    {
+      "label": "Calculation Methods",
+      "link": "/calculation-methods/"
+    },
+    {
+      "label": "Madhab",
+      "link": "/madhab/"
+    },
+    {
+      "label": "High Latitude Rules",
+      "link": "/high-latitude/"
+    },
+    {
+      "label": "Polar Regions",
+      "link": "/polar-regions/"
+    },
+    {
+      "label": "Timetable & Next Prayer",
+      "link": "/timetable/"
+    },
+    {
+      "label": "Qibla Direction",
+      "link": "/qibla/"
+    },
+    {
+      "label": "Sunnah Times",
+      "link": "/sunnah-times/"
+    },
+    {
+      "label": "Moon Sighting",
+      "link": "/moon-sighting/"
+    },
+    {
+      "label": "Hijri Converter",
+      "link": "/hijri-converter/"
+    },
+    {
+      "label": "Timezones & Display",
+      "link": "/timezone/"
+    },
+    {
+      "label": "Framework Integration",
+      "link": "/integration/"
+    },
+    {
+      "label": "Errors",
+      "link": "/errors/"
+    },
+    {
+      "label": "API Reference",
+      "link": "/api-reference/"
+    },
+    {
+      "label": "Migration",
+      "link": "/migration/"
+    },
+    {
+      "label": "Changelog",
+      "link": "/changelog/"
+    },
+    {
+      "label": "Citations",
+      "link": "/citations/"
+    }
+  ],
+  "excluded": []
+}
