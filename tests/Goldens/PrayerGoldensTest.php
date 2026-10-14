@@ -29,13 +29,15 @@ final class PrayerGoldensTest extends TestCase
     private const GOLDEN_DIR = __DIR__;
 
     /**
-     * Allow-listed empty cells, keyed by method|date|marker.
+     * Allow-listed empty cells, keyed by method|date|latitude|longitude|marker.
      *
      * Every per-cell empty in the prayer goldens appears here with its
-     * reason; checkFile() fails any empty cell not on this list so future
+     * non-empty reason; checkFile() fails any empty cell not on this list so future
      * gaps cannot land silently, and testAllowedEmptyCellsAreExactlyTheActualEmpties()
      * fails any allow-list entry with no matching empty cell so stale pins
-     * cannot linger (issue #29). Fully-empty rows stay owned by
+     * cannot linger (issue #29). Coordinates are part of the key so an
+     * exemption for one location cannot leak to another row sharing the same
+     * method|date|marker. Fully-empty rows stay owned by
      * testOnlyDocumentedRowsAreEmpty. Reasons cite docs/prayer.md
      * (Emptied golden cells) and the linked follow-up issues.
      *
@@ -43,61 +45,65 @@ final class PrayerGoldensTest extends TestCase
      */
     private const ALLOWED_EMPTY_CELLS = [
         // Turkey (Diyanet publishes no ishraq/dhuha; Dec maghrib +1 no-fit).
-        'turkey|2025-06-21|ishraq' => 'unpublished by Diyanet table',
-        'turkey|2025-06-21|dhuha' => 'unpublished by Diyanet table',
-        'turkey|2025-12-15|ishraq' => 'unpublished by Diyanet table',
-        'turkey|2025-12-15|dhuha' => 'unpublished by Diyanet table',
-        'turkey|2025-12-15|maghrib' => 'no-fit +1 seasonal dusk-side (docs/prayer.md)',
+        'turkey|2025-06-21|41.0082|28.9784|ishraq' => 'unpublished by Diyanet table',
+        'turkey|2025-06-21|41.0082|28.9784|dhuha' => 'unpublished by Diyanet table',
+        'turkey|2025-12-15|41.0082|28.9784|ishraq' => 'unpublished by Diyanet table',
+        'turkey|2025-12-15|41.0082|28.9784|dhuha' => 'unpublished by Diyanet table',
+        'turkey|2025-12-15|41.0082|28.9784|maghrib' => 'no-fit +1 seasonal dusk-side (docs/prayer.md)',
         // Brunei (KHEU publishes no ishraq and no citable Doha rule, issue #11).
-        'brunei|2025-06-21|ishraq' => 'unpublished by KHEU table',
-        'brunei|2025-06-21|dhuha' => 'pending issue #11 (KHEU Doha +24 structural, no citable rule)',
-        'brunei|2025-12-15|imsak' => 'no-fit +/-1 model noise (issue #11)',
-        'brunei|2025-12-15|fajr' => 'no-fit +/-1 model noise (issue #11)',
-        'brunei|2025-12-15|ishraq' => 'unpublished by KHEU table',
-        'brunei|2025-12-15|dhuha' => 'pending issue #11 (KHEU Doha +24 structural, no citable rule)',
-        'brunei|2025-12-15|maghrib' => 'no-fit +/-1 model noise (issue #11)',
+        'brunei|2025-06-21|4.9031|114.9398|ishraq' => 'unpublished by KHEU table',
+        'brunei|2025-06-21|4.9031|114.9398|dhuha' => 'pending issue #11 (KHEU Doha +24 structural, no citable rule)',
+        'brunei|2025-12-15|4.9031|114.9398|imsak' => 'no-fit +/-1 model noise (issue #11)',
+        'brunei|2025-12-15|4.9031|114.9398|fajr' => 'no-fit +/-1 model noise (issue #11)',
+        'brunei|2025-12-15|4.9031|114.9398|ishraq' => 'unpublished by KHEU table',
+        'brunei|2025-12-15|4.9031|114.9398|dhuha' => 'pending issue #11 (KHEU Doha +24 structural, no citable rule)',
+        'brunei|2025-12-15|4.9031|114.9398|maghrib' => 'no-fit +/-1 model noise (issue #11)',
         // Singapore/MUIS (publishes no imsak/ishraq/dhuha; June fajr -1 rounding).
-        'muis|2025-06-21|imsak' => 'unpublished by MUIS table',
-        'muis|2025-06-21|fajr' => 'no-fit -1 single-cell rounding (docs/prayer.md)',
-        'muis|2025-06-21|ishraq' => 'unpublished by MUIS table',
-        'muis|2025-06-21|dhuha' => 'unpublished by MUIS table',
-        'muis|2025-12-15|imsak' => 'unpublished by MUIS table',
-        'muis|2025-12-15|ishraq' => 'unpublished by MUIS table',
-        'muis|2025-12-15|dhuha' => 'unpublished by MUIS table',
+        'muis|2025-06-21|1.3521|103.8198|imsak' => 'unpublished by MUIS table',
+        'muis|2025-06-21|1.3521|103.8198|fajr' => 'no-fit -1 single-cell rounding (docs/prayer.md)',
+        'muis|2025-06-21|1.3521|103.8198|ishraq' => 'unpublished by MUIS table',
+        'muis|2025-06-21|1.3521|103.8198|dhuha' => 'unpublished by MUIS table',
+        'muis|2025-12-15|1.3521|103.8198|imsak' => 'unpublished by MUIS table',
+        'muis|2025-12-15|1.3521|103.8198|ishraq' => 'unpublished by MUIS table',
+        'muis|2025-12-15|1.3521|103.8198|dhuha' => 'unpublished by MUIS table',
         // Indonesia/Kemenag (publishes no ishraq; the rest +/-1-2 mixed-sign wobble).
-        'kemenag|2025-06-21|sunrise' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-06-21|syuruk' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-06-21|ishraq' => 'unpublished by Kemenag table',
-        'kemenag|2025-06-21|dhuha' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-06-21|asr' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-06-21|maghrib' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-06-21|isha' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-12-15|imsak' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-12-15|fajr' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-12-15|sunrise' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-12-15|syuruk' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-12-15|ishraq' => 'unpublished by Kemenag table',
-        'kemenag|2025-12-15|dhuhr' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-12-15|maghrib' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
-        'kemenag|2025-12-15|isha' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|-6.2000|106.8500|sunrise' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|-6.2000|106.8500|syuruk' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|-6.2000|106.8500|ishraq' => 'unpublished by Kemenag table',
+        'kemenag|2025-06-21|-6.2000|106.8500|dhuha' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|-6.2000|106.8500|asr' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|-6.2000|106.8500|maghrib' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-06-21|-6.2000|106.8500|isha' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|-6.2000|106.8500|imsak' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|-6.2000|106.8500|fajr' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|-6.2000|106.8500|sunrise' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|-6.2000|106.8500|syuruk' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|-6.2000|106.8500|ishraq' => 'unpublished by Kemenag table',
+        'kemenag|2025-12-15|-6.2000|106.8500|dhuhr' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|-6.2000|106.8500|maghrib' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
+        'kemenag|2025-12-15|-6.2000|106.8500|isha' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
     ];
 
     /**
      * Build the allow-list key for one golden cell.
      *
-     * Single owner for the method|date|marker shape so checkFile() and
+     * Single owner for the method|date|latitude|longitude|marker shape so checkFile() and
      * testAllowedEmptyCellsAreExactlyTheActualEmpties() cannot drift apart.
      * The method segment is the filename-derived CalculationMethod value,
-     * matching checkFile()'s $method source.
+     * matching checkFile()'s $method source; latitude/longitude are the raw
+     * CSV strings so an exemption cannot leak to another location sharing
+     * the same method|date|marker.
      *
      * @param CalculationMethod $method Method derived from the golden filename.
      * @param string $dateRaw YYYY-MM-DD date from the golden row.
+     * @param string $latRaw Latitude string from the golden row.
+     * @param string $lonRaw Longitude string from the golden row.
      * @param Prayer $prayer Marker column.
      * @return string Allow-list key.
      */
-    private static function emptyCellKey(CalculationMethod $method, string $dateRaw, Prayer $prayer): string
+    private static function emptyCellKey(CalculationMethod $method, string $dateRaw, string $latRaw, string $lonRaw, Prayer $prayer): string
     {
-        return sprintf('%s|%s|%s', $method->value, $dateRaw, $prayer->value);
+        return sprintf('%s|%s|%s|%s|%s', $method->value, $dateRaw, $latRaw, $lonRaw, $prayer->value);
     }
 
     /** @return list<string> */
@@ -217,12 +223,21 @@ final class PrayerGoldensTest extends TestCase
      *
      * checkFile() already fails new gaps during parity; this scan fails stale
      * pins (an allow-list entry with no matching empty cell, e.g. a golden
-     * that later fills in) by comparing the full sorted key sets. Mirrors
-     * checkFile()'s guards: fully-empty rows stay owned by
-     * testOnlyDocumentedRowsAreEmpty and date-less rows are skipped.
+     * that later fills in) by comparing the full sorted key sets. Fully-empty
+     * rows stay owned by testOnlyDocumentedRowsAreEmpty. Rows with expectations
+     * but missing date/coordinates fail loudly instead of being skipped so
+     * unlisted gaps cannot hide there.
      */
     public function testAllowedEmptyCellsAreExactlyTheActualEmpties(): void
     {
+        foreach (self::ALLOWED_EMPTY_CELLS as $key => $reason) {
+            self::assertNotSame(
+                '',
+                trim($reason),
+                sprintf('Allow-list entry %s has an empty reason; every emptied cell needs its documented reason (issue #29).', $key),
+            );
+        }
+
         $actual = [];
 
         foreach (self::expectedFiles() as $file) {
@@ -248,14 +263,16 @@ final class PrayerGoldensTest extends TestCase
                 }
 
                 $dateRaw = $data['date'] ?? null;
+                $latRaw = $data['latitude'] ?? null;
+                $lonRaw = $data['longitude'] ?? null;
 
-                if (! is_string($dateRaw) || $dateRaw === '') {
-                    continue;
+                if (! is_string($dateRaw) || $dateRaw === '' || ! is_string($latRaw) || $latRaw === '' || ! is_string($lonRaw) || $lonRaw === '') {
+                    self::fail(sprintf('Golden row in %s has expectations but missing date/coordinates; refusing to skip allow-list check.', $file));
                 }
 
                 foreach (Prayer::cases() as $prayer) {
                     if (($data[$prayer->value] ?? '') === '') {
-                        $actual[self::emptyCellKey($method, $dateRaw, $prayer)] = true;
+                        $actual[self::emptyCellKey($method, $dateRaw, $latRaw, $lonRaw, $prayer)] = true;
                     }
                 }
             }
@@ -306,9 +323,11 @@ final class PrayerGoldensTest extends TestCase
             $params = $method->defaultParameters();
 
             $dateRaw = $data['date'] ?? null;
+            $latRaw = $data['latitude'] ?? null;
+            $lonRaw = $data['longitude'] ?? null;
 
-            if (! is_string($dateRaw) || $dateRaw === '') {
-                continue;
+            if (! is_string($dateRaw) || $dateRaw === '' || ! is_string($latRaw) || $latRaw === '' || ! is_string($lonRaw) || $lonRaw === '') {
+                self::fail(sprintf('Golden row in %s has expectations but missing date/coordinates; refusing to skip allow-list check.', basename($path)));
             }
 
             if ($method === CalculationMethod::UMM_AL_QURA && $dateRaw === '2025-03-02') {
@@ -327,15 +346,25 @@ final class PrayerGoldensTest extends TestCase
                 $expected = $data[$prayer->value] ?? '';
 
                 if ($expected === '') {
+                    $cellKey = self::emptyCellKey($method, $dateRaw, $latRaw, $lonRaw, $prayer);
+
                     self::assertArrayHasKey(
-                        self::emptyCellKey($method, $dateRaw, $prayer),
+                        $cellKey,
                         self::ALLOWED_EMPTY_CELLS,
                         sprintf(
-                            'Golden cell %s %s %s is empty but not allow-listed in PrayerGoldensTest::ALLOWED_EMPTY_CELLS (issue #29).',
+                            'Golden cell %s %s %s %s %s is empty but not allow-listed in PrayerGoldensTest::ALLOWED_EMPTY_CELLS (issue #29).',
                             $method->value,
                             $dateRaw,
+                            $latRaw,
+                            $lonRaw,
                             $prayer->value,
                         ),
+                    );
+
+                    self::assertNotSame(
+                        '',
+                        trim(self::ALLOWED_EMPTY_CELLS[$cellKey]),
+                        sprintf('Allow-list entry %s has an empty reason; every emptied cell needs its documented reason (issue #29).', $cellKey),
                     );
 
                     continue;
