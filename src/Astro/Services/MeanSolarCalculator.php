@@ -40,9 +40,26 @@ final class MeanSolarCalculator implements SolarDayEngine
     public function declination(float $julianDay): float
     {
         $century = $this->julianCentury($julianDay);
-        $lambda = $this->apparentLongitude($century);
-        $epsilonApp = $this->apparentObliquity($century);
 
+        return $this->declinationFrom(
+            $this->apparentLongitude($century),
+            $this->apparentObliquity($century),
+        );
+    }
+
+    /**
+     * Declination from apparent solar longitude and apparent obliquity.
+     *
+     * Single owner of the declination formula: declination() derives its
+     * inputs from the Julian Day, while solarTriplet() already holds both
+     * and would otherwise recompute them for every triplet.
+     *
+     * @param float $lambda Apparent solar longitude in degrees.
+     * @param float $epsilonApp Apparent obliquity of the ecliptic in degrees.
+     * @return float Declination in degrees.
+     */
+    private function declinationFrom(float $lambda, float $epsilonApp): float
+    {
         return rad2deg(asin(sin(deg2rad($epsilonApp)) * sin(deg2rad($lambda))));
     }
 
@@ -426,7 +443,8 @@ final class MeanSolarCalculator implements SolarDayEngine
      * Right ascension, declination, and sidereal time for one Julian Day.
      *
      * Pin a7baa8b SolarCoordinates.__init__; Meeus 2nd ed. pp. 165/88.
-     * Declination reuses the public method for a single source of truth.
+     * Declination reuses the apparent longitude and obliquity computed
+     * above, via the shared declinationFrom() formula owner.
      *
      * @param float $julianDay Julian Day number.
      * @return array{ra: float, dec: float, st: float} Right ascension, declination, apparent sidereal time.
@@ -451,7 +469,7 @@ final class MeanSolarCalculator implements SolarDayEngine
         $siderealTime = $this->meanSiderealTime($century)
             + $deltaPsi * cos(deg2rad($epsilon0 + $deltaEpsilon));
 
-        return ['ra' => $rightAscension, 'dec' => $this->declination($julianDay), 'st' => $siderealTime];
+        return ['ra' => $rightAscension, 'dec' => $this->declinationFrom($lambda, $epsilonApp), 'st' => $siderealTime];
     }
 
     /**
