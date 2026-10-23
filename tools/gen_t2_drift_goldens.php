@@ -104,7 +104,9 @@ foreach ($cities as $methodValue => [$lat, $lon]) {
 
     foreach ($driftDates as $datestr) {
         [$y, $m, $d] = array_map('intval', explode('-', $datestr));
-        $row = [$method->value, $datestr, sprintf('%.4f', $lat), sprintf('%.4f', $lon)];
+        // `%F`, not `%f`: PHP's `%f` honours the active LC_NUMERIC, so a
+        // decimal-comma locale would write "41,0082" as one quoted field.
+        $row = [$method->value, $datestr, sprintf('%.4F', $lat), sprintf('%.4F', $lon)];
 
         try {
             $schedule = PrayerTimesCalculator::default()->calculate(
@@ -139,7 +141,9 @@ foreach ($cities as $methodValue => [$lat, $lon]) {
         $out .= $line . $eol;
     }
 
-    $tmpPath = $path . '.tmp';
+    // Per-process name: two overlapping runs must not truncate each other's
+    // staging file between the write and the publish rename.
+    $tmpPath = $path . '.tmp.' . (string) getmypid();
 
     // Binary mode so the CRLF bytes are written verbatim on every platform.
     $handle = fopen($tmpPath, 'wb');

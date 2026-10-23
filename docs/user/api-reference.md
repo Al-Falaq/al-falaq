@@ -103,6 +103,17 @@ Conventions: services are `final` with explicit constructor injection and `defau
 | `Hijri\Traits\LooksUpMonthStarts`, `Hijri\Traits\ShiftsHijriDays` | Helpers shared by the month-start calendars: `LooksUpMonthStarts` contributes `fromGregorian`/`toGregorian`/`monthLength`, `ShiftsHijriDays` contributes `shift` |
 | `Hijri\Exceptions\HijriOutOfRangeException` | `forDate(string $calendar, string $iso, string $range)`; extends `ValidationException` |
 
+## The one stable internal export
+
+`Astro/` is `@internal` except for the wiring seam below: a caller who wants a custom solar engine (or a test double) implements this port, and cannot do so without the value object it returns.
+
+| Class | Key members |
+| --- | --- |
+| `Astro\Contracts\SolarDayEngine` | `solarTime(Coordinates, CivilDate, mixed $elevationM): SolarTime`; `hourAngleFloat(Coordinates, CivilDate, mixed, float $angleDeg, bool $afterTransit): ?float`; `hourAngle(Coordinates, CivilDate, mixed, float, bool): ?DateTimeImmutable`; `afternoon(Coordinates, CivilDate, mixed, mixed $shadowLength): ?DateTimeImmutable`; `isSolarDefined(Coordinates, CivilDate, mixed): bool` |
+| `Astro\ValueObjects\SolarTime` | `transit`, `sunrise`, `sunset` — all UTC `DateTimeImmutable` (the constructor rejects other zones) |
+
+Implement the port for a test double, or construct `MeanSolarCalculator` (the default adapter) for explicit prayer wiring per `docs/integrations.md`.
+
 ## What not to touch
 
-`Astro/` (`MeanSolarCalculator`, `CrescentEphemeris`, `GeodesyEngine`, `KarneyInverse`, `DeltaTProvider`, `SolarDayEngine` port) is `@internal` — covered by semantic versioning only insofar as the public services behave identically. The `SolarDayEngine` port plus `MeanSolarCalculator` adapter are the stable exception for explicit prayer wiring and test doubles.
+The rest of `Astro/` (`MeanSolarCalculator`, `CrescentEphemeris`, `GeodesyEngine`, `KarneyInverse`, `DeltaTProvider`) is `@internal` — covered by semantic versioning only insofar as the public services behave identically.

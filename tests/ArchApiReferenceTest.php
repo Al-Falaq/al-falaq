@@ -17,6 +17,9 @@ use PHPUnit\Framework\TestCase;
  *
  * Internal namespaces are exempt: Astro/ is the @internal engine and
  * Hijri/Data/ holds generated tables, neither of which is public API.
+ * The one stable Astro export — the `SolarDayEngine` port callers implement
+ * for wiring — is documented by hand on the reference page; it is not
+ * gate-enforced because the scan excludes Astro/ wholesale.
  */
 #[Group('arch')]
 final class ArchApiReferenceTest extends TestCase
@@ -44,7 +47,14 @@ final class ArchApiReferenceTest extends TestCase
         foreach ($classes as $class) {
             $relative = substr($class, strlen($prefix));
 
-            if (! str_contains($reference, $relative)) {
+            // Match a whole name, never a fragment: a plain substring test
+            // would let an existing `...\PrayerSchedule` row stand in for a
+            // newly added `...\PrayerScheduleV2`.
+            $pattern = '/(?<![A-Za-z0-9_\\\\])'
+                . preg_quote($relative, '/')
+                . '(?![A-Za-z0-9_\\\\])/';
+
+            if (preg_match($pattern, $reference) !== 1) {
                 $missing[] = $relative;
             }
         }
@@ -62,7 +72,10 @@ final class ArchApiReferenceTest extends TestCase
      */
     private static function publicClasses(): array
     {
-        $root = dirname(__DIR__);
+        // Normalize separators: the Windows release gate runs this suite, and
+        // a mismatch between the iterator's paths and the prefix would make
+        // the internal-namespace skips silently stop matching.
+        $root = str_replace('\\', '/', dirname(__DIR__));
         $prefix = 'AlFalaq\\AlFalaq\\';
         $classes = [];
         $iterator = new \RecursiveIteratorIterator(
@@ -75,7 +88,8 @@ final class ArchApiReferenceTest extends TestCase
                 continue;
             }
 
-            $relative = substr($file->getPathname(), strlen($root . '/src/'), -4);
+            $pathname = str_replace('\\', '/', $file->getPathname());
+            $relative = substr($pathname, strlen($root . '/src/'), -4);
 
             if (str_starts_with($relative, 'Astro/') || str_starts_with($relative, 'Hijri/Data/')) {
                 continue;

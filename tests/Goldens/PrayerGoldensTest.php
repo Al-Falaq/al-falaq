@@ -236,6 +236,44 @@ final class PrayerGoldensTest extends TestCase
         }
     }
 
+    /**
+     * The four widened T2 methods carry the full six-date grid.
+     *
+     * Partial regeneration — one file rewritten, the rest stale or truncated
+     * after an interrupted run — would otherwise look green, because the row
+     * assertions only check the rows that are present. This pins the date set
+     * the widening exists for.
+     */
+    public function testT2MethodsCarryTheSixDateGrid(): void
+    {
+        $expected = [
+            '2025-01-15',
+            '2025-03-02',
+            '2025-03-20',
+            '2025-06-21',
+            '2025-09-22',
+            '2025-12-15',
+        ];
+        sort($expected);
+
+        foreach (['muis', 'turkey', 'kemenag', 'brunei'] as $method) {
+            $loaded = GoldenLoader::load(self::GOLDEN_DIR . '/prayer_' . $method . '.csv');
+            $dates = [];
+
+            foreach ($loaded['rows'] as $row) {
+                $dates[] = $row['date'] ?? '';
+            }
+
+            sort($dates);
+
+            self::assertSame(
+                $expected,
+                $dates,
+                sprintf('prayer_%s.csv must carry the full six-date grid exactly once.', $method),
+            );
+        }
+    }
+
     public function testAllGoldenRowsMatchPinMinutes(): void
     {
         foreach (self::expectedFiles() as $file) {
