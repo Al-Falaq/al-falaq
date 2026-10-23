@@ -14,3 +14,11 @@ composer ci
 - Public API = `src/{SharedKernel,Prayer,Qibla,Moon,Hijri}/{Contracts,Enums,ValueObjects,Services}` + documented `*Exception`s. `Astro` is `@internal`.
 - One class per file, `final readonly` VOs, no `Util/` namespace, no `*Error` names.
 - Update `docs/prayer.md` + goldens when behavior intentionally diverges (code wins, doc follows).
+
+## Mutation gate
+
+`composer mutation` runs the full Infection suite (2,377 mutants, ~7 minutes
+on a developer laptop). The repository sets `config.process-timeout: 0` in
+`composer.json` so the script is not killed by Composer's default 300-second
+process timeout; CI sets the same value through `COMPOSER_PROCESS_TIMEOUT`.
+Run it before opening a pull request that changes `src/` behaviour.
