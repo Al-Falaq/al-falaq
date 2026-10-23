@@ -17,12 +17,13 @@ use PHPUnit\Framework\TestCase;
  * Empty marker fields in rows with at least one expectation must appear in
  * ALLOWED_EMPTY_CELLS with their reason (unpublished markers in T2 tables,
  * documented no-fit residuals, or a pending-issue link); any other empty
- * cell fails the build. The single fully-empty Tehran polar-day row is not
- * allow-listed: it is owned separately by testOnlyDocumentedRowsAreEmpty.
+ * cell fails the build. The three fully-empty rows are not allow-listed:
+ * they are owned separately by testOnlyDocumentedRowsAreEmpty.
  * Ramadan rows are exactly
  * the UMM_AL_QURA rows dated 2025-03-02 (exporter sets Ramadan mode
  * only there). Expected file set is explicit: 18 present (11 pin + 4
- * provisional + tehran/morocco/uoif drift-gated by tools/gen_self_prayer_goldens.php:
+ * provisional + tehran/morocco/uoif drift-gated by tools/gen_self_prayer_goldens.php;
+ * turkey/kemenag/brunei drift rows by tools/gen_t2_drift_goldens.php:
  * Tehran cross-checked against batoulapps/adhan-js@a2c4bda, Morocco a labelled
  * Habous convention with no upstream preset, UOIF a 12/12 zero-offset preset
  * with no pin cell — never claimed as pin parity, see issue #7).
@@ -69,6 +70,24 @@ final class PrayerGoldensTest extends TestCase
         'muis|2025-12-15|1.3521|103.8198|imsak' => 'unpublished by MUIS table',
         'muis|2025-12-15|1.3521|103.8198|ishraq' => 'unpublished by MUIS table',
         'muis|2025-12-15|1.3521|103.8198|dhuha' => 'unpublished by MUIS table',
+        // MUIS 2025-01-15 (official MUIS 2025 timetable): the published Isyak
+        // is one minute later than our output; every other published marker
+        // matches exactly.
+        'muis|2025-01-15|1.3521|103.8198|imsak' => 'unpublished by MUIS table',
+        'muis|2025-01-15|1.3521|103.8198|ishraq' => 'unpublished by MUIS table',
+        'muis|2025-01-15|1.3521|103.8198|dhuha' => 'unpublished by MUIS table',
+        'muis|2025-01-15|1.3521|103.8198|isha' => 'no-fit -1 single-cell rounding (docs/prayer.md)',
+        // MUIS 2025-09-22 (official MUIS 2025 timetable): only Subuh matches
+        // exactly; the other published markers are one minute later.
+        'muis|2025-09-22|1.3521|103.8198|imsak' => 'unpublished by MUIS table',
+        'muis|2025-09-22|1.3521|103.8198|sunrise' => 'no-fit -1 single-cell rounding (docs/prayer.md)',
+        'muis|2025-09-22|1.3521|103.8198|syuruk' => 'no-fit -1 single-cell rounding (docs/prayer.md)',
+        'muis|2025-09-22|1.3521|103.8198|ishraq' => 'unpublished by MUIS table',
+        'muis|2025-09-22|1.3521|103.8198|dhuha' => 'unpublished by MUIS table',
+        'muis|2025-09-22|1.3521|103.8198|dhuhr' => 'no-fit -1 single-cell rounding (docs/prayer.md)',
+        'muis|2025-09-22|1.3521|103.8198|asr' => 'no-fit -1 single-cell rounding (docs/prayer.md)',
+        'muis|2025-09-22|1.3521|103.8198|maghrib' => 'no-fit -1 single-cell rounding (docs/prayer.md)',
+        'muis|2025-09-22|1.3521|103.8198|isha' => 'no-fit -1 single-cell rounding (docs/prayer.md)',
         // Indonesia/Kemenag (publishes no ishraq; the rest +/-1-2 mixed-sign wobble).
         'kemenag|2025-06-21|-6.2000|106.8500|sunrise' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
         'kemenag|2025-06-21|-6.2000|106.8500|syuruk' => 'no-fit +/-1-2 mixed-sign wobble (docs/prayer.md)',
@@ -270,9 +289,21 @@ final class PrayerGoldensTest extends TestCase
     }
 
     /**
-     * Exactly one all-empty row exists by construction (Tehran AngleMaghrib
-     * is unreachable during Tromsoe polar day); any other empty row means
-     * lost golden coverage and must fail loudly instead of being skipped.
+     * Known fully-empty rows, each with its documented reason.
+     *
+     * Two categories exist:
+     *
+     * 1. Unreachable geometry — Tehran AngleMaghrib is unreachable during
+     *    the Tromsoe polar day, so the row cannot be computed at all.
+     * 2. A documented no-fit against the official table — on both Ramadan
+     *    dates of 2025 every marker MUIS publishes is a ±1–2 minute
+     *    residual against our output (our value is 1 min early on every
+     *    marker and 2 min early on maghrib), so no cell can be pinned to
+     *    the minute. The rows stay in the file so the disagreement is loud
+     *    rather than silently absent.
+     *
+     * Any other empty row means lost golden coverage and must fail loudly
+     * instead of being skipped.
      */
     public function testOnlyDocumentedRowsAreEmpty(): void
     {
@@ -325,7 +356,11 @@ final class PrayerGoldensTest extends TestCase
             fclose($handle);
         }
 
-        self::assertSame(['tehran|2025-06-21|69.6496|18.9553'], $empty);
+        self::assertSame([
+            'muis|2025-03-02|1.3521|103.8198',
+            'muis|2025-03-20|1.3521|103.8198',
+            'tehran|2025-06-21|69.6496|18.9553',
+        ], $empty);
     }
 
     /**
