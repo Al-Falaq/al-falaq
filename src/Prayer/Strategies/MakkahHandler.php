@@ -7,6 +7,7 @@ namespace AlFalaq\AlFalaq\Prayer\Strategies;
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Kaaba;
 
 /**
  * Polar fallback substituting Makkah coordinates (pin Constants.MAKKAH verbatim).
@@ -27,9 +28,9 @@ final class MakkahHandler implements PolarCircleHandler
      */
     public function resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array
     {
-        // Pin Constants.MAKKAH full precision (21.4225241, 39.8261818); 4dp display would be ~11 m off — kept verbatim for cross-port parity.
+        // Pin Constants.MAKKAH full precision (21.4225241, 39.8261818); 4dp display would be ~11 m off — kept verbatim via the shared Kaaba owner.
         return [
-            'coordinates' => Coordinates::fromDegrees(21.4225241, 39.8261818),
+            'coordinates' => Kaaba::coordinates(),
             'date' => $date,
         ];
     }
