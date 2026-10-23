@@ -116,7 +116,7 @@ flowchart TB
 ```
 
 - `src/SharedKernel/` — cross-context foundation. `ValueObjects/`
-  (`Coordinates`, `CivilDate`, `Angle`, `Minutes`, `JulianDay`),
+  (`Coordinates`, `CivilDate`, `Angle`, `Minutes`, `JulianDay`, `Kaaba`),
   `Exceptions/` (`AlFalaqException` base, `ValidationException`,
   `AstronomicalException`, `ConfigurationException`, …),
   `Contracts/` (`ClockView`, `DomainException`), `Traits/`
@@ -165,6 +165,8 @@ Supporting directories:
   `--pin/--path/--out`), `gen_hijri.py` (month-start tables + goldens,
   `--path/--pin/--out`, writes in place), `gen_self_prayer_goldens.php`
   (drift-gated Tehran/Morocco/UOIF goldens, regenerate + diff-review in place),
+  `gen_t2_drift_goldens.php` (drift-gated Turkey/Kemenag/Brunei rows; the
+  official-table rows are preserved verbatim),
   `gen_qibla_spherical.py` / `gen_qibla_wgs84.py` (CSV to stdout, diff against
   committed; diagnostics to stderr), `gen_moonsighting.py` (crescent
   characterization goldens, regenerate + diff-review),

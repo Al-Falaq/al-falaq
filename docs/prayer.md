@@ -83,6 +83,16 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   correctly-empty, not gaps. Every emptied cell in a row with at least one
   expectation is allow-listed with its reason in
   `PrayerGoldensTest::ALLOWED_EMPTY_CELLS`; any other such empty cell fails
-  the build (issue #29). The single fully-empty Tehran polar-day row is not
-  allow-listed: it is owned separately by
-  `testOnlyDocumentedRowsAreEmpty`.
+  the build (issue #29). The three fully-empty rows (the Tehran polar-day
+  row and both MUIS Ramadan rows) are not allow-listed: they are owned
+  separately by `testOnlyDocumentedRowsAreEmpty`. The MUIS 2025 rows are
+  re-pinned against the published MUIS 2025 timetable (`data.gov.sg` dataset
+  `d_e81ea2337599b674c4f645c1af93e0dc`, retrieved 2026-10-22): 2025-01-15
+  pins six markers exactly and 2025-09-22 pins one, while both Ramadan dates
+  (2025-03-02, 2025-03-20) are fully-empty rows because every marker MUIS
+  publishes is a ±1–2 min residual — our output is 1 min early on every
+  marker and 2 min early on maghrib. Turkey, Kemenag and Brunei carry
+  drift-gate rows for the four grid dates their official tables could not
+  cover (no archived Diyanet monthly tables for those months, the Kemenag
+  `getShalatbln` endpoint 404s, the KHEU `mora.gov.bn` host does not
+  resolve) — drift gates, never claimed as parity.
