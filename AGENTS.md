@@ -52,7 +52,7 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - Layout mirrors `src/` as contexts land (M1: `SharedKernel`, `Sweep`,
   `Wiring`, `Prayer`, `Astro`, `Goldens`); `tests/Goldens/` holds pinned-Python parity vectors +
   `GoldenLoader.php` (load), `GoldenAsserts.php` (assert), `Comparator.php`
-  (minute equality); arch groups (`tests/Arch{Shape,Docs,Layering}Test.php`,
+  (minute equality); arch groups (`tests/Arch{Shape,Docs,Layering,ApiReference}Test.php`,
   shared `tests/ArchSupport.php`) enforce layering via reflection (`#[Group('arch')]`).
 - Coverage floor is a ratchet (`tools/coverage_gate.php --min=N`): M0
   baseline 20, raised per milestone, 95 at M5. Never lower the floor; raise

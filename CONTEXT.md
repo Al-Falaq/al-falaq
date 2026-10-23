@@ -42,7 +42,7 @@ M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed);
   `Services/`, `Strategies/`, `Traits/`, `Exceptions/`); `src/Astro/`
   `@internal` engine.
 - `tests/` — `SharedKernel/`, `Sweep/`, `Wiring/`, `Goldens/`,
-  arch groups (`Arch{Shape,Docs,Layering}Test.php` + `ArchSupport.php`),
+  arch groups (`Arch{Shape,Docs,Layering,ApiReference}Test.php` + `ArchSupport.php`),
   `bootstrap.php`. `examples/` — runnable snippets +
   `bench.php`. `tools/` — full inventory in `ARCHITECTURE.md`
   (`composer goldens` lists the generator contracts).

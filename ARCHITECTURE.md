@@ -157,8 +157,8 @@ Supporting directories:
   snippet), `Goldens/` (pinned-Python parity vectors, 25 CSVs;
   `GoldenLoader.php` loads, `GoldenAsserts.php` asserts, `Comparator.php`
   compares minutes), and the arch groups
-  (`tests/Arch{Shape,Docs,Layering}Test.php` + `ArchSupport.php`: layering and
-  shape rules, `#[Group('arch')]`).
+  (`tests/Arch{Shape,Docs,Layering,ApiReference}Test.php` + `ArchSupport.php`:
+  layering, shape and public-API-reference rules, `#[Group('arch')]`).
 - `examples/` — runnable snippets plus `bench.php` (performance-tripwire
   harness: loose 50ms/30000ms gates, PRD 2ms/1000ms/16MB budgets as headroom).
 - `tools/` — `export_goldens.py` (pin-parity prayer vectors from `PYTHON_PIN`,
