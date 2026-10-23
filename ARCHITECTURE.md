@@ -133,9 +133,11 @@ flowchart TB
   `NearestDay`, `Makkah`, `Throw`).
 - `src/Qibla/` — `QiblaCalculator` plus two `GeodesyCalculator`
   strategies: `SphericalCalculator` (fast default) and
-  `Wgs84KarneyCalculator` (precise opt-in). Qibla facts (Kaaba, self
-  threshold) live on the seam interface; `Angle::normalized()` is the single
-  unwind owner and `ClampsMakkahSelf` the single self-clamp.
+  `Wgs84KarneyCalculator` (precise opt-in). `SharedKernel\ValueObjects\Kaaba`
+  owns the Kaaba coordinates; the seam keeps `MAKKAH_LATITUDE` /
+  `MAKKAH_LONGITUDE` as API aliases and owns `SELF_DISTANCE_KM`.
+  `Angle::normalized()` is the single unwind owner and `ClampsMakkahSelf` the
+  single self-clamp.
 - `src/Moon/` — `CrescentCalculator` plus four engine-free criterion
   strategies (`YallopEvaluator`, `OdehEvaluator`, `Mabims1992Evaluator`,
   `NeoMabims2021Evaluator`). Userland always goes through `Moon/`; never

@@ -33,6 +33,7 @@ final class ArchApiReferenceTest extends TestCase
         $prefix = 'AlFalaq\\AlFalaq\\';
         $missing = [];
         $classes = self::publicClasses();
+        $documented = self::documentedClasses($reference);
 
         // Non-vacuity: a broken scan (wrong root, failed autoload, a skip that
         // swallows a whole context) would make every assertion below pass
@@ -47,14 +48,7 @@ final class ArchApiReferenceTest extends TestCase
         foreach ($classes as $class) {
             $relative = substr($class, strlen($prefix));
 
-            // Match a whole name, never a fragment: a plain substring test
-            // would let an existing `...\PrayerSchedule` row stand in for a
-            // newly added `...\PrayerScheduleV2`.
-            $pattern = '/(?<![A-Za-z0-9_\\\\])'
-                . preg_quote($relative, '/')
-                . '(?![A-Za-z0-9_\\\\])/';
-
-            if (preg_match($pattern, $reference) !== 1) {
+            if (! isset($documented[$relative])) {
                 $missing[] = $relative;
             }
         }
@@ -63,6 +57,49 @@ final class ArchApiReferenceTest extends TestCase
             'Public classes missing from docs/user/api-reference.md: %s',
             implode(', ', $missing),
         ));
+    }
+
+    /**
+     * Class names documented in the first column of a reference table.
+     *
+     * Only the Class column counts: a name mentioned in prose, or in a
+     * "Key members" cell, does not document the class. Each entry is the
+     * exact backticked span, so a longer name can never stand in for a
+     * shorter one (QiblaResultX does not document QiblaResult).
+     *
+     * @param string $reference Full text of the reference page.
+     * @return array<string, true> Namespace-relative names as keys.
+     */
+    private static function documentedClasses(string $reference): array
+    {
+        $documented = [];
+        $lines = preg_split('/\R/', $reference);
+
+        if ($lines === false) {
+            $lines = [];
+        }
+
+        foreach ($lines as $line) {
+            if (! str_starts_with($line, '|')) {
+                continue;
+            }
+
+            $cells = explode('|', $line);
+
+            // | Class | Key members | — cells[0] is the empty edge, cells[1]
+            // is the Class column itself.
+            if (count($cells) < 3) {
+                continue;
+            }
+
+            preg_match_all('/`([A-Za-z0-9_\\\\]+)`/', $cells[1], $matches);
+
+            foreach ($matches[1] as $name) {
+                $documented[$name] = true;
+            }
+        }
+
+        return $documented;
     }
 
     /**
