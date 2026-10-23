@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Qibla\Contracts;
 
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Kaaba;
 
 /**
  * Geodesic inverse from an observer toward Makkah (driven port).
@@ -18,12 +19,12 @@ interface GeodesyCalculator
     /**
      * Kaaba latitude in degrees (pin Constants.py:8; goldens pin these digits).
      */
-    public const MAKKAH_LATITUDE = 21.4225241;
+    public const MAKKAH_LATITUDE = Kaaba::LATITUDE;
 
     /**
      * Kaaba longitude in degrees (pin Constants.py:8; goldens pin these digits).
      */
-    public const MAKKAH_LONGITUDE = 39.8261818;
+    public const MAKKAH_LONGITUDE = Kaaba::LONGITUDE;
 
     /**
      * Makkah-self distance in km below which direction clamps to 0.0 (§5.3).

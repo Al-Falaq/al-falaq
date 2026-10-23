@@ -7,7 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No changes yet.
+### Changed
+
+- Prayer engine: the solar triplet no longer recomputes the declination from
+  the Julian Day — it reuses the apparent longitude and obliquity it already
+  holds. `declinationFrom()` is now the single owner of the formula. Output
+  is unchanged (all 5,133 golden rows stay green); the redundant work was
+  measured at 19.8% of a solar triplet's trig cost.
+- Bench harness: the printed contract and the enforced contract now agree.
+  The tripwires are printed as the contract (single-day 50 ms, year 30,000 ms,
+  unchanged) and the PRD figures are printed on their own line as
+  hardware- and load-dependent references that are explicitly not gated.
+- Golden coverage: Turkey, Kemenag, MUIS and Brunei move from 2 golden rows
+  to the 6-date grid. MUIS gains four official rows from the published MUIS
+  2025 timetable; Turkey, Kemenag and Brunei gain drift-gate rows for the
+  dates their official tables could not cover.
+- The Kaaba coordinates get a single owner (`SharedKernel\ValueObjects\Kaaba`);
+  the public `GeodesyCalculator` constants now reference it, so the Prayer
+  polar fallback and the Qibla geodesy cannot drift apart.
+- `docs/user/api-reference.md` now names the whole public surface, and a new
+  arch gate (`tests/ArchApiReferenceTest.php`) fails the build when a public
+  class is added without a reference entry.
+
+### Fixed
+
+- The bench harness printed a budget it did not meet and enforced a gate 25x
+  looser than that budget. The printed contract and the enforced contract now
+  agree.
+- `composer mutation` could not run locally: Composer's default 300-second
+  process timeout killed the Infection run partway through (about 1,680 of
+  2,377 mutants). `composer.json` now sets `config.process-timeout: 0`,
+  matching the `COMPOSER_PROCESS_TIMEOUT=0` that CI already exports.
 
 ## [0.1.1] - 2026-10-14
 

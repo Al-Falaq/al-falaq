@@ -9,6 +9,7 @@ Targets (contracts live with each generator):
     prayer-pin        pin-parity prayer vectors (needs --pin/--path/--out)
     hijri             month-start tables + Hijri goldens (writes in place)
     prayer-self       drift-gated Tehran/Morocco/UOIF goldens (php, in place)
+    prayer-t2         drift-gated Turkey/Kemenag/Brunei rows (php, in place)
     qibla-spherical   CSV to stdout (diff against committed)
     qibla-wgs84       CSV to stdout (diff against committed)
     moonsighting      crescent characterization (asserts + diagnostics)
@@ -24,6 +25,7 @@ TARGETS = {
     "prayer-pin": (["python3", "tools/export_goldens.py"], "pin-parity prayer vectors from PYTHON_PIN"),
     "hijri": (["python3", "tools/gen_hijri.py"], "month-start tables + Hijri goldens"),
     "prayer-self": (["php", "tools/gen_self_prayer_goldens.php"], "drift-gated Tehran/Morocco/UOIF goldens"),
+    "prayer-t2": (["php", "tools/gen_t2_drift_goldens.php"], "drift-gated Turkey/Kemenag/Brunei golden rows"),
     "qibla-spherical": (["python3", "tools/gen_qibla_spherical.py"], "spherical Qibla CSV to stdout"),
     "qibla-wgs84": (["python3", "tools/gen_qibla_wgs84.py"], "WGS84 Qibla CSV to stdout"),
     "moonsighting": (["python3", "tools/gen_moonsighting.py"], "crescent characterization goldens"),

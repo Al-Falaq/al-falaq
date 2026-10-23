@@ -235,4 +235,38 @@ final class MeanSolarCalculatorTest extends TestCase
             1.0,
         );
     }
+
+    /**
+     * The solar triplet must not recompute the declination from the Julian Day.
+     *
+     * declination() derives the century, apparent longitude, and apparent
+     * obliquity from the JD; solarTriplet() already holds the last two, so
+     * calling declination() there recomputes all three for every triplet
+     * (~20% of the engine's trig cost, measured). declinationFrom() is the
+     * single owner of the formula: declination() derives its inputs from the
+     * JD, the triplet reuses the values it already has.
+     */
+    public function testSolarTripletDoesNotRecomputeDeclinationFromTheJulianDay(): void
+    {
+        $path = __DIR__ . '/../../src/Astro/Services/MeanSolarCalculator.php';
+        $source = (string) file_get_contents($path);
+
+        self::assertStringContainsString(
+            'private function declinationFrom(',
+            $source,
+            'MeanSolarCalculator must declare declinationFrom() as the single owner of the declination formula.',
+        );
+
+        self::assertStringNotContainsString(
+            "'dec' => \$this->declination(",
+            $source,
+            'solarTriplet() must reuse the apparent longitude and obliquity it already computed, not call declination().',
+        );
+
+        self::assertSame(
+            1,
+            substr_count($source, 'rad2deg(asin(sin(deg2rad($epsilonApp)) * sin(deg2rad($lambda))))'),
+            'The declination formula must exist exactly once in the file; a second copy would drift.',
+        );
+    }
 }
