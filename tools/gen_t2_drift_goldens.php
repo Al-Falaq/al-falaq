@@ -10,9 +10,11 @@ declare(strict_types=1);
  * (2025-06-21 and 2025-12-15) taken from the published timetables. The
  * official monthly tables for the remaining grid dates could not be
  * retrieved on 2026-10-22 (Diyanet has no archived monthly tables for
- * those months; the Kemenag `getShalatbln` endpoint is gone; the KHEU
- * `mora.gov.bn` host does not resolve), and no obtainable archive exists
- * for them — the same situation recorded for Tehran and Morocco.
+ * those months; the Kemenag `getShalatbln` endpoint answers HTTP 200 with
+ * `{"status":"Illegal key"}` and yields no table; the KHEU `mora.gov.bn`
+ * host resolves but its HTTPS endpoint fails on an expired certificate),
+ * and no obtainable archive exists for them — the same situation recorded
+ * for Tehran and Morocco.
  *
  * So the remaining grid dates are drift-gated: our own output, recorded as
  * a regression guard and explicitly NOT a parity claim. The `source` tag
@@ -51,7 +53,7 @@ $cities = [
 $markers = array_map(static fn(Prayer $p): string => $p->value, Prayer::cases());
 
 $sourceTag = 'drift:no-official-table-retrievable-2026-10-22;not-parity;drift-gate;'
-    . 'diyanet-no-archived-monthly-tables;kemenag-getShalatbln-404;kheu-mora-host-unresolved;'
+    . 'diyanet-no-archived-monthly-tables;kemenag-endpoint-rejects-request;kheu-mora-https-unavailable;'
     . 'takwim-rows-preserved';
 
 foreach ($cities as $methodValue => [$lat, $lon]) {
@@ -139,8 +141,54 @@ foreach ($cities as $methodValue => [$lat, $lon]) {
 
     $tmpPath = $path . '.tmp';
 
-    if (file_put_contents($tmpPath, $out) === false) {
+    // Binary mode so the CRLF bytes are written verbatim on every platform.
+    $handle = fopen($tmpPath, 'wb');
+
+    if ($handle === false) {
+        throw new RuntimeException('Cannot open ' . $tmpPath);
+    }
+
+    if (fwrite($handle, $out) !== strlen($out) || ! fflush($handle)) {
+        fclose($handle);
+
         throw new RuntimeException('Cannot write ' . $tmpPath);
+    }
+
+    fclose($handle);
+
+    // Verify the temp file before publishing it: a partial write must never
+    // replace a shipped golden. Same guard as gen_self_prayer_goldens.php.
+    $check = fopen($tmpPath, 'rb');
+
+    if ($check === false) {
+        throw new RuntimeException('Cannot verify ' . $tmpPath);
+    }
+
+    $rows = 0;
+    $width = 0;
+
+    while (($cells = fgetcsv($check, 0, ',', '"', '')) !== false) {
+        $rows++;
+
+        if ($rows === 1) {
+            $width = count($cells);
+        }
+    }
+
+    fclose($check); // Read-handle close intentionally unchecked: rows already counted, nothing to lose.
+
+    $expectedRows = 1 + count($kept) + count($generated);
+    $expectedWidth = 4 + count($markers) + 1;
+
+    if ($rows !== $expectedRows || $width !== $expectedWidth) {
+        throw new RuntimeException(sprintf(
+            'Refusing to publish truncated %s: got %d rows x %d cols, want %d x %d.',
+            $tmpPath,
+            $rows,
+            $width,
+            $expectedRows,
+            $expectedWidth,
+        ));
     }
 
     if (! rename($tmpPath, $path)) {

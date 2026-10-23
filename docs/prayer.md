@@ -94,5 +94,7 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   marker and 2 min early on maghrib. Turkey, Kemenag and Brunei carry
   drift-gate rows for the four grid dates their official tables could not
   cover (no archived Diyanet monthly tables for those months, the Kemenag
-  `getShalatbln` endpoint 404s, the KHEU `mora.gov.bn` host does not
-  resolve) — drift gates, never claimed as parity.
+  `getShalatbln` endpoint answers HTTP 200 with `{"status":"Illegal key"}`
+  and yields no table, the KHEU `mora.gov.bn` host resolves but its HTTPS
+  endpoint fails on an expired certificate) — drift gates, never claimed as
+  parity.

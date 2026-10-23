@@ -160,7 +160,8 @@ Supporting directories:
   (`tests/Arch{Shape,Docs,Layering,ApiReference}Test.php` + `ArchSupport.php`:
   layering, shape and public-API-reference rules, `#[Group('arch')]`).
 - `examples/` — runnable snippets plus `bench.php` (performance-tripwire
-  harness: loose 50ms/30000ms gates, PRD 2ms/1000ms/16MB budgets as headroom).
+  harness: loose 50ms/30000ms tripwires, PRD 2ms/1000ms/16MB references not
+  gated).
 - `tools/` — `export_goldens.py` (pin-parity prayer vectors from `PYTHON_PIN`,
   `--pin/--path/--out`), `gen_hijri.py` (month-start tables + goldens,
   `--path/--pin/--out`, writes in place), `gen_self_prayer_goldens.php`

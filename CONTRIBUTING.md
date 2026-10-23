@@ -17,8 +17,9 @@ composer ci
 
 ## Mutation gate
 
-`composer mutation` runs the full Infection suite (2,377 mutants, ~7 minutes
-on a developer laptop). The repository sets `config.process-timeout: 0` in
-`composer.json` so the script is not killed by Composer's default 300-second
-process timeout; CI sets the same value through `COMPOSER_PROCESS_TIMEOUT`.
-Run it before opening a pull request that changes `src/` behaviour.
+`composer mutation` runs the full Infection suite (2,378 mutants, about 10
+minutes on a developer laptop — hardware-dependent). The repository sets
+`config.process-timeout: 0` in `composer.json` so the script is not killed by
+Composer's default 300-second process timeout; CI sets the same value through
+`COMPOSER_PROCESS_TIMEOUT`. Run it before opening a pull request that changes
+`src/` behaviour.

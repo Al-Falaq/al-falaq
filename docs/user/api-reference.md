@@ -7,7 +7,7 @@ description: Every public class, method, and contract in al-falaq, grouped by co
 
 This page maps the entire public surface — what to call, what to implement, and what to leave alone. Public contexts are `SharedKernel`, `Prayer`, `Qibla`, `Moon`, and `Hijri`; every public class-like is named below, and `tests/ArchApiReferenceTest.php` fails the build when one is added without an entry here. `Astro/` is `@internal`: the engine behind the services, never imported from userland (the one stable exception is the `SolarDayEngine` port with its `MeanSolarCalculator` adapter for explicit prayer wiring).
 
-Conventions: services are `final` with explicit constructor injection and `default()` / `defaultFor()` factories; value objects are `final readonly` and validate at construction; service contracts carry the `Interface` suffix (a PHP same-short-name rule — do not "simplify" it away); everything time-bearing is UTC `DateTimeImmutable`.
+Conventions: services are `final` with explicit constructor injection and `default()` / `defaultFor()` factories; value objects are `final readonly` and validate at construction, while static-holder classes (`Kaaba`, `Minutes`) carry no instance state and stay plain `final`; service contracts carry the `Interface` suffix (a PHP same-short-name rule — do not "simplify" it away); everything time-bearing is UTC `DateTimeImmutable`.
 
 ## SharedKernel — the foundation
 

@@ -29,8 +29,19 @@ final class ArchApiReferenceTest extends TestCase
         $reference = (string) file_get_contents(dirname(__DIR__) . '/docs/user/api-reference.md');
         $prefix = 'AlFalaq\\AlFalaq\\';
         $missing = [];
+        $classes = self::publicClasses();
 
-        foreach (self::publicClasses() as $class) {
+        // Non-vacuity: a broken scan (wrong root, failed autoload, a skip that
+        // swallows a whole context) would make every assertion below pass
+        // trivially. The floor is just under today's 82 public class-likes and
+        // above any single-context loss, so it only fires on real breakage.
+        self::assertGreaterThanOrEqual(
+            80,
+            count($classes),
+            'The public-class scan found too few entries; this gate would pass vacuously.',
+        );
+
+        foreach ($classes as $class) {
             $relative = substr($class, strlen($prefix));
 
             if (! str_contains($reference, $relative)) {

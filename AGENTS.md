@@ -41,7 +41,7 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - Actions are pinned to full commit SHAs with a `# vX.Y.Z` comment; Dependabot
   (`.github/dependabot.yml`, github-actions, weekly) refreshes them. Keep the
   comment when bumping by hand — it is what Dependabot tracks.
-- `composer mutation` — Infection gate (MSI ≥ 85, ~7 min). `composer.json`
+- `composer mutation` — Infection gate (MSI ≥ 85, about 10 min). `composer.json`
   sets `config.process-timeout: 0` so the script survives Composer's default
   300 s process timeout; CI sets the same via `COMPOSER_PROCESS_TIMEOUT`.
 
@@ -53,7 +53,8 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   `Wiring`, `Prayer`, `Astro`, `Goldens`); `tests/Goldens/` holds pinned-Python parity vectors +
   `GoldenLoader.php` (load), `GoldenAsserts.php` (assert), `Comparator.php`
   (minute equality); arch groups (`tests/Arch{Shape,Docs,Layering,ApiReference}Test.php`,
-  shared `tests/ArchSupport.php`) enforce layering via reflection (`#[Group('arch')]`).
+  shared `tests/ArchSupport.php`) enforce layering, shape and
+  public-API-reference rules (`#[Group('arch')]`).
 - Coverage floor is a ratchet (`tools/coverage_gate.php --min=N`): M0
   baseline 20, raised per milestone, 95 at M5. Never lower the floor; raise
   it when a context lands. Without pcov/xdebug the gate passes on green
