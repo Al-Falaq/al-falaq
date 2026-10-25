@@ -116,7 +116,7 @@ flowchart TB
 ```
 
 - `src/SharedKernel/` — cross-context foundation. `ValueObjects/`
-  (`Coordinates`, `CivilDate`, `Angle`, `Minutes`, `JulianDay`),
+  (`Coordinates`, `CivilDate`, `Angle`, `Minutes`, `JulianDay`, `Kaaba`),
   `Exceptions/` (`AlFalaqException` base, `ValidationException`,
   `AstronomicalException`, `ConfigurationException`, …),
   `Contracts/` (`ClockView`, `DomainException`), `Traits/`
@@ -133,9 +133,11 @@ flowchart TB
   `NearestDay`, `Makkah`, `Throw`).
 - `src/Qibla/` — `QiblaCalculator` plus two `GeodesyCalculator`
   strategies: `SphericalCalculator` (fast default) and
-  `Wgs84KarneyCalculator` (precise opt-in). Qibla facts (Kaaba, self
-  threshold) live on the seam interface; `Angle::normalized()` is the single
-  unwind owner and `ClampsMakkahSelf` the single self-clamp.
+  `Wgs84KarneyCalculator` (precise opt-in). `SharedKernel\ValueObjects\Kaaba`
+  owns the Kaaba coordinates; the seam keeps `MAKKAH_LATITUDE` /
+  `MAKKAH_LONGITUDE` as API aliases and owns `SELF_DISTANCE_KM`.
+  `Angle::normalized()` is the single unwind owner and `ClampsMakkahSelf` the
+  single self-clamp.
 - `src/Moon/` — `CrescentCalculator` plus four engine-free criterion
   strategies (`YallopEvaluator`, `OdehEvaluator`, `Mabims1992Evaluator`,
   `NeoMabims2021Evaluator`). Userland always goes through `Moon/`; never
@@ -157,14 +159,17 @@ Supporting directories:
   snippet), `Goldens/` (pinned-Python parity vectors, 25 CSVs;
   `GoldenLoader.php` loads, `GoldenAsserts.php` asserts, `Comparator.php`
   compares minutes), and the arch groups
-  (`tests/Arch{Shape,Docs,Layering}Test.php` + `ArchSupport.php`: layering and
-  shape rules, `#[Group('arch')]`).
+  (`tests/Arch{Shape,Docs,Layering,ApiReference}Test.php` + `ArchSupport.php`:
+  layering, shape and public-API-reference rules, `#[Group('arch')]`).
 - `examples/` — runnable snippets plus `bench.php` (performance-tripwire
-  harness: loose 50ms/30000ms gates, PRD 2ms/1000ms/16MB budgets as headroom).
+  harness: loose 50ms/30000ms tripwires, PRD 2ms/1000ms/16MB references not
+  gated).
 - `tools/` — `export_goldens.py` (pin-parity prayer vectors from `PYTHON_PIN`,
   `--pin/--path/--out`), `gen_hijri.py` (month-start tables + goldens,
   `--path/--pin/--out`, writes in place), `gen_self_prayer_goldens.php`
   (drift-gated Tehran/Morocco/UOIF goldens, regenerate + diff-review in place),
+  `gen_t2_drift_goldens.php` (drift-gated Turkey/Kemenag/Brunei rows; the
+  official-table rows are preserved verbatim),
   `gen_qibla_spherical.py` / `gen_qibla_wgs84.py` (CSV to stdout, diff against
   committed; diagnostics to stderr), `gen_moonsighting.py` (crescent
   characterization goldens, regenerate + diff-review),

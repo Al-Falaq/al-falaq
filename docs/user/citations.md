@@ -25,6 +25,10 @@ Prayer software inherits trust: when your app says Fajr is at 05:42, someone set
 - **Diyanet (Turkey)** — temkin offsets behind the Turkey preset (sunrise −7, Dhuhr +5, Asr +4, Maghrib +7), confirmed against official tables.
 - **Kemenag (Indonesia)** — ihtiyat offsets behind the Kemenag preset, confirmed against official tables.
 - **MUIS / KHEU** — the `+1` zohor convention behind the Singapore/Malaysia/Brunei Dhuhr +1.
+- **MUIS prayer timetable 2025** — Majlis Ugama Islam Singapura, via
+  data.gov.sg dataset `d_e81ea2337599b674c4f645c1af93e0dc` (retrieved
+  2026-10-22). Subuh, Syuruk, Zohor, Asar, Maghrib, Isyak for the whole
+  of 2025, Singapore local time (+08:00, no DST).
 - **UOIF (France)** — pure 12°/12° preset cited to the 1994 Dar el-Fatwa text, the 2012 UOIF presidential statement (Saphirnews), ECFR Dublin 2004 toleration, communally confirmed current (Musulmans de France, Feb 2026 review), cross-checked against the praytimes.org France row. The 2015 14°/15° joint-commission compromise never landed.
 - **Tehran / Morocco** — Tehran 17.7°/14°/Maghrib-4.5° cross-checked against `batoulapps/adhan-js@a2c4bda` `Tehran()` and drift-gated (convention, not published official rule); Morocco 19°/17° as the labelled Habous convention (Fajr 18-vs-19 undecided in sources as of 2026-10-11).
 
