@@ -12,8 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `tests/ArchShapeTest.php` now enforces the remaining `AGENTS.md`
   conventions: `Contracts/` interfaces-only, the exact `*Interface` suffix
   set, one named class per file, `readonly` value objects (property-free
-  static holders aside), private trait helpers, and `default()` service
-  factories (the two documented exceptions aside).
+  static holders aside), private trait helpers, and `default()` factories
+  for public-context services (the two documented exceptions aside;
+  `Astro/Services/` is internal).
 - `docs/integrations.md` now has runnable recipes for Timetable, Sunnah,
   Crescent visibility, and Hijri conversion. `tests/Wiring/` extracts and
   executes every fenced PHP block, so the recipes cannot drift.

@@ -434,8 +434,9 @@ flowchart LR
   aside), `*Exception` naming, no `Util/` namespace, `Contracts/` holding
   interfaces only and the exact `*Interface` suffix set, one named class per
   file, private trait helpers (the two Hijri contract traits aside),
-  `default()` service factories (the two documented exceptions aside),
-  mandatory docblocks (`@param $name` /
+  `default()` factories for public-context services (the two documented
+  exceptions aside; `Astro/Services/` is internal), mandatory docblocks
+  (`@param $name` /
   `@return` on all public API), and the layering rules above. The API
   reference is checked in both directions. `composer arch` runs these in
   isolation.

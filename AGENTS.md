@@ -81,7 +81,9 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   command method. Two documented exceptions: `NightResolver` is an internal
   step wired by `PrayerTimesCalculator::default()` (no standalone factory),
   and `SunnahCalculator` needs the day's schedules, so it is built through
-  `fromCalculator()`. `Strategies/`: `final`, one
+  `fromCalculator()`. `Astro/Services/` is internal engine wiring and is
+  constructed with `new` (including the stable `MeanSolarCalculator`
+  adapter). `Strategies/`: `final`, one
   `Contracts/` interface each. `ValueObjects/`: `final readonly`, validated
   ctor, UTC math only (the stateless static holders `Kaaba` and `Minutes`
   stay plain `final`). `Traits/` (named `Traits/`, not `Concerns/`):
