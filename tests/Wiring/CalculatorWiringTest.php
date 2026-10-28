@@ -6,6 +6,8 @@ namespace AlFalaq\AlFalaq\Tests\Wiring;
 
 use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
+use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
 use AlFalaq\AlFalaq\Prayer\Contracts\NextPrayerResolverInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\TimetableServiceInterface;
@@ -13,7 +15,6 @@ use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
-use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\Prayer\Services\NextPrayerResolver;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\Prayer\Services\TimetableService;
@@ -25,10 +26,14 @@ use AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeventhOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\NextPrayer;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\SunnahTimes;
 use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
 use AlFalaq\AlFalaq\Qibla\Strategies\SphericalCalculator;
 use AlFalaq\AlFalaq\Qibla\Strategies\Wgs84KarneyCalculator;
+use AlFalaq\AlFalaq\Qibla\ValueObjects\QiblaResult;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use PHPUnit\Framework\TestCase;
@@ -102,83 +107,6 @@ final class CalculatorWiringTest extends TestCase
         self::assertInstanceOf(MakkahHandler::class, $custom->polarCircleHandler());
     }
 
-    public function testPrayerSnippetCalculatesTenUtcMarkers(): void
-    {
-        // Mirrors docs/integrations.md "Prayer times": the snippet must run,
-        // not just wire — ten UTC markers in documented key order.
-        $calculator = PrayerTimesCalculator::default();
-        $params = CalculationMethod::SINGAPORE->defaultParameters();
-        $schedule = $calculator->calculate(
-            Coordinates::fromDegrees(3.1390, 101.6869),
-            CivilDate::fromYmd(2025, 3, 1),
-            $params,
-        );
-
-        self::assertSame(
-            ['imsak', 'fajr', 'sunrise', 'syuruk', 'ishraq', 'dhuha', 'dhuhr', 'asr', 'maghrib', 'isha'],
-            array_keys($schedule->all()),
-        );
-
-        foreach ($schedule->all() as $instant) {
-            self::assertSame('UTC', $instant->getTimezone()->getName());
-        }
-    }
-
-    public function testAdvancedSnippetConstructsWorkingCalculator(): void
-    {
-        // Mirrors docs/integrations.md advanced wiring: explicit 4-arg
-        // construction must satisfy the constructor contract and calculate.
-        $calculator = new PrayerTimesCalculator(
-            new MeanSolarCalculator(),
-            new MiddleOfNightCorrection(),
-            new NearestLatitudeHandler(),
-            new SeasonAdjustedTwilight(),
-        );
-        $schedule = $calculator->calculate(
-            Coordinates::fromDegrees(3.1390, 101.6869),
-            CivilDate::fromYmd(2025, 3, 1),
-            CalculationMethod::SINGAPORE->defaultParameters(),
-        );
-
-        self::assertSame('UTC', $schedule->timeFor(Prayer::FAJR)->getTimezone()->getName());
-    }
-
-    public function testQiblaSnippetCalculatesBothModels(): void
-    {
-        // Mirrors docs/integrations.md "Qibla": both factories calculate.
-        $spherical = QiblaCalculator::default();
-        $precise = QiblaCalculator::wgs84();
-        $result = $spherical->calculate(Coordinates::fromDegrees(3.1390, 101.6869));
-        $preciseResult = $precise->calculate(Coordinates::fromDegrees(3.1390, 101.6869));
-
-        foreach ([$result, $preciseResult] as $answer) {
-            self::assertGreaterThanOrEqual(0.0, $answer->direction);
-            self::assertLessThan(360.0, $answer->direction);
-            self::assertGreaterThan(0.0, $answer->distanceKm);
-            self::assertTrue(is_finite($answer->distanceKm));
-        }
-    }
-
-    public function testClockSnippetResolvesNextPrayer(): void
-    {
-        // Mirrors docs/integrations.md clock input: explicit UTC now resolves.
-        $calculator = PrayerTimesCalculator::default();
-        $params = CalculationMethod::SINGAPORE->defaultParameters();
-        $coords = Coordinates::fromDegrees(3.1390, 101.6869);
-        $today = $calculator->calculate($coords, CivilDate::fromYmd(2025, 3, 1), $params);
-        $tomorrow = $calculator->calculate($coords, CivilDate::fromYmd(2025, 3, 2), $params);
-
-        $next = (new NextPrayerResolver())->resolve(
-            $today,
-            $tomorrow,
-            new \DateTimeImmutable('2025-03-01 12:00:00', new \DateTimeZone('UTC')),
-        );
-
-        self::assertInstanceOf(Prayer::class, $next->prayer);
-        self::assertSame('UTC', $next->at->getTimezone()->getName());
-        self::assertGreaterThan(0, $next->inSeconds);
-    }
-
     public function testOutputShapesMatchDocumentedSchema(): void
     {
         // Mirrors docs/integrations.md output shapes: keys, order, formats.
@@ -203,5 +131,201 @@ final class CalculatorWiringTest extends TestCase
         foreach ($zoned as $iso) {
             self::assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+08:00$/', $iso);
         }
+    }
+
+    /**
+     * Section heading → variables the snippet must define and their types.
+     *
+     * @var array<string, array<string, class-string|'array'>>
+     */
+    private const SECTION_EXPECTATIONS = [
+        'Prayer times' => [
+            'calculator' => PrayerTimesCalculator::class,
+            'schedule' => PrayerSchedule::class,
+        ],
+        'Prayer times — explicit strategy wiring' => [
+            'calculator' => PrayerTimesCalculator::class,
+        ],
+        'Qibla' => [
+            'spherical' => QiblaCalculator::class,
+            'precise' => QiblaCalculator::class,
+            'result' => QiblaResult::class,
+            'preciseResult' => QiblaResult::class,
+        ],
+        'Timetable' => [
+            'month' => 'array',
+        ],
+        'Sunnah' => [
+            'sunnah' => SunnahTimes::class,
+        ],
+        'Crescent visibility' => [
+            'geometry' => CrescentGeometry::class,
+            'verdicts' => 'array',
+        ],
+        'Hijri conversion' => [
+            'hijri' => HijriDate::class,
+            'hijriAtSunset' => HijriDate::class,
+        ],
+        'Clock input (edges only)' => [
+            'next' => NextPrayer::class,
+        ],
+    ];
+
+    /**
+     * Every PHP block in docs/integrations.md runs exactly as written.
+     *
+     * The doc is the source of truth for wiring: extracting and executing its
+     * fenced blocks means a renamed constructor, a changed signature, or an
+     * unqualified global class in a snippet fails the build. Section headings
+     * are the anchors, so moving a snippet to the wrong section fails too.
+     */
+    public function testDocumentedSnippetsRunAsWritten(): void
+    {
+        $markdown = (string) file_get_contents(dirname(__DIR__, 2) . '/docs/integrations.md');
+        $snippets = self::phpSnippets($markdown);
+
+        self::assertGreaterThanOrEqual(
+            count(self::SECTION_EXPECTATIONS),
+            count($snippets),
+            'Expected at least one PHP snippet per documented wiring recipe.',
+        );
+
+        $bySection = [];
+
+        foreach ($snippets as [$section, $code]) {
+            $bySection[$section] = array_merge($bySection[$section] ?? [], self::runSnippet($code));
+        }
+
+        foreach (self::SECTION_EXPECTATIONS as $section => $expectations) {
+            self::assertArrayHasKey($section, $bySection, sprintf('Missing documented section: %s', $section));
+
+            foreach ($expectations as $variable => $type) {
+                self::assertArrayHasKey(
+                    $variable,
+                    $bySection[$section],
+                    sprintf('Section "%s" must define $%s.', $section, $variable),
+                );
+
+                if ($type === 'array') {
+                    self::assertIsArray($bySection[$section][$variable]);
+                } else {
+                    self::assertInstanceOf($type, $bySection[$section][$variable]);
+                }
+            }
+        }
+
+        $prayer = $bySection['Prayer times'];
+        $explicit = $bySection['Prayer times — explicit strategy wiring'];
+        $qibla = $bySection['Qibla'];
+        $hijri = $bySection['Hijri conversion'];
+        $clock = $bySection['Clock input (edges only)'];
+
+        $schedule = $prayer['schedule'] ?? null;
+        self::assertInstanceOf(PrayerSchedule::class, $schedule);
+        self::assertSame(
+            ['imsak', 'fajr', 'sunrise', 'syuruk', 'ishraq', 'dhuha', 'dhuhr', 'asr', 'maghrib', 'isha'],
+            array_keys($schedule->all()),
+        );
+
+        $explicitCalculator = $explicit['calculator'] ?? null;
+        self::assertInstanceOf(PrayerTimesCalculator::class, $explicitCalculator);
+        self::assertInstanceOf(MeanSolarCalculator::class, $explicitCalculator->solar());
+        self::assertInstanceOf(MiddleOfNightCorrection::class, $explicitCalculator->highLatitudeCorrection());
+        self::assertInstanceOf(NearestLatitudeHandler::class, $explicitCalculator->polarCircleHandler());
+        self::assertInstanceOf(SeasonAdjustedTwilight::class, $explicitCalculator->twilightModel());
+
+        $spherical = $qibla['spherical'] ?? null;
+        self::assertInstanceOf(QiblaCalculator::class, $spherical);
+        self::assertInstanceOf(SphericalCalculator::class, $spherical->geodesy());
+
+        $precise = $qibla['precise'] ?? null;
+        self::assertInstanceOf(QiblaCalculator::class, $precise);
+        self::assertInstanceOf(Wgs84KarneyCalculator::class, $precise->geodesy());
+
+        $hijriDate = $hijri['hijri'] ?? null;
+        $hijriAtSunset = $hijri['hijriAtSunset'] ?? null;
+        self::assertInstanceOf(HijriDate::class, $hijriDate);
+        self::assertInstanceOf(HijriDate::class, $hijriAtSunset);
+        self::assertNotSame($hijriDate->isoformat(), $hijriAtSunset->isoformat());
+
+        $next = $clock['next'] ?? null;
+        self::assertInstanceOf(NextPrayer::class, $next);
+        self::assertSame('UTC', $next->at->getTimezone()->getName());
+        self::assertGreaterThan(0, $next->inSeconds);
+    }
+
+    /**
+     * Fenced PHP blocks paired with their preceding `## ` heading.
+     *
+     * Supports backtick and tilde fences, ignores `## ` lines inside code,
+     * and surfaces an unterminated fence as a snippet so eval fails loudly.
+     * A `## ` heading must anchor one snippet per documented recipe.
+     *
+     * @param string $markdown Full docs/integrations.md contents.
+     * @return list<array{string, string}> Heading + code pairs, in file order.
+     */
+    private static function phpSnippets(string $markdown): array
+    {
+        $snippets = [];
+        $section = '';
+        $buffer = null;
+        $fence = null;
+        $lines = preg_split('/\R/', $markdown);
+
+        foreach ($lines === false ? [] : $lines as $line) {
+            if ($fence === null && str_starts_with($line, '## ')) {
+                $section = rtrim(substr($line, 3));
+
+                continue;
+            }
+
+            if ($fence === null && preg_match('/^(`{3,}|~{3,})php\s*$/', $line, $matches) === 1) {
+                $fence = $matches[1];
+                $buffer = '';
+
+                continue;
+            }
+
+            if ($fence !== null && str_starts_with($line, $fence)) {
+                $snippets[] = [$section, $buffer ?? ''];
+                $buffer = null;
+                $fence = null;
+
+                continue;
+            }
+
+            if ($buffer !== null) {
+                $buffer .= $line . "\n";
+            }
+        }
+
+        if ($fence !== null) {
+            $snippets[] = [$section, $buffer ?? ''];
+        }
+
+        return $snippets;
+    }
+
+    /**
+     * Evaluate one snippet and return the variables it defined.
+     *
+     * Snippets are self-contained: every class is imported or fully
+     * qualified, and every input is constructed in the block. The runner
+     * adds `strict_types=1`, so scalar argument drift fails here rather than
+     * only in strict consumer files; snippets must not declare it themselves.
+     *
+     * The namespace prefix is load-bearing: eval() otherwise runs in the
+     * global namespace, where unqualified globals (e.g. DateTimeImmutable)
+     * resolve and hide the drift this test guards against.
+     *
+     * @param string $code PHP code without the opening tag.
+     * @return array<string, mixed> Variables in scope after execution.
+     */
+    private static function runSnippet(string $code): array
+    {
+        eval("declare(strict_types=1);\nnamespace AlFalaq\\AlFalaq\\Tests\\Wiring;\n\n" . $code);
+        unset($code);
+
+        return get_defined_vars();
     }
 }
