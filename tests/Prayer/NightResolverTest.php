@@ -6,6 +6,7 @@ namespace AlFalaq\AlFalaq\Tests\Prayer;
 
 use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
 use AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime;
+use AlFalaq\AlFalaq\Prayer\Contracts\HighLatitudeCorrection;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
@@ -16,6 +17,7 @@ use AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\MinutesAfterSunsetMaghrib;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\NightPortions;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
@@ -102,6 +104,62 @@ final class NightResolverTest extends TestCase
             $day,
             43200,
         );
+    }
+
+    /**
+     * The seasonal arm must not compute fallback portions it never reads.
+     *
+     * The counter also proves the test is not vacuous: the same resolver
+     * constructed with MIDDLE_OF_NIGHT does ask for portions.
+     *
+     * @return void
+     */
+    public function testSeasonalPathNeverComputesFallbackPortions(): void
+    {
+        $utc = new \DateTimeZone('UTC');
+        $day = new SolarTime(
+            new \DateTimeImmutable('2025-06-21 12:00:00', $utc),
+            new \DateTimeImmutable('2025-06-21 03:00:00', $utc),
+            new \DateTimeImmutable('2025-06-21 21:00:00', $utc),
+        );
+        $correction = new class implements HighLatitudeCorrection {
+            public bool $called = false;
+
+            public function portions(float $fajrAngle, ?float $ishaAngle): NightPortions
+            {
+                $this->called = true;
+
+                return new NightPortions(0.5, 0.5);
+            }
+        };
+        $resolver = new NightResolver(
+            self::stubSolar($day, new \DateTimeImmutable('2025-06-21 01:00:00', $utc)),
+            $correction,
+            new SeasonAdjustedTwilight(),
+        );
+        $coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 6, 21);
+        $base = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters();
+
+        $resolver->resolve(
+            $coordinates,
+            $date,
+            0.0,
+            $base->withHighLatitudeRule(HighLatitudeRule::SEASONAL_TWILIGHT),
+            $day,
+            36000,
+        );
+        self::assertFalse($correction->called, 'SEASONAL_TWILIGHT must not compute fallback portions.');
+
+        $resolver->resolve(
+            $coordinates,
+            $date,
+            0.0,
+            $base->withHighLatitudeRule(HighLatitudeRule::MIDDLE_OF_NIGHT),
+            $day,
+            36000,
+        );
+        self::assertTrue($correction->called, 'The portions path must still compute portions.');
     }
 
     /**

@@ -61,18 +61,6 @@ final class NightResolver
         SolarTime $day,
         int $nightSec,
     ): array {
-        // NONE skips the portions safe caps (raw angle temps); every other
-        // rule resolves fallback portions eagerly. The SEASONAL_TWILIGHT arm
-        // is wired to MiddleOfNightCorrection via defaultFor and only
-        // consults these portions on the non-seasonal fallback path.
-        $portions = match ($parameters->highLatitudeRule) {
-            HighLatitudeRule::NONE => null,
-            default => $this->highLatitudeCorrection->portions(
-                $parameters->fajrAngle,
-                $parameters->ishaRule->angle(),
-            ),
-        };
-
         $isMsc = $parameters->method === CalculationMethod::MOON_SIGHTING_COMMITTEE;
 
         // Pin _set_fajr/_set_isha MSC branches (PrayerTimes.py verbatim): the
@@ -84,6 +72,16 @@ final class NightResolver
         // (_set_fajr and _set_isha); keep pin-verbatim here.
         $useSeasonalSafe = $isMsc || $parameters->highLatitudeRule === HighLatitudeRule::SEASONAL_TWILIGHT;
         $useSeventh = $useSeasonalSafe && $coords->latitude >= 55;
+
+        // Three modes: seasonal safe caps (MSC or SEASONAL_TWILIGHT),
+        // NONE-raw (no cap), or fallback portions. The seasonal arm never
+        // reads portions, so resolve them only for the portions mode.
+        $portions = $useSeasonalSafe || $parameters->highLatitudeRule === HighLatitudeRule::NONE
+            ? null
+            : $this->highLatitudeCorrection->portions(
+                $parameters->fajrAngle,
+                $parameters->ishaRule->angle(),
+            );
 
         $seasonalSeconds = ['morning' => 0, 'evening' => 0];
         $seventh = 0;
@@ -113,7 +111,8 @@ final class NightResolver
      * @param CalculationParameters $parameters Method defaults + overrides.
      * @param SolarTime $day Solar day from the engine.
      * @param int $nightSec Sunset-to-next-sunrise seconds.
-     * @param NightPortions|null $portions Fallback portions, null for NONE.
+     * @param NightPortions|null $portions Fallback portions; null for NONE or
+     *     the seasonal safe-cap path (never read there).
      * @param bool $useSeasonalSafe MSC method or SEASONAL_TWILIGHT arm.
      * @param bool $useSeventh High-latitude seventh-of-night path.
      * @param array{morning: int, evening: int} $seasonalSeconds Seasonal caps in seconds.
@@ -178,7 +177,8 @@ final class NightResolver
      * @param CalculationParameters $parameters Method defaults + overrides.
      * @param SolarTime $day Solar day from the engine.
      * @param int $nightSec Sunset-to-next-sunrise seconds.
-     * @param NightPortions|null $portions Fallback portions, null for NONE.
+     * @param NightPortions|null $portions Fallback portions; null for NONE or
+     *     the seasonal safe-cap path (never read there).
      * @param bool $useSeasonalSafe MSC method or SEASONAL_TWILIGHT arm.
      * @param bool $useSeventh High-latitude seventh-of-night path.
      * @param array{morning: int, evening: int} $seasonalSeconds Seasonal caps in seconds.
