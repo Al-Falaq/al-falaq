@@ -7,8 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `tests/ArchShapeTest.php` now enforces the remaining `AGENTS.md`
+  conventions: `Contracts/` interfaces-only, the exact `*Interface` suffix
+  set, one named class per file, `readonly` value objects (property-free
+  static holders aside), private trait helpers, and `default()` service
+  factories (the two documented exceptions aside).
+- `docs/integrations.md` now has runnable recipes for Timetable, Sunnah,
+  Crescent visibility, and Hijri conversion. `tests/Wiring/` extracts and
+  executes every fenced PHP block, so the recipes cannot drift.
+
 ### Changed
 
+- `GregorianToHijriConverter` now takes the `maghribAt()` fallback for every
+  astronomical "schedule undefined" case (`AstronomicalException`), not only
+  `UndefinedScheduleException`; validation errors still surface.
+- `NightResolver` no longer computes high-latitude fallback portions on the
+  seasonal path (MSC / `SEASONAL_TWILIGHT`), where they were discarded.
+- `CalculationParameters` withers share one private `copyWith()` construction
+  site, so a future field cannot be dropped by a missed wither.
+- `NextPrayerResolver` and `TimetableService` expose `default()` factories.
 - Prayer engine: the solar triplet no longer recomputes the declination from
   the Julian Day — it reuses the apparent longitude and obliquity it already
   holds. `declinationFrom()` is now the single owner of the formula. Output
@@ -29,8 +48,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   arch gate (`tests/ArchApiReferenceTest.php`) fails the build when a public
   class is added without a reference entry.
 
+### Removed
+
+- `SharedKernel\Contracts\ClockView` — never implemented or referenced; the
+  library passes `$nowUtc` explicitly.
+- `Astro\ValueObjects\SolarPosition` and `MeanSolarCalculator::position()` —
+  the only caller was `position()`'s own test, and the class is `@internal`.
+
 ### Fixed
 
+- The public-API reference is checked in both directions: a documented class
+  that no longer exists fails the build.
 - The bench harness printed a budget it did not meet and enforced a gate 25x
   looser than that budget. The printed contract and the enforced contract now
   agree.

@@ -52,8 +52,8 @@ Conventions: services are `final` with explicit constructor injection and `defau
 | `Prayer\Contracts\TwilightModel` | `seasonalSeconds(int $dayOfYear, int $year, float $latitude): array{morning: int, evening: int}` — the MSC seasonal caps |
 | `Prayer\Contracts\PolarCircleHandler` | `resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array{coordinates: Coordinates, date: CivilDate}` |
 | `Prayer\Services\PrayerTimesCalculator` | `default(): self`; `defaultFor(CalculationParameters): self`; `calculate(Coordinates\|array, CivilDate, CalculationParameters): PrayerSchedule`; `maghribAt(...): DateTimeImmutable` |
-| `Prayer\Services\TimetableService` | `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` |
-| `Prayer\Services\NextPrayerResolver` | `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be UTC) |
+| `Prayer\Services\TimetableService` | `default(): self`; `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` |
+| `Prayer\Services\NextPrayerResolver` | `default(): self`; `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be UTC) |
 | `Prayer\Services\SunnahCalculator` | `fromCalculator(PrayerTimesCalculatorInterface, Coordinates, CivilDate, CalculationParameters): self`; `__construct(PrayerSchedule $today, PrayerSchedule $tomorrow)`; `calculate(): SunnahTimes` |
 | `Prayer\Services\NightResolver` | The step that owns the fajr/isha resolution (seasonal / NONE-raw / portions). Exposed for introspection; not a driving port |
 | `Prayer\Strategies\AngleIsha`, `Prayer\Strategies\IntervalIsha` | `IshaRule` implementations (angle vs minutes-after-Maghrib) |
