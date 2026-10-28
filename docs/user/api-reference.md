@@ -19,7 +19,6 @@ Conventions: services are `final` with explicit constructor injection and `defau
 | `SharedKernel\ValueObjects\Minutes` | `add(DateTimeImmutable, int): DateTimeImmutable`; `roundedHalfUp(DateTimeImmutable $utc): DateTimeImmutable` (UTC-only, half-up) |
 | `SharedKernel\ValueObjects\JulianDay` | `fromCivilDate(CivilDate): self` (Fliegel–Van Flandern, day number at 00:00 UTC); `day` (raw float); `toFloat(): float` (astronomy internals) |
 | `SharedKernel\ValueObjects\Kaaba` | `LATITUDE = 21.4225241`, `LONGITUDE = 39.8261818`; `coordinates(): Coordinates` — the single owner of the Kaaba position (the Qibla contract constants reference it) |
-| `SharedKernel\Contracts\ClockView` | `now(): DateTimeImmutable` — an optional edge port for host apps; the domain never reads the clock |
 | `SharedKernel\Contracts\DomainException` | Marker interface every domain exception implements — catch this for everything |
 | `SharedKernel\Exceptions\AlFalaqException` | Abstract base for every exception in the library (`extends \RuntimeException implements DomainException`) |
 | `SharedKernel\Exceptions\ValidationException` | Invalid input that is not coordinates-specific; `extends AlFalaqException` |

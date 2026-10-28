@@ -31,10 +31,6 @@ final class MeanSolarCalculatorTest extends TestCase
         self::assertEqualsWithDelta(-3.4502404616062683, $calc->equationOfTime(2460676.5), 1e-9);
         self::assertEqualsWithDelta(-19.862498983037842, $calc->declination(2461000.25), 1e-9);
         self::assertEqualsWithDelta(14.267116404509053, $calc->equationOfTime(2461000.25), 1e-9);
-
-        $pos = $calc->position(2451545.0);
-        self::assertEqualsWithDelta(-23.03251608590199, $pos->declinationDeg, 1e-9);
-        self::assertEqualsWithDelta(-3.3007602707561516, $pos->equationOfTimeMinutes, 1e-9);
     }
 
     public function testDeclinationAndEotAtSolsticesAndEquinoxes(): void

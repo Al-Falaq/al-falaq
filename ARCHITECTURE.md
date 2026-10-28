@@ -119,7 +119,7 @@ flowchart TB
   (`Coordinates`, `CivilDate`, `Angle`, `Minutes`, `JulianDay`, `Kaaba`),
   `Exceptions/` (`AlFalaqException` base, `ValidationException`,
   `AstronomicalException`, `ConfigurationException`, …),
-  `Contracts/` (`ClockView`, `DomainException`), `Traits/`
+  `Contracts/` (`DomainException`), `Traits/`
   (`HasWithersGuard`, `ValidatesFinite`).
 - `src/Prayer/` — the largest context. `PrayerTimesCalculator` (single-day
   pipeline), `TimetableService` (monthly loop), `NextPrayerResolver`
@@ -149,7 +149,7 @@ flowchart TB
   geometry), `CrescentEphemeris` (sun/moon positions, sidereal time,
   moonset), `GeodesyEngine` / `KarneyInverse` (ellipsoidal geodesy),
   `DeltaTProvider`, plus engine-local `Contracts/` (`SolarDayEngine`, one
-  instant-based port) and `ValueObjects/` (`SolarPosition`, `SolarTime`).
+  instant-based port) and `ValueObjects/` (`SolarTime`).
   Shared Meeus theory lives once in `Traits/SharesSolarTheory`.
 
 Supporting directories:

@@ -37,7 +37,7 @@ final class ArchApiReferenceTest extends TestCase
 
         // Non-vacuity: a broken scan (wrong root, failed autoload, a skip that
         // swallows a whole context) would make every assertion below pass
-        // trivially. The floor is just under today's 82 public class-likes and
+        // trivially. The floor is just under today's 81 public class-likes and
         // above any single-context loss, so it only fires on real breakage.
         self::assertGreaterThanOrEqual(
             80,
@@ -55,6 +55,38 @@ final class ArchApiReferenceTest extends TestCase
 
         self::assertSame([], $missing, sprintf(
             'Public classes missing from docs/user/api-reference.md: %s',
+            implode(', ', $missing),
+        ));
+    }
+
+    /**
+     * Every class named in the reference has a source file.
+     *
+     * The forward gate catches an undocumented class; this one catches a
+     * documented class that no longer exists (a deleted seam left in the
+     * table). Both directions are needed for the page to be a map.
+     */
+    public function testEveryDocumentedClassHasASourceFile(): void
+    {
+        $reference = (string) file_get_contents(dirname(__DIR__) . '/docs/user/api-reference.md');
+        $root = dirname(__DIR__) . '/src/';
+        $documented = self::documentedClasses($reference);
+        $missing = [];
+
+        foreach (array_keys($documented) as $name) {
+            if (! is_file($root . str_replace('\\', '/', $name) . '.php')) {
+                $missing[] = $name;
+            }
+        }
+
+        self::assertGreaterThanOrEqual(
+            80,
+            count($documented),
+            'The reference scan found too few entries; this gate would pass vacuously.',
+        );
+
+        self::assertSame([], $missing, sprintf(
+            'docs/user/api-reference.md names classes with no source file: %s',
             implode(', ', $missing),
         ));
     }
