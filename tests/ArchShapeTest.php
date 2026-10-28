@@ -355,13 +355,11 @@ PHP;
             $allowed = self::CONTRACT_TRAITS[$class] ?? [];
 
             foreach ($reflection->getProperties() as $property) {
-                if ($property->isStatic()) {
-                    $violations[] = sprintf(
-                        '%s::$%s must not be static; traits are stateless.',
-                        $class,
-                        $property->getName(),
-                    );
-                }
+                $violations[] = sprintf(
+                    '%s::$%s must not be declared; traits are stateless.',
+                    $class,
+                    $property->getName(),
+                );
             }
 
             foreach ($reflection->getMethods() as $method) {
