@@ -386,9 +386,10 @@ PHP;
     /**
      * Public-context services expose a usable default() factory.
      *
-     * `Astro/Services/` is internal engine wiring, constructed with `new`
-     * (the stable MeanSolarCalculator adapter included); the two
-     * dependency-bound Prayer services are named in the map below.
+     * `Astro/Services/` is internal engine wiring and is exempt from the
+     * factory convention (the stable MeanSolarCalculator adapter is
+     * constructed with `new`); the two dependency-bound Prayer services are
+     * named in the map below.
      */
     public function testServicesExposeDefaultFactory(): void
     {

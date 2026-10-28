@@ -82,8 +82,8 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   step wired by `PrayerTimesCalculator::default()` (no standalone factory),
   and `SunnahCalculator` needs the day's schedules, so it is built through
   `fromCalculator()`. `Astro/Services/` is internal engine wiring and is
-  constructed with `new` (including the stable `MeanSolarCalculator`
-  adapter). `Strategies/`: `final`, one
+  exempt from the factory convention (the stable `MeanSolarCalculator`
+  adapter is constructed with `new`). `Strategies/`: `final`, one
   `Contracts/` interface each. `ValueObjects/`: `final readonly`, validated
   ctor, UTC math only (the stateless static holders `Kaaba` and `Minutes`
   stay plain `final`). `Traits/` (named `Traits/`, not `Concerns/`):
