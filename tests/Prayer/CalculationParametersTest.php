@@ -1111,4 +1111,22 @@ final class CalculationParametersTest extends TestCase
 
         self::assertSame([$field], $changed);
     }
+
+    /**
+     * Falsy replacements are values, not "keep current" sentinels.
+     *
+     * `copyWith()` uses null as the sentinel, so false and 0.0 must replace
+     * the current field rather than falling back to it.
+     *
+     * @return void
+     */
+    public function testWithersTreatFalsyReplacementsAsValues(): void
+    {
+        $base = CalculationMethod::UMM_AL_QURA->defaultParameters();
+
+        self::assertFalse($base->isRamadan);
+        self::assertTrue($base->withRamadan(true)->isRamadan);
+        self::assertFalse($base->withRamadan(true)->withRamadan(false)->isRamadan);
+        self::assertSame(0.0, $base->withFajrAngle(0.0)->fajrAngle);
+    }
 }

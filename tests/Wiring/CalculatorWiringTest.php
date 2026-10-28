@@ -220,6 +220,24 @@ final class CalculatorWiringTest extends TestCase
         $hijri = $bySection['Hijri conversion'];
         $clock = $bySection['Clock input (edges only)'];
 
+        $timetable = $bySection['Timetable'];
+        $crescent = $bySection['Crescent visibility'];
+
+        $month = $timetable['month'] ?? null;
+        self::assertIsArray($month);
+        self::assertCount(31, $month);
+
+        foreach ($month as $day) {
+            self::assertInstanceOf(PrayerSchedule::class, $day);
+        }
+
+        $verdicts = $crescent['verdicts'] ?? null;
+        self::assertIsArray($verdicts);
+        self::assertSame(
+            ['yallop', 'odeh', 'mabims1992', 'neomabims2021'],
+            array_keys($verdicts),
+        );
+
         $schedule = $prayer['schedule'] ?? null;
         self::assertInstanceOf(PrayerSchedule::class, $schedule);
         self::assertSame(
@@ -255,11 +273,41 @@ final class CalculatorWiringTest extends TestCase
     }
 
     /**
+     * The parser ignores headings inside any fence and reads only php blocks.
+     *
+     * @return void
+     */
+    public function testPhpSnippetParserRespectsFenceState(): void
+    {
+        $markdown = <<<'MARKDOWN'
+## First
+```text
+## not a heading
+```
+
+## Second
+```PHP
+$answer = 42;
+```
+```php
+$other = 'x';
+```
+MARKDOWN;
+
+        self::assertSame([
+            ['Second', '$answer = 42;' . "\n"],
+            ['Second', '$other = \'x\';' . "\n"],
+        ], self::phpSnippets($markdown));
+    }
+
+    /**
      * Fenced PHP blocks paired with their preceding `## ` heading.
      *
-     * Supports backtick and tilde fences, ignores `## ` lines inside code,
-     * and surfaces an unterminated fence as a snippet so eval fails loudly.
-     * A `## ` heading must anchor one snippet per documented recipe.
+     * Tracks every fence (backtick or tilde), so `## ` lines inside any code
+     * block are ignored; only `php`-tagged fences become snippets. Supports
+     * up to three spaces of fence indentation and case-insensitive `php`.
+     * An unterminated PHP fence is surfaced as a snippet so eval fails loudly;
+     * a `## ` heading must anchor one snippet per documented recipe.
      *
      * @param string $markdown Full docs/integrations.md contents.
      * @return list<array{string, string}> Heading + code pairs, in file order.
@@ -270,36 +318,47 @@ final class CalculatorWiringTest extends TestCase
         $section = '';
         $buffer = null;
         $fence = null;
+        $isPhp = false;
         $lines = preg_split('/\R/', $markdown);
 
         foreach ($lines === false ? [] : $lines as $line) {
-            if ($fence === null && str_starts_with($line, '## ')) {
-                $section = rtrim(substr($line, 3));
+            if ($fence === null) {
+                if (preg_match('/^ {0,3}(`{3,}|~{3,})(.*)$/', $line, $matches) === 1) {
+                    $fence = $matches[1];
+                    $isPhp = preg_match('/^php\b/i', trim($matches[2])) === 1;
+
+                    if ($isPhp) {
+                        $buffer = '';
+                    }
+
+                    continue;
+                }
+
+                if (str_starts_with($line, '## ')) {
+                    $section = rtrim(substr($line, 3));
+                }
 
                 continue;
             }
 
-            if ($fence === null && preg_match('/^(`{3,}|~{3,})php\s*$/', $line, $matches) === 1) {
-                $fence = $matches[1];
-                $buffer = '';
+            if (preg_match('/^ {0,3}' . preg_quote($fence, '/') . '/', $line) === 1) {
+                if ($isPhp) {
+                    $snippets[] = [$section, $buffer ?? ''];
+                }
 
-                continue;
-            }
-
-            if ($fence !== null && str_starts_with($line, $fence)) {
-                $snippets[] = [$section, $buffer ?? ''];
                 $buffer = null;
                 $fence = null;
+                $isPhp = false;
 
                 continue;
             }
 
-            if ($buffer !== null) {
+            if ($isPhp && $buffer !== null) {
                 $buffer .= $line . "\n";
             }
         }
 
-        if ($fence !== null) {
+        if ($isPhp) {
             $snippets[] = [$section, $buffer ?? ''];
         }
 

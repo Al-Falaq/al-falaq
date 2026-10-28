@@ -354,6 +354,16 @@ PHP;
             $checked++;
             $allowed = self::CONTRACT_TRAITS[$class] ?? [];
 
+            foreach ($reflection->getProperties() as $property) {
+                if ($property->isStatic()) {
+                    $violations[] = sprintf(
+                        '%s::$%s must not be static; traits are stateless.',
+                        $class,
+                        $property->getName(),
+                    );
+                }
+            }
+
             foreach ($reflection->getMethods() as $method) {
                 if ($method->isPrivate() || $method->isAbstract()) {
                     continue;
@@ -375,6 +385,13 @@ PHP;
         self::assertSame([], $violations);
     }
 
+    /**
+     * Public-context services expose a usable default() factory.
+     *
+     * `Astro/Services/` is internal engine wiring, constructed with `new`
+     * (the stable MeanSolarCalculator adapter included); the two
+     * dependency-bound Prayer services are named in the map below.
+     */
     public function testServicesExposeDefaultFactory(): void
     {
         $checked = 0;
@@ -422,6 +439,16 @@ PHP;
                     $factory['method'],
                 ),
             );
+            $entryPoint = new \ReflectionMethod($factory['entry'], $factory['method']);
+
+            self::assertTrue(
+                $entryPoint->isPublic() && $entryPoint->isStatic(),
+                sprintf(
+                    'SERVICES_WITHOUT_DIRECT_FACTORY entry point %s::%s() must be public static.',
+                    $factory['entry'],
+                    $factory['method'],
+                ),
+            );
             self::assertFalse(
                 self::hasUsableDefaultFactory(new \ReflectionClass($class)),
                 sprintf(
@@ -443,6 +470,13 @@ PHP;
                 self::assertTrue(
                     $reflection->hasMethod($method),
                     sprintf('CONTRACT_TRAITS entry %s no longer declares %s().', $trait, $method),
+                );
+
+                $traitMethod = $reflection->getMethod($method);
+
+                self::assertTrue(
+                    $traitMethod->isPublic(),
+                    sprintf('CONTRACT_TRAITS entry %s::%s() must be public.', $trait, $method),
                 );
             }
         }
