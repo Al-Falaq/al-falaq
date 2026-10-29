@@ -51,8 +51,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- `SharedKernel\Contracts\ClockView` — never implemented or referenced; the
-  library passes `$nowUtc` explicitly.
+- **Breaking (0.2.0):** `SharedKernel\Contracts\ClockView` — it shipped in
+  `v0.1.1`, but the library never used it. Host apps that implemented the
+  optional clock port should delete that adapter; callers still pass
+  `$nowUtc` explicitly, and the `psr/clock` suggestion is unchanged. This is
+  the only consumer-visible break in the release, so it requires a minor
+  version (`0.2.0`), not a patch.
 - `Astro\ValueObjects\SolarPosition` and `MeanSolarCalculator::position()` —
   the only caller was `position()`'s own test, and the class is `@internal`.
 

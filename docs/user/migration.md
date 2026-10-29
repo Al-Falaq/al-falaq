@@ -5,9 +5,20 @@ description: Upgrade between al-falaq versions — what changed, what breaks, an
 
 # Migration
 
-This page collects the changes that require your attention when upgrading. Everything below ships in 0.1.0 — the first tagged release.
+This page collects the changes that require your attention when upgrading.
+
+## Unreleased — 0.2.0
+
+### `ClockView` removed
+
+`SharedKernel\Contracts\ClockView` shipped in 0.1.1 but the library never
+used it. If you implemented the optional clock port for your edge, delete the
+adapter; the library still passes `$nowUtc` explicitly, and the `psr/clock`
+suggestion is unchanged. This is the only consumer-visible break in 0.2.0.
 
 ## 0.1.0
+
+Everything below ships in 0.1.0 — the first tagged release.
 
 The guiding promise for the architecture changes: `default()` / `defaultFor()` factories keep working across them — only explicit construction and custom strategy implementations need attention there. The [Hijri surface changes](#hijri-surface-changes) are the exception: they remove or narrow three public methods, so callers of those methods must update even when everything else is built through factories. Bugfixes that need no action are marked as such.
 
