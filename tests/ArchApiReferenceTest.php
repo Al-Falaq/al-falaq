@@ -60,21 +60,24 @@ final class ArchApiReferenceTest extends TestCase
     }
 
     /**
-     * Every class named in the reference has a source file.
+     * Every class named in the reference resolves to a declared class-like.
      *
      * The forward gate catches an undocumented class; this one catches a
      * documented class that no longer exists (a deleted seam left in the
-     * table). Both directions are needed for the page to be a map.
+     * table). Checking the FQCN, not the file path, also catches a rename
+     * whose old file survives. Both directions are needed for the page to be
+     * a map.
      */
-    public function testEveryDocumentedClassHasASourceFile(): void
+    public function testEveryDocumentedClassExists(): void
     {
         $reference = (string) file_get_contents(dirname(__DIR__) . '/docs/user/api-reference.md');
-        $root = dirname(__DIR__) . '/src/';
         $documented = self::documentedClasses($reference);
         $missing = [];
 
         foreach (array_keys($documented) as $name) {
-            if (! is_file($root . str_replace('\\', '/', $name) . '.php')) {
+            $fqcn = 'AlFalaq\\AlFalaq\\' . $name;
+
+            if (! class_exists($fqcn) && ! interface_exists($fqcn) && ! trait_exists($fqcn)) {
                 $missing[] = $name;
             }
         }
@@ -86,7 +89,7 @@ final class ArchApiReferenceTest extends TestCase
         );
 
         self::assertSame([], $missing, sprintf(
-            'docs/user/api-reference.md names classes with no source file: %s',
+            'docs/user/api-reference.md names classes that do not exist: %s',
             implode(', ', $missing),
         ));
     }
