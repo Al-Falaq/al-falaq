@@ -39,9 +39,10 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Manual wiring smoke test: every service is constructed with plain
- * `new` / named factories. No container, no service provider, no config
- * files — the library must be usable in a single expression.
+ * Wiring smoke tests: every service is constructed with plain `new` / named
+ * factories, and every PHP block in `docs/integrations.md` is extracted and
+ * executed verbatim. No container, no service provider, no config files — the
+ * library must be usable in a single expression.
  */
 final class CalculatorWiringTest extends TestCase
 {
@@ -297,6 +298,39 @@ MARKDOWN;
         self::assertSame([
             ['Second', '$answer = 42;' . "\n"],
             ['Second', '$other = \'x\';' . "\n"],
+        ], self::phpSnippets($markdown));
+    }
+
+    /**
+     * Tilde, indented, and unterminated fences all reach the snippet list.
+     *
+     * The parser's docblock promises all three; the fence-state test above
+     * covers only column-0 backticks, so exercise the remaining branches.
+     *
+     * @return void
+     */
+    public function testPhpSnippetParserHandlesTildeIndentedAndUnterminatedFences(): void
+    {
+        $markdown = <<<'MARKDOWN'
+## Tilde
+~~~php
+$tilde = true;
+~~~
+
+## Indented
+   ```php
+$indented = true;
+   ```
+
+## Unterminated
+```php
+$open = true;
+MARKDOWN;
+
+        self::assertSame([
+            ['Tilde', '$tilde = true;' . "\n"],
+            ['Indented', '$indented = true;' . "\n"],
+            ['Unterminated', '$open = true;' . "\n"],
         ], self::phpSnippets($markdown));
     }
 
