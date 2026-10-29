@@ -335,13 +335,45 @@ MARKDOWN;
     }
 
     /**
+     * A closing fence repeats the opener's marker, not a fence-like prefix.
+     *
+     * A longer run closes (CommonMark allows it) and surrounding whitespace is
+     * optional; a language label after the opener's marker stays code.
+     *
+     * @return void
+     */
+    public function testPhpSnippetParserRequiresMatchingClosingFence(): void
+    {
+        $markdown = <<<'MARKDOWN'
+## Label is content
+```php
+$before = true;
+```php
+$after = true;
+```
+
+## Longer close
+~~~php
+$longer = true;
+~~~~
+MARKDOWN;
+
+        self::assertSame([
+            ['Label is content', '$before = true;' . "\n```php\n" . '$after = true;' . "\n"],
+            ['Longer close', '$longer = true;' . "\n"],
+        ], self::phpSnippets($markdown));
+    }
+
+    /**
      * Fenced PHP blocks paired with their preceding `## ` heading.
      *
      * Tracks every fence (backtick or tilde), so `## ` lines inside any code
      * block are ignored; only `php`-tagged fences become snippets. Supports
      * up to three spaces of fence indentation and case-insensitive `php`.
-     * An unterminated PHP fence is surfaced as a snippet so eval fails loudly;
-     * a `## ` heading must anchor one snippet per documented recipe.
+     * A closing fence must repeat the opener's marker at least as many times,
+     * with only surrounding whitespace after it. An unterminated PHP fence is
+     * surfaced as a snippet so eval fails loudly; a `## ` heading must anchor
+     * one snippet per documented recipe.
      *
      * @param string $markdown Full docs/integrations.md contents.
      * @return list<array{string, string}> Heading + code pairs, in file order.
@@ -375,7 +407,10 @@ MARKDOWN;
                 continue;
             }
 
-            if (preg_match('/^ {0,3}' . preg_quote($fence, '/') . '/', $line) === 1) {
+            $marker = preg_quote($fence[0], '/');
+            $closing = '/^ {0,3}' . $marker . '{' . strlen($fence) . ',}[ \t]*$/';
+
+            if (preg_match($closing, $line) === 1) {
                 if ($isPhp) {
                     $snippets[] = [$section, $buffer ?? ''];
                 }

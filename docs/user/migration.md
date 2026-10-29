@@ -12,9 +12,22 @@ This page collects the changes that require your attention when upgrading.
 ### `ClockView` removed
 
 `SharedKernel\Contracts\ClockView` shipped in 0.1.1 but the library never
-used it. If you implemented the optional clock port for your edge, delete the
-adapter; the library still passes `$nowUtc` explicitly, and the `psr/clock`
-suggestion is unchanged. This is the only consumer-visible break in 0.2.0.
+used it. If you implemented the optional clock port for your edge, remove the
+implementation and migrate any type hints to a host-owned clock interface (or
+a PSR clock interface). Keep the adapter only if host code still calls
+`now()` or uses it to supply `$nowUtc`; the library still takes `$nowUtc`
+explicitly, and the `psr/clock` suggestion is unchanged.
+
+### `TWILIGHT_ANGLE` requires an angle-based Isha
+
+The prayer pipeline now rejects parameters that combine
+`HighLatitudeRule::TWILIGHT_ANGLE` with an interval-based Isha rule — through
+`PrayerTimesCalculator::default()` as well as `defaultFor()`. `calculate()`
+raises `ConfigurationException` from `NightResolver` before the seasonal
+split; previously the Moonsighting Committee / `SEASONAL_TWILIGHT` path could
+skip that check. If you override a preset such as Umm al-Qura or Qatar with
+`TWILIGHT_ANGLE`, choose a compatible high-latitude rule or switch Isha to an
+angle-based rule (`AngleIsha`).
 
 ## 0.1.0
 

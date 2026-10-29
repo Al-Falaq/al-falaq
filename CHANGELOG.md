@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `UndefinedScheduleException`; validation errors still surface.
 - `NightResolver` no longer computes high-latitude fallback portions on the
   seasonal path (MSC / `SEASONAL_TWILIGHT`), where they were discarded.
+- **Breaking (0.2.0):** the prayer pipeline now rejects
+  `HighLatitudeRule::TWILIGHT_ANGLE` with an interval-based Isha rule before
+  the seasonal split, so `PrayerTimesCalculator::default()` / `defaultFor()`
+  raise `ConfigurationException` from `calculate()` instead of silently
+  skipping the check on the MSC / `SEASONAL_TWILIGHT` path. Use an
+  angle-based Isha or a compatible high-latitude rule.
 - `CalculationParameters` withers share one private `copyWith()` construction
   site, so a future field cannot be dropped by a missed wither.
 - `NextPrayerResolver` and `TimetableService` expose `default()` factories.
@@ -53,10 +59,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Breaking (0.2.0):** `SharedKernel\Contracts\ClockView` — it shipped in
   `v0.1.1`, but the library never used it. Host apps that implemented the
-  optional clock port should delete that adapter; callers still pass
-  `$nowUtc` explicitly, and the `psr/clock` suggestion is unchanged. This is
-  the only consumer-visible break in the release, so it requires a minor
-  version (`0.2.0`), not a patch.
+  optional clock port should remove that implementation and migrate type
+  hints to a host-owned or PSR clock interface. Keep the adapter only if host
+  code still calls `now()` or uses it to supply `$nowUtc`; the library still
+  takes `$nowUtc` explicitly, and the `psr/clock` suggestion is unchanged.
+  This break requires a minor version (`0.2.0`), not a patch.
 - `Astro\ValueObjects\SolarPosition` and `MeanSolarCalculator::position()` —
   the only caller was `position()`'s own test, and the class is `@internal`.
 
