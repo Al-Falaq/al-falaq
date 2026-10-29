@@ -37,7 +37,7 @@ final class ArchApiReferenceTest extends TestCase
 
         // Non-vacuity: a broken scan (wrong root, failed autoload, a skip that
         // swallows a whole context) would make every assertion below pass
-        // trivially. The floor is just under today's 82 public class-likes and
+        // trivially. The floor is just under today's 81 public class-likes and
         // above any single-context loss, so it only fires on real breakage.
         self::assertGreaterThanOrEqual(
             80,
@@ -55,6 +55,41 @@ final class ArchApiReferenceTest extends TestCase
 
         self::assertSame([], $missing, sprintf(
             'Public classes missing from docs/user/api-reference.md: %s',
+            implode(', ', $missing),
+        ));
+    }
+
+    /**
+     * Every class named in the reference resolves to a declared class-like.
+     *
+     * The forward gate catches an undocumented class; this one catches a
+     * documented class that no longer exists (a deleted seam left in the
+     * table). Checking the FQCN, not the file path, also catches a rename
+     * whose old file survives. Both directions are needed for the page to be
+     * a map.
+     */
+    public function testEveryDocumentedClassExists(): void
+    {
+        $reference = (string) file_get_contents(dirname(__DIR__) . '/docs/user/api-reference.md');
+        $documented = self::documentedClasses($reference);
+        $missing = [];
+
+        foreach (array_keys($documented) as $name) {
+            $fqcn = 'AlFalaq\\AlFalaq\\' . $name;
+
+            if (! class_exists($fqcn) && ! interface_exists($fqcn) && ! trait_exists($fqcn)) {
+                $missing[] = $name;
+            }
+        }
+
+        self::assertGreaterThanOrEqual(
+            80,
+            count($documented),
+            'The reference scan found too few entries; this gate would pass vacuously.',
+        );
+
+        self::assertSame([], $missing, sprintf(
+            'docs/user/api-reference.md names classes that do not exist: %s',
             implode(', ', $missing),
         ));
     }

@@ -18,6 +18,7 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -1005,5 +1006,127 @@ final class CalculationParametersTest extends TestCase
             PrayerAdjustments::empty(),
             PrayerAdjustments::empty(),
         );
+    }
+
+    /**
+     * Every wither changes exactly its own field and preserves the other 14.
+     *
+     * This is the counterweight to copyWith(): one construction site can drop
+     * a field silently, so the table asserts the full property set before and
+     * after and that exactly one key differs.
+     *
+     * @return iterable<string, array{callable(CalculationParameters): CalculationParameters, string}>
+     */
+    public static function witherProvider(): iterable
+    {
+        yield 'withMadhab' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withMadhab(Madhab::HANAFI),
+            'madhab',
+        ];
+        yield 'withElevationM' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withElevationM(100.5),
+            'elevationM',
+        ];
+        yield 'withAdjustments' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withAdjustments(
+                PrayerAdjustments::empty()->with(Prayer::FAJR, 3),
+            ),
+            'adjustments',
+        ];
+        yield 'withMethodAdjustments' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withMethodAdjustments(
+                PrayerAdjustments::empty()->with(Prayer::FAJR, -3),
+            ),
+            'methodAdjustments',
+        ];
+        yield 'withRamadan' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withRamadan(true),
+            'isRamadan',
+        ];
+        yield 'withFajrAngle' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withFajrAngle(19.5),
+            'fajrAngle',
+        ];
+        yield 'withIshaRule' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withIshaRule(new AngleIsha(17.0)),
+            'ishaRule',
+        ];
+        yield 'withMaghribRule' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withMaghribRule(
+                new MinutesAfterSunsetMaghrib(5),
+            ),
+            'maghribRule',
+        ];
+        yield 'withHighLatitudeRule' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withHighLatitudeRule(
+                HighLatitudeRule::SEVENTH_OF_NIGHT,
+            ),
+            'highLatitudeRule',
+        ];
+        yield 'withPolarCircleRule' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withPolarCircleRule(
+                PolarCircleRule::MAKKAH,
+            ),
+            'polarCircleRule',
+        ];
+        yield 'withImsakOffset' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withImsakOffset(5),
+            'imsakOffsetMinutes',
+        ];
+        yield 'withIshraqOffset' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withIshraqOffset(10),
+            'ishraqOffsetMinutes',
+        ];
+        yield 'withDhuhaOffset' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withDhuhaOffset(30),
+            'dhuhaOffsetMinutes',
+        ];
+        yield 'withDhuhrOffset' => [
+            static fn(CalculationParameters $p): CalculationParameters => $p->withDhuhrOffset(2),
+            'dhuhrOffsetMinutes',
+        ];
+    }
+
+    /**
+     * @param callable(CalculationParameters): CalculationParameters $apply Wither under test.
+     * @param string $field Property the wither is expected to change.
+     * @return void
+     */
+    #[DataProvider('witherProvider')]
+    public function testWitherChangesExactlyOneField(callable $apply, string $field): void
+    {
+        $base = CalculationMethod::UMM_AL_QURA->defaultParameters();
+        $before = get_object_vars($base);
+        $after = get_object_vars($apply($base));
+
+        self::assertSame(array_keys($before), array_keys($after));
+
+        $changed = [];
+
+        foreach ($before as $name => $value) {
+            if ($value !== $after[$name]) {
+                $changed[] = $name;
+            }
+        }
+
+        self::assertSame([$field], $changed);
+    }
+
+    /**
+     * Falsy replacements are values, not "keep current" sentinels.
+     *
+     * `copyWith()` uses null as the sentinel, so false and 0.0 must replace
+     * the current field rather than falling back to it.
+     *
+     * @return void
+     */
+    public function testWithersTreatFalsyReplacementsAsValues(): void
+    {
+        $base = CalculationMethod::UMM_AL_QURA->defaultParameters();
+
+        self::assertFalse($base->isRamadan);
+        self::assertTrue($base->withRamadan(true)->isRamadan);
+        self::assertFalse($base->withRamadan(true)->withRamadan(false)->isRamadan);
+        self::assertSame(0.0, $base->withFajrAngle(0.0)->fajrAngle);
     }
 }

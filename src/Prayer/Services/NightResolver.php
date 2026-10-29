@@ -13,6 +13,7 @@ use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\NightPortions;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
@@ -61,17 +62,17 @@ final class NightResolver
         SolarTime $day,
         int $nightSec,
     ): array {
-        // NONE skips the portions safe caps (raw angle temps); every other
-        // rule resolves fallback portions eagerly. The SEASONAL_TWILIGHT arm
-        // is wired to MiddleOfNightCorrection via defaultFor and only
-        // consults these portions on the non-seasonal fallback path.
-        $portions = match ($parameters->highLatitudeRule) {
-            HighLatitudeRule::NONE => null,
-            default => $this->highLatitudeCorrection->portions(
-                $parameters->fajrAngle,
-                $parameters->ishaRule->angle(),
-            ),
-        };
+        // The twilight-angle rule splits the night at the Isha angle; an
+        // interval-based Isha has no angle to split at. Validate the rule up
+        // front: the seasonal arm (MSC / SEASONAL_TWILIGHT) never reads
+        // portions, so it would otherwise bypass TwilightAngleCorrection's
+        // guard.
+        if (
+            $parameters->highLatitudeRule === HighLatitudeRule::TWILIGHT_ANGLE
+            && $parameters->ishaRule->angle() === null
+        ) {
+            throw new ConfigurationException('TWILIGHT_ANGLE requires angle-based Isha.');
+        }
 
         $isMsc = $parameters->method === CalculationMethod::MOON_SIGHTING_COMMITTEE;
 
@@ -84,6 +85,16 @@ final class NightResolver
         // (_set_fajr and _set_isha); keep pin-verbatim here.
         $useSeasonalSafe = $isMsc || $parameters->highLatitudeRule === HighLatitudeRule::SEASONAL_TWILIGHT;
         $useSeventh = $useSeasonalSafe && $coords->latitude >= 55;
+
+        // Three modes: seasonal safe caps (MSC or SEASONAL_TWILIGHT),
+        // NONE-raw (no cap), or fallback portions. The seasonal arm never
+        // reads portions, so resolve them only for the portions mode.
+        $portions = $useSeasonalSafe || $parameters->highLatitudeRule === HighLatitudeRule::NONE
+            ? null
+            : $this->highLatitudeCorrection->portions(
+                $parameters->fajrAngle,
+                $parameters->ishaRule->angle(),
+            );
 
         $seasonalSeconds = ['morning' => 0, 'evening' => 0];
         $seventh = 0;
@@ -113,7 +124,8 @@ final class NightResolver
      * @param CalculationParameters $parameters Method defaults + overrides.
      * @param SolarTime $day Solar day from the engine.
      * @param int $nightSec Sunset-to-next-sunrise seconds.
-     * @param NightPortions|null $portions Fallback portions, null for NONE.
+     * @param NightPortions|null $portions Fallback portions; null for NONE or
+     *     the seasonal safe-cap path (never read there).
      * @param bool $useSeasonalSafe MSC method or SEASONAL_TWILIGHT arm.
      * @param bool $useSeventh High-latitude seventh-of-night path.
      * @param array{morning: int, evening: int} $seasonalSeconds Seasonal caps in seconds.
@@ -178,7 +190,8 @@ final class NightResolver
      * @param CalculationParameters $parameters Method defaults + overrides.
      * @param SolarTime $day Solar day from the engine.
      * @param int $nightSec Sunset-to-next-sunrise seconds.
-     * @param NightPortions|null $portions Fallback portions, null for NONE.
+     * @param NightPortions|null $portions Fallback portions; null for NONE or
+     *     the seasonal safe-cap path (never read there).
      * @param bool $useSeasonalSafe MSC method or SEASONAL_TWILIGHT arm.
      * @param bool $useSeventh High-latitude seventh-of-night path.
      * @param array{morning: int, evening: int} $seasonalSeconds Seasonal caps in seconds.

@@ -78,9 +78,17 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   `*Interface` suffix) and driven ports (strategy SPIs, short names).
   Never add an `Interface` suffix outside service contracts; never strip one.
 - `Services/`: `final`, explicit ctor injection, `default()` factory, single
-  command method. `Strategies/`: `final`, one `Contracts/` interface each.
-  `ValueObjects/`: `final readonly`, validated ctor, UTC math only.
-  `Traits/` (named `Traits/`, not `Concerns/`): stateless, `private` helpers.
+  command method. Two documented exceptions: `NightResolver` is an internal
+  step wired by `PrayerTimesCalculator::default()` (no standalone factory),
+  and `SunnahCalculator` needs the day's schedules, so it is built through
+  `fromCalculator()`. `Astro/Services/` is internal engine wiring and is
+  exempt from the factory convention (the stable `MeanSolarCalculator`
+  adapter is constructed with `new`). `Strategies/`: `final`, one
+  `Contracts/` interface each. `ValueObjects/`: `final readonly`, validated
+  ctor, UTC math only (the stateless static holders `Kaaba` and `Minutes`
+  stay plain `final`). `Traits/` (named `Traits/`, not `Concerns/`):
+  stateless, `private` helpers (the two Hijri calendar traits contribute
+  public `HijriCalendar` methods by design).
   `Exceptions/`: `*Exception` suffix, extend `AlFalaqException`; `*Error`
   names forbidden.
 - Pure domain: SPL + `\DateTimeImmutable` only (mutable `DateTime` and

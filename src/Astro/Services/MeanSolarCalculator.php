@@ -6,7 +6,6 @@ namespace AlFalaq\AlFalaq\Astro\Services;
 
 use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
 use AlFalaq\AlFalaq\Astro\Traits\SharesSolarTheory;
-use AlFalaq\AlFalaq\Astro\ValueObjects\SolarPosition;
 use AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
@@ -18,12 +17,13 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
  * Mean-sun solar calculator (Meeus transcription, M1).
  *
  * Default SolarDayEngine adapter: the day-level methods (solarTime,
- * hourAngle, afternoon, isSolarDefined) are the port surface, plus
- * declination/equationOfTime/position for direct consumers.
+ * hourAngleFloat, hourAngle, afternoon, isSolarDefined) are the port
+ * surface; declination/equationOfTime are kept as the Meeus pin-parity
+ * oracle (tests only).
  *
- * Default SolarDayEngine adapter: safe to construct for explicit service
- * wiring per docs/integrations.md (userland otherwise goes through Moon/
- * or the relevant Prayer service, never Astro internals).
+ * Safe to construct for explicit service wiring per docs/integrations.md
+ * (userland otherwise goes through Moon/ or the relevant Prayer service,
+ * never Astro internals).
  */
 final class MeanSolarCalculator implements SolarDayEngine
 {
@@ -91,20 +91,6 @@ final class MeanSolarCalculator implements SolarDayEngine
             $meanLongitude - 0.0057183 - $rightAscension
             + $deltaPsi * cos(deg2rad($epsilon0 + $deltaEpsilon)),
         ) * 4.0;
-    }
-
-    /**
-     * Full solar position bundle for one day number (M1).
-     *
-     * @param float $julianDay Julian Day number.
-     * @return SolarPosition Declination + equation of time.
-     */
-    public function position(float $julianDay): SolarPosition
-    {
-        return new SolarPosition(
-            $this->declination($julianDay),
-            $this->equationOfTime($julianDay),
-        );
     }
 
     /**

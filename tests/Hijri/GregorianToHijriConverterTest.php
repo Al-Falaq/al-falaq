@@ -447,8 +447,9 @@ final class GregorianToHijriConverterTest extends TestCase
         // tomorrow's sunrise is not, so the full schedule is undefined
         // under PolarCircleRule::NONE while maghrib itself exists. The
         // bridge must resolve maghrib alone instead of failing.
-        // (White-nights latitudes stay fully defined or fail with a plain
-        // AstronomicalException, which still propagates by design.)
+        // (A plain AstronomicalException from the full schedule takes the
+        // same fallback; an undefined maghrib from maghribAt() still
+        // propagates.)
         $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
             ->withPolarCircleRule(PolarCircleRule::NONE);
         $coordinates = Coordinates::fromDegrees(69.6496, 18.9553);
@@ -517,5 +518,77 @@ final class GregorianToHijriConverterTest extends TestCase
         } catch (ValidationException $e) {
             self::assertNotSame('', $e->getMessage());
         }
+    }
+
+    /**
+     * A plain AstronomicalException (Asr/Isha undefined) takes the
+     * maghrib-only fallback too: #15 is "schedule undefined", not "the
+     * pipeline threw one particular subclass".
+     *
+     * @return void
+     */
+    public function testSunsetRollFallsBackOnPlainAstronomicalException(): void
+    {
+        $utc = new DateTimeZone('UTC');
+        $calculator = new class implements PrayerTimesCalculatorInterface {
+            public function calculate(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule
+            {
+                throw new AstronomicalException('Unable to compute Asr: the afternoon shadow length is undefined.');
+            }
+
+            public function maghribAt(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): DateTimeImmutable
+            {
+                return new DateTimeImmutable($date->isoformat() . ' 10:00:00', new DateTimeZone('UTC'));
+            }
+        };
+
+        $converter = new GregorianToHijriConverter($calculator);
+        $calendar = new TabularCalendar();
+
+        self::assertSame(
+            $calendar->fromGregorian(CivilDate::fromYmd(2025, 3, 2))->isoformat(),
+            $converter->convert(
+                new DateTimeImmutable('2025-03-01 12:00:00', $utc),
+                $calendar,
+                $this->kualaLumpur(),
+                CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(),
+                true,
+            )->isoformat(),
+        );
+    }
+
+    /**
+     * Validation errors are not "schedule undefined": they must escape.
+     *
+     * A future widening to AlFalaqException (or Throwable) would make a bad
+     * caller configuration look like a polar fallback; this pins the edge.
+     *
+     * @return void
+     */
+    public function testSunsetRollDoesNotSwallowValidationErrors(): void
+    {
+        $calculator = new class implements PrayerTimesCalculatorInterface {
+            public function calculate(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule
+            {
+                throw new ValidationException('Invalid parameters.');
+            }
+
+            public function maghribAt(Coordinates $coordinates, CivilDate $date, CalculationParameters $parameters): DateTimeImmutable
+            {
+                return new DateTimeImmutable($date->isoformat() . ' 10:00:00', new DateTimeZone('UTC'));
+            }
+        };
+
+        $converter = new GregorianToHijriConverter($calculator);
+
+        $this->expectException(ValidationException::class);
+
+        $converter->convert(
+            new DateTimeImmutable('2025-03-01 12:00:00', new DateTimeZone('UTC')),
+            new TabularCalendar(),
+            $this->kualaLumpur(),
+            CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(),
+            true,
+        );
     }
 }

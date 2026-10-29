@@ -9,9 +9,9 @@ use AlFalaq\AlFalaq\Hijri\Contracts\OffsetStore;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
-use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
@@ -128,11 +128,11 @@ final class GregorianToHijriConverter
     ): \DateTimeImmutable {
         try {
             return $this->calculator->calculate($coordinates, $date, $parameters)->timeFor(Prayer::MAGHRIB);
-        } catch (UndefinedScheduleException) {
-            // Strict high-latitude configs may leave the full schedule
-            // undefined while maghrib itself is defined; resolve maghrib
-            // alone rather than failing the conversion. Throws the same
-            // exception when maghrib itself is undefined (e.g. polar night).
+        } catch (AstronomicalException) {
+            // Any astronomical "schedule undefined" — polar day/night or an
+            // undefined Fajr/Asr/Isha component — falls back to maghrib alone.
+            // A genuinely undefined maghrib still propagates; validation and
+            // configuration errors are not AstronomicalException and surface.
             return $this->calculator->maghribAt($coordinates, $date, $parameters);
         }
     }

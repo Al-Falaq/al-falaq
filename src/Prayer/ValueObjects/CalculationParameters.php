@@ -120,6 +120,64 @@ final readonly class CalculationParameters
     }
 
     /**
+     * Copy with selected fields replaced (the only wither construction site).
+     *
+     * Every field is non-nullable, so `null` is a safe "keep current"
+     * sentinel. If a nullable field is ever added, switch that field to an
+     * explicit sentinel rather than overloading null.
+     *
+     * @param Madhab|null $madhab Replacement Asr school, null keeps current.
+     * @param HighLatitudeRule|null $highLatitudeRule Replacement rule, null keeps current.
+     * @param PolarCircleRule|null $polarCircleRule Replacement selector, null keeps current.
+     * @param float|null $fajrAngle Replacement angle, null keeps current.
+     * @param IshaRule|null $ishaRule Replacement rule, null keeps current.
+     * @param MaghribRule|null $maghribRule Replacement rule, null keeps current.
+     * @param int|null $dhuhrOffsetMinutes Replacement offset, null keeps current.
+     * @param int|null $imsakOffsetMinutes Replacement offset, null keeps current.
+     * @param int|null $ishraqOffsetMinutes Replacement offset, null keeps current.
+     * @param int|null $dhuhaOffsetMinutes Replacement offset, null keeps current.
+     * @param float|null $elevationM Replacement elevation, null keeps current.
+     * @param bool|null $isRamadan Replacement flag, null keeps current.
+     * @param PrayerAdjustments|null $methodAdjustments Replacement layer, null keeps current.
+     * @param PrayerAdjustments|null $adjustments Replacement layer, null keeps current.
+     * @return self New parameters; this instance is unchanged.
+     */
+    private function copyWith(
+        ?Madhab $madhab = null,
+        ?HighLatitudeRule $highLatitudeRule = null,
+        ?PolarCircleRule $polarCircleRule = null,
+        ?float $fajrAngle = null,
+        ?IshaRule $ishaRule = null,
+        ?MaghribRule $maghribRule = null,
+        ?int $dhuhrOffsetMinutes = null,
+        ?int $imsakOffsetMinutes = null,
+        ?int $ishraqOffsetMinutes = null,
+        ?int $dhuhaOffsetMinutes = null,
+        ?float $elevationM = null,
+        ?bool $isRamadan = null,
+        ?PrayerAdjustments $methodAdjustments = null,
+        ?PrayerAdjustments $adjustments = null,
+    ): self {
+        return new self(
+            $this->method,
+            $madhab ?? $this->madhab,
+            $highLatitudeRule ?? $this->highLatitudeRule,
+            $polarCircleRule ?? $this->polarCircleRule,
+            $fajrAngle ?? $this->fajrAngle,
+            $ishaRule ?? $this->ishaRule,
+            $maghribRule ?? $this->maghribRule,
+            $dhuhrOffsetMinutes ?? $this->dhuhrOffsetMinutes,
+            $imsakOffsetMinutes ?? $this->imsakOffsetMinutes,
+            $ishraqOffsetMinutes ?? $this->ishraqOffsetMinutes,
+            $dhuhaOffsetMinutes ?? $this->dhuhaOffsetMinutes,
+            $elevationM ?? $this->elevationM,
+            $isRamadan ?? $this->isRamadan,
+            $methodAdjustments ?? $this->methodAdjustments,
+            $adjustments ?? $this->adjustments,
+        );
+    }
+
+    /**
      * Guard Umm al-Qura Ramadan mode at construction time.
      *
      * @param CalculationMethod $method Owning method (NONE for custom configs).
@@ -183,23 +241,7 @@ final readonly class CalculationParameters
      */
     public function withMadhab(Madhab $madhab): self
     {
-        return new self(
-            $this->method,
-            $madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(madhab: $madhab);
     }
 
     /**
@@ -212,23 +254,7 @@ final readonly class CalculationParameters
     {
         $value = self::validateElevation($meters);
 
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $value,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(elevationM: $value);
     }
 
     /**
@@ -239,23 +265,7 @@ final readonly class CalculationParameters
      */
     public function withAdjustments(PrayerAdjustments $adjustments): self
     {
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $adjustments,
-        );
+        return $this->copyWith(adjustments: $adjustments);
     }
 
     /**
@@ -270,23 +280,7 @@ final readonly class CalculationParameters
     {
         self::assertRamadanCompatible($this->method, $isRamadan);
 
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(isRamadan: $isRamadan);
     }
 
     /**
@@ -299,23 +293,7 @@ final readonly class CalculationParameters
     {
         $value = self::validateAngle($angle, 'fajrAngle');
 
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $value,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(fajrAngle: $value);
     }
 
     /**
@@ -328,23 +306,7 @@ final readonly class CalculationParameters
     {
         $ishaRule->validate();
 
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(ishaRule: $ishaRule);
     }
 
     /**
@@ -357,23 +319,7 @@ final readonly class CalculationParameters
     {
         $maghribRule->validate();
 
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(maghribRule: $maghribRule);
     }
 
     /**
@@ -384,23 +330,7 @@ final readonly class CalculationParameters
      */
     public function withHighLatitudeRule(HighLatitudeRule $highLatitudeRule): self
     {
-        return new self(
-            $this->method,
-            $this->madhab,
-            $highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(highLatitudeRule: $highLatitudeRule);
     }
 
     /**
@@ -411,23 +341,7 @@ final readonly class CalculationParameters
      */
     public function withPolarCircleRule(PolarCircleRule $polarCircleRule): self
     {
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(polarCircleRule: $polarCircleRule);
     }
 
     /**
@@ -440,23 +354,7 @@ final readonly class CalculationParameters
     {
         $value = self::guardOffsetMinutes($minutes, 'imsakOffsetMinutes');
 
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $value,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(imsakOffsetMinutes: $value);
     }
 
     /**
@@ -477,23 +375,7 @@ final readonly class CalculationParameters
             ));
         }
 
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $value,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(ishraqOffsetMinutes: $value);
     }
 
     /**
@@ -514,23 +396,7 @@ final readonly class CalculationParameters
             ));
         }
 
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $value,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(dhuhaOffsetMinutes: $value);
     }
 
     /**
@@ -543,23 +409,7 @@ final readonly class CalculationParameters
     {
         $value = self::guardOffsetMinutes($minutes, 'dhuhrOffsetMinutes', 0, 5);
 
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $value,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $this->methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(dhuhrOffsetMinutes: $value);
     }
 
     /**
@@ -570,22 +420,6 @@ final readonly class CalculationParameters
      */
     public function withMethodAdjustments(PrayerAdjustments $methodAdjustments): self
     {
-        return new self(
-            $this->method,
-            $this->madhab,
-            $this->highLatitudeRule,
-            $this->polarCircleRule,
-            $this->fajrAngle,
-            $this->ishaRule,
-            $this->maghribRule,
-            $this->dhuhrOffsetMinutes,
-            $this->imsakOffsetMinutes,
-            $this->ishraqOffsetMinutes,
-            $this->dhuhaOffsetMinutes,
-            $this->elevationM,
-            $this->isRamadan,
-            $methodAdjustments,
-            $this->adjustments,
-        );
+        return $this->copyWith(methodAdjustments: $methodAdjustments);
     }
 }

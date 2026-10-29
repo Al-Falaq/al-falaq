@@ -80,7 +80,7 @@ $hijri = $converter->convert(
 );
 ```
 
-The Maghrib instant comes through the real prayer pipeline (never a reimplementation), so high-latitude and polar behaviour match prayer times exactly: an undefined Maghrib propagates `AstronomicalException` unchanged rather than guessing, and when the full schedule is undefined but Maghrib alone is defined, the bridge resolves Maghrib alone.
+The Maghrib instant comes through the real prayer pipeline (never a reimplementation), so high-latitude and polar behaviour match prayer times exactly: an undefined Maghrib propagates an `AstronomicalException` from the maghrib-only probe rather than guessing, and when the full schedule is undefined but Maghrib alone is defined, the bridge resolves Maghrib alone.
 
 ## MABIMS countries and proxies
 

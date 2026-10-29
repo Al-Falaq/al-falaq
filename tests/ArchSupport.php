@@ -232,4 +232,59 @@ abstract class ArchSupport extends TestCase
 
         return null;
     }
+
+    /**
+     * Count named class/interface/trait/enum declarations in one file.
+     *
+     * @param string $path PHP file to scan.
+     * @return int Named class-like declarations in the file.
+     */
+    protected static function classLikeDeclarationCount(string $path): int
+    {
+        return self::countClassLikeDeclarations((string) file_get_contents($path));
+    }
+
+    /**
+     * Count named class-like declarations in a code string.
+     *
+     * `T_CLASS` is emitted for declarations, anonymous classes (`new class`),
+     * and `::class` constants. A declaration is the only form whose next
+     * significant token is the declared name, so the following token decides.
+     * The same rule covers `new #[Attr] class {}` and `readonly class`.
+     *
+     * @param string $code PHP source, including the opening tag.
+     * @return int Named class-like declarations.
+     */
+    protected static function countClassLikeDeclarations(string $code): int
+    {
+        $significant = [];
+
+        foreach (token_get_all($code) as $token) {
+            if (is_array($token)) {
+                if (in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                    continue;
+                }
+
+                $significant[] = $token[0];
+            } else {
+                $significant[] = $token;
+            }
+        }
+
+        $count = 0;
+
+        foreach ($significant as $index => $id) {
+            if (! in_array($id, [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM], true)) {
+                continue;
+            }
+
+            if (($significant[$index + 1] ?? null) !== T_STRING) {
+                continue;
+            }
+
+            $count++;
+        }
+
+        return $count;
+    }
 }

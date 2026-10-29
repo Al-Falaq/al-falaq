@@ -7,7 +7,7 @@ description: Every public class, method, and contract in al-falaq, grouped by co
 
 This page maps the entire public surface — what to call, what to implement, and what to leave alone. Public contexts are `SharedKernel`, `Prayer`, `Qibla`, `Moon`, and `Hijri`; every public class-like is named below, and `tests/ArchApiReferenceTest.php` fails the build when one is added without an entry here. `Astro/` is `@internal`: the engine behind the services, never imported from userland (the one stable exception is the `SolarDayEngine` port with its `MeanSolarCalculator` adapter for explicit prayer wiring).
 
-Conventions: services are `final` with explicit constructor injection and `default()` / `defaultFor()` factories; value objects are `final readonly` and validate at construction, while static-holder classes (`Kaaba`, `Minutes`) carry no instance state and stay plain `final`; service contracts carry the `Interface` suffix (a PHP same-short-name rule — do not "simplify" it away); everything time-bearing is UTC `DateTimeImmutable`.
+Conventions: public services are `final` with explicit constructor injection and `default()` / `defaultFor()` factories; the two exceptions are `NightResolver` (wired by `PrayerTimesCalculator::default()`) and `SunnahCalculator` (`fromCalculator()`), and internal `Astro/Services/` classes are exempt from the factory convention. Value objects are `final readonly` and validate at construction, while static-holder classes (`Kaaba`, `Minutes`) carry no instance state and stay plain `final`; service contracts carry the `Interface` suffix (a PHP same-short-name rule — do not "simplify" it away); everything time-bearing is UTC `DateTimeImmutable`.
 
 ## SharedKernel — the foundation
 
@@ -19,7 +19,6 @@ Conventions: services are `final` with explicit constructor injection and `defau
 | `SharedKernel\ValueObjects\Minutes` | `add(DateTimeImmutable, int): DateTimeImmutable`; `roundedHalfUp(DateTimeImmutable $utc): DateTimeImmutable` (UTC-only, half-up) |
 | `SharedKernel\ValueObjects\JulianDay` | `fromCivilDate(CivilDate): self` (Fliegel–Van Flandern, day number at 00:00 UTC); `day` (raw float); `toFloat(): float` (astronomy internals) |
 | `SharedKernel\ValueObjects\Kaaba` | `LATITUDE = 21.4225241`, `LONGITUDE = 39.8261818`; `coordinates(): Coordinates` — the single owner of the Kaaba position (the Qibla contract constants reference it) |
-| `SharedKernel\Contracts\ClockView` | `now(): DateTimeImmutable` — an optional edge port for host apps; the domain never reads the clock |
 | `SharedKernel\Contracts\DomainException` | Marker interface every domain exception implements — catch this for everything |
 | `SharedKernel\Exceptions\AlFalaqException` | Abstract base for every exception in the library (`extends \RuntimeException implements DomainException`) |
 | `SharedKernel\Exceptions\ValidationException` | Invalid input that is not coordinates-specific; `extends AlFalaqException` |
@@ -53,8 +52,8 @@ Conventions: services are `final` with explicit constructor injection and `defau
 | `Prayer\Contracts\TwilightModel` | `seasonalSeconds(int $dayOfYear, int $year, float $latitude): array{morning: int, evening: int}` — the MSC seasonal caps |
 | `Prayer\Contracts\PolarCircleHandler` | `resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array{coordinates: Coordinates, date: CivilDate}` |
 | `Prayer\Services\PrayerTimesCalculator` | `default(): self`; `defaultFor(CalculationParameters): self`; `calculate(Coordinates\|array, CivilDate, CalculationParameters): PrayerSchedule`; `maghribAt(...): DateTimeImmutable` |
-| `Prayer\Services\TimetableService` | `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` |
-| `Prayer\Services\NextPrayerResolver` | `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be UTC) |
+| `Prayer\Services\TimetableService` | `default(): self`; `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` |
+| `Prayer\Services\NextPrayerResolver` | `default(): self`; `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be UTC) |
 | `Prayer\Services\SunnahCalculator` | `fromCalculator(PrayerTimesCalculatorInterface, Coordinates, CivilDate, CalculationParameters): self`; `__construct(PrayerSchedule $today, PrayerSchedule $tomorrow)`; `calculate(): SunnahTimes` |
 | `Prayer\Services\NightResolver` | The step that owns the fajr/isha resolution (seasonal / NONE-raw / portions). Exposed for introspection; not a driving port |
 | `Prayer\Strategies\AngleIsha`, `Prayer\Strategies\IntervalIsha` | `IshaRule` implementations (angle vs minutes-after-Maghrib) |

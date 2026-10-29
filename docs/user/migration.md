@@ -5,9 +5,33 @@ description: Upgrade between al-falaq versions — what changed, what breaks, an
 
 # Migration
 
-This page collects the changes that require your attention when upgrading. Everything below ships in 0.1.0 — the first tagged release.
+This page collects the changes that require your attention when upgrading.
+
+## Unreleased — 0.2.0
+
+### `ClockView` removed
+
+`SharedKernel\Contracts\ClockView` shipped in 0.1.1 but the library never
+used it. If you implemented the optional clock port for your edge, remove the
+implementation and migrate any type hints to a host-owned clock interface (or
+a PSR clock interface). Keep the adapter only if host code still calls
+`now()` or uses it to supply `$nowUtc`; the library still takes `$nowUtc`
+explicitly, and the `psr/clock` suggestion is unchanged.
+
+### `TWILIGHT_ANGLE` requires an angle-based Isha
+
+The prayer pipeline now rejects parameters that combine
+`HighLatitudeRule::TWILIGHT_ANGLE` with an interval-based Isha rule — through
+`PrayerTimesCalculator::default()` as well as `defaultFor()`. `calculate()`
+raises `ConfigurationException` from `NightResolver` before the seasonal
+split; previously the Moonsighting Committee / `SEASONAL_TWILIGHT` path could
+skip that check. If you override a preset such as Umm al-Qura or Qatar with
+`TWILIGHT_ANGLE`, choose a compatible high-latitude rule or switch Isha to an
+angle-based rule (`AngleIsha`).
 
 ## 0.1.0
+
+Everything below ships in 0.1.0 — the first tagged release.
 
 The guiding promise for the architecture changes: `default()` / `defaultFor()` factories keep working across them — only explicit construction and custom strategy implementations need attention there. The [Hijri surface changes](#hijri-surface-changes) are the exception: they remove or narrow three public methods, so callers of those methods must update even when everything else is built through factories. Bugfixes that need no action are marked as such.
 

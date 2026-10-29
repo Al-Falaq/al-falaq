@@ -119,7 +119,7 @@ flowchart TB
   (`Coordinates`, `CivilDate`, `Angle`, `Minutes`, `JulianDay`, `Kaaba`),
   `Exceptions/` (`AlFalaqException` base, `ValidationException`,
   `AstronomicalException`, `ConfigurationException`, …),
-  `Contracts/` (`ClockView`, `DomainException`), `Traits/`
+  `Contracts/` (`DomainException`), `Traits/`
   (`HasWithersGuard`, `ValidatesFinite`).
 - `src/Prayer/` — the largest context. `PrayerTimesCalculator` (single-day
   pipeline), `TimetableService` (monthly loop), `NextPrayerResolver`
@@ -149,14 +149,15 @@ flowchart TB
   geometry), `CrescentEphemeris` (sun/moon positions, sidereal time,
   moonset), `GeodesyEngine` / `KarneyInverse` (ellipsoidal geodesy),
   `DeltaTProvider`, plus engine-local `Contracts/` (`SolarDayEngine`, one
-  instant-based port) and `ValueObjects/` (`SolarPosition`, `SolarTime`).
+  instant-based port) and `ValueObjects/` (`SolarTime`).
   Shared Meeus theory lives once in `Traits/SharesSolarTheory`.
 
 Supporting directories:
 
 - `tests/` — mirrors `src/` per context, plus `Sweep/` (seeded property
-  sweeps), `Wiring/` (smoke tests for every `docs/integrations.md`
-  snippet), `Goldens/` (pinned-Python parity vectors, 25 CSVs;
+  sweeps), `Wiring/` (extracts and executes every PHP block in
+  `docs/integrations.md`, so the recipes cannot drift from the code),
+  `Goldens/` (pinned-Python parity vectors, 25 CSVs;
   `GoldenLoader.php` loads, `GoldenAsserts.php` asserts, `Comparator.php`
   compares minutes), and the arch groups
   (`tests/Arch{Shape,Docs,Layering,ApiReference}Test.php` + `ArchSupport.php`:
@@ -428,10 +429,17 @@ flowchart LR
   `tests/Goldens/`. Each vector cites its source (Meeus page/edition or
   Takwim URL + date). Intentional divergence updates docs and goldens
   together; code wins, docs follow.
-- **Machine-checked shape.** The arch groups (`composer arch`) enforce `final` services and
-  value objects, `*Exception` naming, no `Util/` namespace, mandatory
-  docblocks (`@param $name` / `@return` on all public API), and the
-  layering rules above. `composer arch` runs these in isolation.
+- **Machine-checked shape.** The arch groups (`composer arch`) enforce `final`
+  services and `final readonly` value objects (property-free static holders
+  aside), `*Exception` naming, no `Util/` namespace, `Contracts/` holding
+  interfaces only and the exact `*Interface` suffix set, one named class per
+  file, private trait helpers (the two Hijri contract traits aside),
+  `default()` factories for public-context services (the two documented
+  exceptions aside; `Astro/Services/` is internal), mandatory docblocks
+  (`@param $name` /
+  `@return` on all public API), and the layering rules above. The API
+  reference is checked in both directions. `composer arch` runs these in
+  isolation.
 
 Key trade-off: the `Astro/` engine is deliberately duplicated in structure
 from the pinned Python rather than replaced with a generic astronomy

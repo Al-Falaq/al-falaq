@@ -25,6 +25,16 @@ final class TimetableService implements TimetableServiceInterface
     public function __construct(private readonly ?PrayerTimesCalculatorInterface $calculator = null) {}
 
     /**
+     * Build on the default prayer pipeline.
+     *
+     * @return self Ready to build monthly timetables.
+     */
+    public static function default(): self
+    {
+        return new self();
+    }
+
+    /**
      * Compute one schedule per day of the month (UTC, constant memory).
      *
      * No yearly helper by design (no contract method) — callers loop monthly().

@@ -16,6 +16,16 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 final class NextPrayerResolver implements NextPrayerResolverInterface
 {
     /**
+     * Build the stateless resolver.
+     *
+     * @return self Ready to resolve the next prayer.
+     */
+    public static function default(): self
+    {
+        return new self();
+    }
+
+    /**
      * Resolve the upcoming prayer across the today/tomorrow boundary.
      *
      * @param PrayerSchedule $today Today's schedule (UTC).
