@@ -13,6 +13,7 @@ use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\NightPortions;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
@@ -61,6 +62,18 @@ final class NightResolver
         SolarTime $day,
         int $nightSec,
     ): array {
+        // The twilight-angle rule splits the night at the Isha angle; an
+        // interval-based Isha has no angle to split at. Validate the rule up
+        // front: the seasonal arm (MSC / SEASONAL_TWILIGHT) never reads
+        // portions, so it would otherwise bypass TwilightAngleCorrection's
+        // guard.
+        if (
+            $parameters->highLatitudeRule === HighLatitudeRule::TWILIGHT_ANGLE
+            && $parameters->ishaRule->angle() === null
+        ) {
+            throw new ConfigurationException('TWILIGHT_ANGLE requires angle-based Isha.');
+        }
+
         $isMsc = $parameters->method === CalculationMethod::MOON_SIGHTING_COMMITTEE;
 
         // Pin _set_fajr/_set_isha MSC branches (PrayerTimes.py verbatim): the

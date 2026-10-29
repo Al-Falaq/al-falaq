@@ -324,6 +324,26 @@ final class PrayerTimesCalculatorTest extends TestCase
         self::assertInstanceOf(MiddleOfNightCorrection::class, $none->highLatitudeCorrection());
     }
 
+    public function testTwilightAngleRuleWithIntervalIshaThrowsOnMscSeasonalPath(): void
+    {
+        // MSC selects the seasonal arm by method, while TWILIGHT_ANGLE selects
+        // TwilightAngleCorrection by rule. The seasonal arm never reads the
+        // portions, so NightResolver must validate the rule before choosing
+        // the mode instead of relying on the correction's eager call.
+        $params = CalculationMethod::MOON_SIGHTING_COMMITTEE->defaultParameters()
+            ->withHighLatitudeRule(HighLatitudeRule::TWILIGHT_ANGLE)
+            ->withIshaRule(new IntervalIsha(90));
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('TWILIGHT_ANGLE requires angle-based Isha.');
+
+        PrayerTimesCalculator::defaultFor($params)->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 6, 21),
+            $params,
+        );
+    }
+
     public function testSeasonalMscAtLatitude55UsesSeventhOfNight(): void
     {
         // The pin gates its temp branch on signed latitude >= 55: at exactly
