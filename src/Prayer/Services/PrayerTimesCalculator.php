@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Services;
 
 use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
+use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
 use AlFalaq\AlFalaq\Prayer\Contracts\HighLatitudeCorrection;
 use AlFalaq\AlFalaq\Prayer\Contracts\MaghribRule;
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
@@ -167,10 +168,10 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
     public static function default(): self
     {
         return new self(
-            new \AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator(),
-            new \AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection(),
-            new \AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler(),
-            new \AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight(),
+            new MeanSolarCalculator(),
+            new MiddleOfNightCorrection(),
+            new NearestLatitudeHandler(),
+            new SeasonAdjustedTwilight(),
         );
     }
 
@@ -201,7 +202,7 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         $twilight = new SeasonAdjustedTwilight();
 
         return new self(
-            new \AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator(),
+            new MeanSolarCalculator(),
             $hl,
             $polar,
             $twilight,

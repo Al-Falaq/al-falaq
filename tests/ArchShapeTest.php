@@ -422,6 +422,106 @@ PHP;
         self::assertSame([], $violations);
     }
 
+    /**
+     * Source must import its own names, never inline a fully-qualified name.
+     *
+     * The tokenizer sees `use`/`namespace` as T_NAME_QUALIFIED and docblocks
+     * as T_DOC_COMMENT, so only a real code reference (`new \AlFalaq\...`)
+     * trips the gate.
+     */
+    public function testNoInlineSourceFqcns(): void
+    {
+        $violations = [];
+        $checked = 0;
+
+        foreach (self::srcPhpFiles() as $path) {
+            $checked++;
+
+            foreach (self::inlineSourceFqcns((string) file_get_contents($path)) as $found) {
+                $violations[] = sprintf('%s:%d: inline %s; import it instead.', $path, $found['line'], $found['name']);
+            }
+        }
+
+        self::assertGreaterThanOrEqual(90, $checked, 'The source scan found too few files; the gate would pass vacuously.');
+        self::assertSame([], $violations);
+    }
+
+    /**
+     * Scanner regression probe: imports, namespaces, and docblocks are not
+     * inline references.
+     */
+    public function testInlineFqcnScannerIgnoresImportsAndComments(): void
+    {
+        $code = <<<'PHP'
+<?php
+namespace Probe;
+
+use AlFalaq\AlFalaq\Imported;
+
+/** \AlFalaq\AlFalaq\Docblock is prose, not code. */
+final class Probe
+{
+    public function make(): object
+    {
+        return new \AlFalaq\AlFalaq\Inline();
+    }
+}
+PHP;
+
+        self::assertSame(
+            ['\\AlFalaq\\AlFalaq\\Inline'],
+            array_column(self::inlineSourceFqcns($code), 'name'),
+        );
+    }
+
+    /**
+     * Every src file uses at most one consecutive blank line.
+     */
+    public function testNoConsecutiveBlankLines(): void
+    {
+        $violations = [];
+        $checked = 0;
+
+        foreach (self::srcPhpFiles() as $path) {
+            $checked++;
+            $code = (string) file_get_contents($path);
+
+            if (preg_match_all('/(?:\r?\n[ \t]*){3,}/', $code, $matches, PREG_OFFSET_CAPTURE) === false) {
+                continue;
+            }
+
+            foreach ($matches[0] as [$match, $offset]) {
+                $line = substr_count(substr($code, 0, (int) $offset), "\n") + 1;
+                $violations[] = sprintf('%s:%d: %d consecutive blank lines.', $path, $line, substr_count($match, "\n") - 1);
+            }
+        }
+
+        self::assertGreaterThanOrEqual(90, $checked, 'The source scan found too few files; the gate would pass vacuously.');
+        self::assertSame([], $violations);
+    }
+
+    /**
+     * Inline FQCNs in a source string (comments and imports excluded).
+     *
+     * @param string $code PHP source.
+     * @return list<array{name: string, line: int}> Fully-qualified names in code position.
+     */
+    private static function inlineSourceFqcns(string $code): array
+    {
+        $names = [];
+
+        foreach (token_get_all($code) as $token) {
+            if (is_array($token)
+                && $token[0] === T_NAME_FULLY_QUALIFIED
+                && str_starts_with($token[1], '\\AlFalaq\\AlFalaq\\')
+            ) {
+                $names[] = ['name' => $token[1], 'line' => $token[2]];
+            }
+        }
+
+        return $names;
+    }
+
     public function testConventionAllowListsDoNotRot(): void
     {
         foreach (self::SERVICES_WITHOUT_DIRECT_FACTORY as $class => $factory) {

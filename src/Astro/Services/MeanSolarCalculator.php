@@ -394,18 +394,6 @@ final class MeanSolarCalculator implements SolarDayEngine
         return $this->hoursToUtc($tomorrow, $tomorrowRiseHours) !== null;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Wrap a signed angle to (-180, 180] degrees.
      *
@@ -423,7 +411,6 @@ final class MeanSolarCalculator implements SolarDayEngine
 
         return $angle - 360.0 * round($angle / 360.0, 0, PHP_ROUND_HALF_EVEN);
     }
-
 
     /**
      * Right ascension, declination, and sidereal time for one Julian Day.
@@ -470,8 +457,6 @@ final class MeanSolarCalculator implements SolarDayEngine
     {
         return self::SUNSET_DEPRESSION_DEG - 0.0293 * sqrt($elevationM);
     }
-
-
 
     /**
      * Corrected transit in float hours (Meeus Ch.15 interpolation).
@@ -564,8 +549,6 @@ final class MeanSolarCalculator implements SolarDayEngine
 
         return ($m + ($altitude - $altitudeDeg) / $denominator) * 24.0;
     }
-
-
 
     /**
      * Float hours to a UTC instant on the civil date.
