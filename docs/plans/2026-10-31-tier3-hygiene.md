@@ -291,10 +291,12 @@ In each file below, replace every run of two or more blank lines with exactly on
 Verify with:
 
 ```bash
-awk '/^[[:space:]]*$/{c++;next}{if(c>=2)print FILENAME": "c" blanks at line "FNR-c;c=0}' $(find src -name '*.php')
+for f in $(find src -name '*.php'); do
+  awk '/^[[:space:]]*$/{c++;next}{if(c>=2)print FILENAME": "c" blanks before line "FNR;c=0} END{if(c>=2)print FILENAME": "c" trailing blanks from line "FNR-c+1}' "$f"
+done
 ```
 
-Expected: no output.
+Expected: no output. The per-file loop reports runs that reach end-of-file too, and it does not leak the blank-line count from one file into the next; the arch gate uses the same `(?:\r?\n[ \t]*){3,}` shape, so the manual check and the gate agree.
 
 - [ ] **Step 5: Run the gates and the full arch group**
 
@@ -1108,9 +1110,12 @@ Under `### Changed`, add:
   `postcss-selector-parser` were refreshed to clear the current advisories.
 - `docs/migration.md` is scoped as the M1-M5 architecture record; the live
   0.2.0 upgrade guide remains `docs/user/migration.md`.
-- `PrayerTimesCalculator::calculate()` documents why the Asr clamp order is
-  safe: transit precedes sunset, so the Maghrib clamp cannot push Asr below
-  Dhuhr.
+- `PrayerTimesCalculator::calculate()` documents the Asr clamp order: the
+  Maghrib clamp is the final authority, so `asr <= maghrib` always holds and
+  `dhuhr <= asr` holds whenever `dhuhr <= maghrib` (the empty-adjustment
+  ordering sweeps assert that for the supported grid). High-latitude caller
+  offsets can invert the anchors, in which case the Maghrib clamp wins by
+  design.
 - The `composer ci` gate now includes `changelog:check`; `AGENTS.md` records
   the docs scope and the npm audit gate.
 ```
@@ -1170,7 +1175,9 @@ Run:
 git diff --stat main -- docs/user/v0.1.0 docs/user/v0.1.1
 git status --short
 grep -rn 'AlFalaq\\AlFalaq\\' --include='*.php' src | grep -vE ':(use |namespace )' || true
-awk '/^[[:space:]]*$/{c++;next}{if(c>=2)print FILENAME": "c" blanks at line "FNR-c;c=0}' $(find src -name '*.php')
+for f in $(find src -name '*.php'); do
+  awk '/^[[:space:]]*$/{c++;next}{if(c>=2)print FILENAME": "c" blanks before line "FNR;c=0} END{if(c>=2)print FILENAME": "c" trailing blanks from line "FNR-c+1}' "$f"
+done
 ```
 
 Expected:
@@ -1178,7 +1185,7 @@ Expected:
 - The snapshot diff is empty.
 - `git status` shows only the intended Tier-3 files.
 - The inline-FQCN grep prints nothing: all 11 lines now use imported short names, and the arch gate is authoritative.
-- The blank-line `awk` prints nothing.
+- The blank-line scan prints nothing (it also covers trailing runs at end-of-file).
 
 - [ ] **Step 6: Commit**
 
@@ -1219,7 +1226,7 @@ git commit -m "docs: sync the tier-3 changes"
 6. `docs: scope contributor and published documentation` — Task 6.
 7. `docs: sync the tier-3 changes` — Task 7.
 
-The commits are individually revertable. Tasks 1–3 do not touch each other. Task 4's generator is independent of Tasks 5–6. Task 5 only touches the docs-site toolchain. Task 6 only touches documentation and arch tests. Task 7 is the final sync and must come last.
+The commits are individually revertable. Task 2 is independent of both, but Tasks 1 and 3 both edit `src/Prayer/Services/PrayerTimesCalculator.php` (different regions: imports/`default()` vs the `calculate()` clamp), so keep them in that order rather than running them in parallel. Task 4's generator is independent of Tasks 5–6. Task 5 only touches the docs-site toolchain. Task 6 only touches documentation and arch tests. Task 7 is the final sync and must come last.
 
 ---
 
@@ -1235,7 +1242,9 @@ composer cs                        # 0 of 158 files
 composer stan                      # 0 errors / 142 files
 
 # P14 blank-line runs
-awk '/^[[:space:]]*$/{c++;next}{if(c>=2)print FILENAME": "c" blanks at line "FNR-c;c=0}' $(find src -name '*.php')
+for f in $(find src -name '*.php'); do
+  awk '/^[[:space:]]*$/{c++;next}{if(c>=2)print FILENAME": "c" blanks before line "FNR;c=0} END{if(c>=2)print FILENAME": "c" trailing blanks from line "FNR-c+1}' "$f"
+done
 
 # P15 inline FQCNs (namespace/use excluded)
 grep -rn 'AlFalaq\\AlFalaq\\' --include='*.php' src | grep -vE ':(use |namespace )'
