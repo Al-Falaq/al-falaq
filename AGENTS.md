@@ -41,6 +41,9 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - Actions are pinned to full commit SHAs with a `# vX.Y.Z` comment; Dependabot
   (`.github/dependabot.yml`, github-actions, weekly) refreshes them. Keep the
   comment when bumping by hand — it is what Dependabot tracks.
+- Docs-site dependencies are audit-gated in `docs.yml`
+  (`npm audit --omit=dev --audit-level=moderate`); Dependabot tracks both
+  `github-actions` and the `npm` package in `docs_site/`.
 - `composer mutation` — Infection gate (MSI ≥ 85, about 10 min). `composer.json`
   sets `config.process-timeout: 0` so the script survives Composer's default
   300 s process timeout; CI sets the same via `COMPOSER_PROCESS_TIMEOUT`.

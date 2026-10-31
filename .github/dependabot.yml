@@ -17,3 +17,18 @@ updates:
       github-actions:
         patterns:
           - '*'
+
+  # The docs site is a separate npm package. Its dependencies are build-time
+  # only (never shipped in the Composer package), but they still execute in
+  # CI, so they get the same weekly refresh and the audit gate in docs.yml.
+  - package-ecosystem: npm
+    directory: /docs_site
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+    groups:
+      docs-site:
+        patterns:
+          - '*'
