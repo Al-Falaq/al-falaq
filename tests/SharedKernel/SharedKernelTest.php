@@ -211,11 +211,11 @@ final class SharedKernelTest extends TestCase
             CivilDate::fromYmd(2024, 12, 31),
             CivilDate::fromYmd(2025, 1, 15),
         ];
-        usort($dates, static fn (CivilDate $a, CivilDate $b): int => $a->compareTo($b));
+        usort($dates, static fn(CivilDate $a, CivilDate $b): int => $a->compareTo($b));
 
         self::assertSame(
             ['2024-12-31', '2025-01-15', '2025-02-01'],
-            array_map(static fn (CivilDate $date): string => $date->isoformat(), $dates),
+            array_map(static fn(CivilDate $date): string => $date->isoformat(), $dates),
         );
     }
 }
