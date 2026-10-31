@@ -24,6 +24,15 @@ Versioned snapshots of the whole documentation site are kept per release — use
 - `docs/integrations.md` now has runnable recipes for Timetable, Sunnah,
   Crescent visibility, and Hijri conversion. `tests/Wiring/` extracts and
   executes every fenced PHP block, so the recipes cannot drift.
+- `docs/README.md` now defines the contributor-vs-published documentation
+  scope and maps every `docs/*.md` page to its user-facing counterpart;
+  `tests/ArchDocsTest` gates the map and the docs paths cited by error
+  messages.
+- `docs/user/changelog.md` is generated from `CHANGELOG.md` by
+  `tools/sync_changelog.php`; `composer changelog:check` runs in CI and the
+  release gate, so the published changelog can no longer drift.
+- Direct unit tests cover `Minutes::add()`, `Angle::toRadians()`,
+  `Coordinates::__toString()`, and `CivilDate::compareTo()`.
 
 ### Changed
 
@@ -60,6 +69,19 @@ Versioned snapshots of the whole documentation site are kept per release — use
 - `docs/user/api-reference.md` now names the whole public surface, and a new
   arch gate (`tests/ArchApiReferenceTest.php`) fails the build when a public
   class is added without a reference entry.
+- Docs-site dependencies are audit-gated (`npm audit --omit=dev
+  --audit-level=moderate`) and tracked by Dependabot; `undici` and
+  `postcss-selector-parser` were refreshed to clear the current advisories.
+- `docs/migration.md` is scoped as the M1-M5 architecture record; the live
+  0.2.0 upgrade guide remains `docs/user/migration.md`.
+- `PrayerTimesCalculator::calculate()` documents the Asr clamp order: the
+  Maghrib clamp is the final authority, so `asr <= maghrib` always holds and
+  `dhuhr <= asr` holds whenever `dhuhr <= maghrib` (the empty-adjustment
+  ordering sweeps assert that for the supported grid). High-latitude caller
+  offsets can invert the anchors, in which case the Maghrib clamp wins by
+  design.
+- The `composer ci` gate now includes `changelog:check`; `AGENTS.md` records
+  the docs scope and the npm audit gate.
 
 ### Removed
 
@@ -84,6 +106,8 @@ Versioned snapshots of the whole documentation site are kept per release — use
   process timeout killed the Infection run partway through (about 1,680 of
   2,377 mutants). `composer.json` now sets `config.process-timeout: 0`,
   matching the `COMPOSER_PROCESS_TIMEOUT=0` that CI already exports.
+- Inline source FQCNs and deleted-code blank-line runs were removed; new arch
+  gates reject both patterns so they cannot regrow.
 
 ## [0.1.1] - 2026-10-14
 
