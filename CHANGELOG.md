@@ -176,8 +176,9 @@ No library change since 0.1.0 (`src/`, `tests/`, Composer manifest untouched).
   EoT); full pipeline (`PrayerTimesCalculator` + polar/high-latitude/Ramadan
   branches) + `TimetableService` + `NextPrayerResolver`; goldens 100%
   minute-equality (15 files: 11 pin + turkey/kemenag/muis/brunei official-table
-  vectors; tehran/morocco pending, no obtainable tables). Known gaps: UOIF is
-  pin-only with no preset; provisional residual cells emptied per file with
+  vectors; tehran/morocco pending, no obtainable tables). Known gaps: UOIF
+  preset added in 0.1.0; pin-only cell — never claimed as pin parity;
+  provisional residual cells emptied per file with
   reasons (`adee976`: turkey Dec maghrib +1 seasonal wobble; kemenag 13 cells
   ±1 ephemeris gap vs Kemenag tables; muis June fajr single-cell rounding
   noise; brunei dhuha — no published KHEU Doha definition — + Dec ±1 noise);

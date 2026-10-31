@@ -73,8 +73,8 @@ $footer = <<<'MD'
 
 ## See also
 
-- [Migration](migration/) — upgrade instructions per change
-- [Citations](citations/) — sources behind the numbers
+- [Migration](migration.md) — upgrade instructions per change
+- [Citations](citations.md) — sources behind the numbers
 MD;
 
 $output = rtrim($frontmatter) . "\n\n" . rtrim($releases) . "\n\n" . $footer . "\n";
@@ -93,8 +93,34 @@ if ($check) {
     exit(0);
 }
 
-if (file_put_contents($targetPath, $output) === false) {
+// Abort if the source changed while we were generating: an older run
+// must not overwrite newer output derived from a later source revision.
+$currentSource = file_get_contents($sourcePath);
+if ($currentSource === false) {
+    fwrite(STDERR, "sync_changelog: cannot re-read {$sourcePath}.\n");
+    exit(1);
+}
+$currentSource = str_replace(["\r\n", "\r"], "\n", $currentSource);
+if ($currentSource !== $source) {
+    fwrite(STDERR, "sync_changelog: {$sourcePath} changed during generation; aborting to avoid overwriting newer output.\n");
+    exit(1);
+}
+
+// Write to a temp file in the same directory, verify the complete byte
+// count, then atomically rename over the target. A crash or disk-full
+// mid-write can never leave a partially-written changelog behind.
+$tmpPath = $targetPath . '.' . getmypid() . '.tmp';
+if (($written = file_put_contents($tmpPath, $output)) === false || $written !== strlen($output)) {
+    if ($written !== false) {
+        @unlink($tmpPath);
+    }
     fwrite(STDERR, "sync_changelog: cannot write {$targetPath}.\n");
+    exit(1);
+}
+
+if (! rename($tmpPath, $targetPath)) {
+    @unlink($tmpPath);
+    fwrite(STDERR, "sync_changelog: cannot rename temp file to {$targetPath}.\n");
     exit(1);
 }
 
