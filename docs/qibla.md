@@ -123,3 +123,7 @@ the `QiblaCalculator` strategies + `tests/Goldens/qibla_*.csv`.
   Tromsø `69.65N` is an ordinary golden.
 - `magneticHeading(declinationEast)` feeds true-north goldens as
   `unwind(true − declination_east)` (untouched by the spherical oracle).
+
+## See also
+
+- [Qibla](user/qibla.md) — the published user guide

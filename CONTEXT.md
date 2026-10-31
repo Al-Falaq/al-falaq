@@ -46,9 +46,10 @@ M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed);
   `bootstrap.php`. `examples/` — runnable snippets +
   `bench.php`. `tools/` — full inventory in `ARCHITECTURE.md`
   (`composer goldens` lists the generator contracts).
-- Docs: `ARCHITECTURE.md` (layering),
-  `docs/` per-context guides + `integrations.md` (plain-`new` wiring),
-  `AGENTS.md` (agent instructions), `UQ_PROVENANCE.md` (M4).
+- Docs: `ARCHITECTURE.md` (layering), `docs/README.md` (contributor/user
+  scope map), `docs/` contributor guides + `integrations.md` (plain-`new`
+  wiring), `docs/user/` published user guide, `AGENTS.md`,
+  `UQ_PROVENANCE.md` (M4).
 
 ## Conventions that must not regress
 

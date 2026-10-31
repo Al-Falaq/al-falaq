@@ -131,3 +131,7 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   the `Interface` suffix. Do not "simplify" it away.
 - Gotcha: `composer update` without `config.platform.php=8.2.0` resolves
   8.4-only deps and breaks the 8.2/8.3 CI legs.
+- `docs/` is contributor-facing (algorithm appendices, internals,
+  error-message targets); `docs/user/` is the published user guide. Keep
+  `docs/README.md` current; new top-level `docs/*.md` pages must be added to
+  its map.

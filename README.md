@@ -54,7 +54,8 @@ composer bench
   changelog, run `composer changelog`; CI runs `composer changelog:check` and
   fails if the published page is stale.
 - `ARCHITECTURE.md` — layering summary
-- `docs/` — per-context guides (M1–M5, contributor-facing) plus `docs/user/` (user-facing, versioned)
+- `docs/` — contributor-facing algorithm appendices and error-message targets;
+  see [`docs/README.md`](docs/README.md) for the map to the published user guide
 - `UQ_PROVENANCE.md` — Umm al-Qura + MABIMS table provenance, digests, regeneration
 
 ### Freezing docs for a release

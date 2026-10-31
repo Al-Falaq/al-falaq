@@ -27,3 +27,7 @@ exclusive between maghrib and fajr (`0.5` = middle of night, `1.0/3.0` and
 `round(nightSeconds * f)` + `Minutes::roundedHalfUp` arithmetic as
 `SunnahCalculator`, then converts back to the maghrib zone — so `forZone()`
 commutes with it and fraction math never throws on non-UTC markers.
+
+## See also
+
+- [Sunnah Times](user/sunnah-times.md) — the published user guide
