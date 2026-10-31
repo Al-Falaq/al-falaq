@@ -53,7 +53,9 @@
         "arch": "phpunit --group arch",
         "bench": "php examples/bench.php --budget",
         "goldens": "python3 tools/goldens.py",
+        "changelog": "php tools/sync_changelog.php",
+        "changelog:check": "php tools/sync_changelog.php --check",
         "mutation": "infection --threads=4",
-        "ci": ["@lint", "@cs", "@stan", "@test"]
+        "ci": ["@lint", "@cs", "@stan", "@changelog:check", "@test"]
     }
 }

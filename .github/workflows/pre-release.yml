@@ -63,6 +63,12 @@ jobs:
           fetch-depth: 0 # ancestry check below walks history
           persist-credentials: false
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          coverage: none
+
       - name: Verify the tag is releasable
         # The tag name is data from the ref namespace, never shell source: it
         # is passed through the environment, never interpolated into the script.
@@ -70,6 +76,8 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+
+          php tools/sync_changelog.php --check
 
           VERSION="${TAG#v}"
           if ! printf '%s' "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then

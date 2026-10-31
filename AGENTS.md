@@ -25,7 +25,7 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 
 ## Development Workflow
 
-- Canonical gate: `composer ci` = `lint + cs + stan + test`
+- Canonical gate: `composer ci` = `lint + cs + stan + changelog:check + test`
 - `composer bench` — performance tripwire harness (`--budget` enforces the loose
   50ms/30000ms tripwires; the printed 2ms/1000ms/16MB PRD budgets are headroom
   references, gated later — see `examples/bench.php`)
@@ -44,6 +44,9 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - `composer mutation` — Infection gate (MSI ≥ 85, about 10 min). `composer.json`
   sets `config.process-timeout: 0` so the script survives Composer's default
   300 s process timeout; CI sets the same via `COMPOSER_PROCESS_TIMEOUT`.
+- `composer changelog` regenerates `docs/user/changelog.md` from `CHANGELOG.md`;
+  `composer changelog:check` fails when the published page is stale (also in the
+  release gate). Never hand-edit the generated page.
 
 ## Testing Instructions
 

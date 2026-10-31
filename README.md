@@ -50,6 +50,9 @@ composer bench
 ## Docs
 
 - User documentation (versioned, GitHub Pages, Astro Starlight): [`docs/user/`](docs/user/) — built via `docs_site/` (see `docs_site/astro.config.mjs`, `docs_site/versions.json`). Local preview: `cd docs_site && npm install && npm run dev`.
+- `docs/user/changelog.md` is generated from `CHANGELOG.md`. After editing the
+  changelog, run `composer changelog`; CI runs `composer changelog:check` and
+  fails if the published page is stale.
 - `ARCHITECTURE.md` — layering summary
 - `docs/` — per-context guides (M1–M5, contributor-facing) plus `docs/user/` (user-facing, versioned)
 - `UQ_PROVENANCE.md` — Umm al-Qura + MABIMS table provenance, digests, regeneration
@@ -60,6 +63,8 @@ The versioning plugin generates the snapshot — never copy `docs/user/*.md` by 
 Hand-copied pages lack the `slug:` frontmatter the plugin injects, so they build at the
 wrong route and the version switcher links 404.
 
+0. Update `CHANGELOG.md` (including the exact dated `## [X.Y.Z] - YYYY-MM-DD`
+   header), run `composer changelog`, and commit both files before tagging.
 1. Add the tag to `docs_site/versions.json` (`{ "slug": "vX.Y.Z", "label": "vX.Y.Z" }`).
 2. Run the build; the plugin copies the current docs into `docs/user/vX.Y.Z/`,
    injects the versioned `slug`, and writes `docs_site/src/content/versions/vX.Y.Z.json`:
