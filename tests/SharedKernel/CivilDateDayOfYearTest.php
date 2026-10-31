@@ -19,4 +19,13 @@ final class CivilDateDayOfYearTest extends TestCase
         self::assertSame(366, CivilDate::fromYmd(2024, 12, 31)->dayOfYear());
         self::assertSame(60, CivilDate::fromYmd(2024, 2, 29)->dayOfYear());
     }
+
+    public function testPlusDaysRejectsExtremeOffset(): void
+    {
+        $date = CivilDate::fromYmd(2025, 1, 15);
+
+        $this->expectException(\AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException::class);
+
+        $date->plusDays(PHP_INT_MAX);
+    }
 }

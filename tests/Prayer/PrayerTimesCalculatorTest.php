@@ -20,8 +20,10 @@ use AlFalaq\AlFalaq\Prayer\Strategies\AngleMaghrib;
 use AlFalaq\AlFalaq\Prayer\Strategies\IntervalIsha;
 use AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\MinutesAfterSunsetMaghrib;
+use AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight;
 use AlFalaq\AlFalaq\Prayer\Strategies\TwilightAngleCorrection;
+use AlFalaq\AlFalaq\Prayer\Services\NightResolver;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
@@ -516,6 +518,373 @@ final class PrayerTimesCalculatorTest extends TestCase
             CivilDate::fromYmd(2025, 11, 28),
             CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
                 ->withPolarCircleRule(PolarCircleRule::NONE),
+        );
+    }
+
+    public function testAccessorsReturnInjectedStrategies(): void
+    {
+        $solar = new MeanSolarCalculator();
+        $hlc = new MiddleOfNightCorrection();
+        $polar = new NearestLatitudeHandler();
+        $twilight = new SeasonAdjustedTwilight();
+        $calc = new PrayerTimesCalculator($solar, $hlc, $polar, $twilight);
+
+        self::assertSame($solar, $calc->solar());
+        self::assertSame($hlc, $calc->highLatitudeCorrection());
+        self::assertSame($polar, $calc->polarCircleHandler());
+        self::assertSame($twilight, $calc->twilightModel());
+        self::assertInstanceOf(NightResolver::class, $calc->night());
+    }
+
+    public function testDefaultWiringReturnsCalculator(): void
+    {
+        $calc = PrayerTimesCalculator::default();
+
+        self::assertInstanceOf(PrayerTimesCalculator::class, $calc);
+        self::assertInstanceOf(MeanSolarCalculator::class, $calc->solar());
+    }
+
+    public function testCalculateUsesIntervalMaghribWhenNoMinutesAfterSunset(): void
+    {
+        // MaghribRule with angle only (no minutesAfterSunset) -> hourAngle path.
+        $params = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new AngleMaghrib(6.0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        $schedule = PrayerTimesCalculator::default()->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            $params,
+        );
+
+        self::assertTrue($schedule->timeFor(Prayer::MAGHRIB) < $schedule->timeFor(Prayer::ISHA));
+    }
+
+    public function testCalculateWithDhuhrAdjustment(): void
+    {
+        // Non-empty adjustments exercise the adjusted() offset path.
+        $params = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty()->with(Prayer::DHUHR, 5),
+        );
+
+        $schedule = PrayerTimesCalculator::default()->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            $params,
+        );
+
+        self::assertTrue($schedule->timeFor(Prayer::DHUHR) > $schedule->timeFor(Prayer::SUNRISE));
+    }
+
+    public function testAsrTempNullThrows(): void
+    {
+        // Stubbed engine where afternoon() returns null but isSolarDefined
+        // returns true, triggering the asrTemp === null throw.
+        $utc = new \DateTimeZone('UTC');
+        $day = new \DateTimeImmutable('2025-01-15 12:00:00', $utc);
+        $calc = new PrayerTimesCalculator(
+            new class implements \AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine {
+                public function declination(float $j): float
+                {
+                    return 0.0;
+                }
+                public function equationOfTime(float $j): float
+                {
+                    return 0.0;
+                }
+                public function solarTime(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e): \AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime
+                {
+                    return new \AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime(
+                        new \DateTimeImmutable('2025-01-15 12:00:00', new \DateTimeZone('UTC')),
+                        new \DateTimeImmutable('2025-01-15 06:00:00', new \DateTimeZone('UTC')),
+                        new \DateTimeImmutable('2025-01-15 18:00:00', new \DateTimeZone('UTC')),
+                    );
+                }
+                public function hourAngleFloat(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, float $a, bool $at): ?float
+                {
+                    return null;
+                }
+                public function hourAngle(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, float $a, bool $at): \DateTimeImmutable
+                {
+                    return new \DateTimeImmutable('2025-01-15 03:00:00', new \DateTimeZone('UTC'));
+                }
+                public function afternoon(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, mixed $s): ?\DateTimeImmutable
+                {
+                    return null;
+                }
+                public function isSolarDefined(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e): bool
+                {
+                    return true;
+                }
+            },
+            new \AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight(),
+        );
+
+        $this->expectException(AstronomicalException::class);
+        $this->expectExceptionMessage('Unable to compute Asr');
+
+        $calc->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(),
+        );
+    }
+
+    public function testAsrClampedUpToDhuhr(): void
+    {
+        // Stubbed engine where asr computes before dhuhr, triggering the
+        // asr = dhuhr clamp.
+        $utc = new \DateTimeZone('UTC');
+        $calc = new PrayerTimesCalculator(
+            new class implements \AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine {
+                public function declination(float $j): float
+                {
+                    return 0.0;
+                }
+                public function equationOfTime(float $j): float
+                {
+                    return 0.0;
+                }
+                public function solarTime(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e): \AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime
+                {
+                    return new \AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime(
+                        new \DateTimeImmutable('2025-01-15 12:00:00', new \DateTimeZone('UTC')),
+                        new \DateTimeImmutable('2025-01-15 06:00:00', new \DateTimeZone('UTC')),
+                        new \DateTimeImmutable('2025-01-15 18:00:00', new \DateTimeZone('UTC')),
+                    );
+                }
+                public function hourAngleFloat(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, float $a, bool $at): ?float
+                {
+                    return null;
+                }
+                public function hourAngle(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, float $a, bool $at): \DateTimeImmutable
+                {
+                    return new \DateTimeImmutable('2025-01-15 03:00:00', new \DateTimeZone('UTC'));
+                }
+                public function afternoon(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, mixed $s): \DateTimeImmutable
+                {
+                    return new \DateTimeImmutable('2025-01-15 04:00:00', new \DateTimeZone('UTC'));
+                }
+                public function isSolarDefined(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e): bool
+                {
+                    return true;
+                }
+            },
+            new \AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight(),
+        );
+
+        $schedule = $calc->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(),
+        );
+
+        // asr (04:00) < dhuhr (05:24 + adjustments) so asr clamps up to dhuhr.
+        self::assertSame(
+            $schedule->timeFor(Prayer::DHUHR)->getTimestamp(),
+            $schedule->timeFor(Prayer::ASR)->getTimestamp(),
+        );
+    }
+
+    public function testAsrClampedDownToMaghrib(): void
+    {
+        // Stubbed engine where asr computes after maghrib, triggering the
+        // asr = maghrib clamp.
+        $utc = new \DateTimeZone('UTC');
+        $calc = new PrayerTimesCalculator(
+            new class implements \AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine {
+                public function declination(float $j): float
+                {
+                    return 0.0;
+                }
+                public function equationOfTime(float $j): float
+                {
+                    return 0.0;
+                }
+                public function solarTime(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e): \AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime
+                {
+                    return new \AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime(
+                        new \DateTimeImmutable('2025-01-15 12:00:00', new \DateTimeZone('UTC')),
+                        new \DateTimeImmutable('2025-01-15 06:00:00', new \DateTimeZone('UTC')),
+                        new \DateTimeImmutable('2025-01-15 18:00:00', new \DateTimeZone('UTC')),
+                    );
+                }
+                public function hourAngleFloat(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, float $a, bool $at): ?float
+                {
+                    return null;
+                }
+                public function hourAngle(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, float $a, bool $at): \DateTimeImmutable
+                {
+                    return new \DateTimeImmutable('2025-01-15 03:00:00', new \DateTimeZone('UTC'));
+                }
+                public function afternoon(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, mixed $s): \DateTimeImmutable
+                {
+                    return new \DateTimeImmutable('2025-01-15 20:00:00', new \DateTimeZone('UTC'));
+                }
+                public function isSolarDefined(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e): bool
+                {
+                    return true;
+                }
+            },
+            new \AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight(),
+        );
+
+        $schedule = $calc->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(),
+        );
+
+        // asr (20:00) > maghrib (11:21) so asr clamps down to maghrib.
+        self::assertSame(
+            $schedule->timeFor(Prayer::MAGHRIB)->getTimestamp(),
+            $schedule->timeFor(Prayer::ASR)->getTimestamp(),
+        );
+    }
+
+    public function testMaghribBaseNoAngleOrIntervalThrows(): void
+    {
+        // A MaghribRule with neither minutesAfterSunset nor angle defined.
+        $rule = new class implements MaghribRule {
+            public function minutesAfterSunset(): ?int
+            {
+                return null;
+            }
+            public function angle(): ?float
+            {
+                return null;
+            }
+            public function validate(): void {}
+        };
+
+        $this->expectException(AstronomicalException::class);
+        $this->expectExceptionMessage('no angle or interval defined');
+
+        PrayerTimesCalculator::default()->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            CalculationParameters::create(
+                CalculationMethod::NONE,
+                Madhab::SHAFI,
+                HighLatitudeRule::MIDDLE_OF_NIGHT,
+                PolarCircleRule::NEAREST_LATITUDE,
+                18.0,
+                new AngleIsha(17.0),
+                $rule,
+                0,
+                10,
+                15,
+                28,
+                0.0,
+                false,
+                PrayerAdjustments::empty(),
+                PrayerAdjustments::empty(),
+            ),
+        );
+    }
+
+    public function testMaghribBaseHourAngleNullThrows(): void
+    {
+        // Stubbed engine: isSolarDefined returns true but hourAngle returns
+        // null for the maghrib angle, triggering the throw in maghribBase().
+        $utc = new \DateTimeZone('UTC');
+        $calc = new PrayerTimesCalculator(
+            new class implements \AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine {
+                public function declination(float $j): float
+                {
+                    return 0.0;
+                }
+                public function equationOfTime(float $j): float
+                {
+                    return 0.0;
+                }
+                public function solarTime(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e): \AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime
+                {
+                    return new \AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime(
+                        new \DateTimeImmutable('2025-01-15 12:00:00', new \DateTimeZone('UTC')),
+                        new \DateTimeImmutable('2025-01-15 06:00:00', new \DateTimeZone('UTC')),
+                        new \DateTimeImmutable('2025-01-15 18:00:00', new \DateTimeZone('UTC')),
+                    );
+                }
+                public function hourAngleFloat(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, float $a, bool $at): ?float
+                {
+                    return null;
+                }
+                public function hourAngle(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, float $a, bool $at): ?\DateTimeImmutable
+                {
+                    return null;
+                }
+                public function afternoon(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e, mixed $s): \DateTimeImmutable
+                {
+                    return new \DateTimeImmutable('2025-01-15 08:00:00', new \DateTimeZone('UTC'));
+                }
+                public function isSolarDefined(\AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $c, \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $d, mixed $e): bool
+                {
+                    return true;
+                }
+            },
+            new \AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\NearestLatitudeHandler(),
+            new \AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight(),
+        );
+
+        $this->expectException(AstronomicalException::class);
+        $this->expectExceptionMessage('sun never reaches the angle');
+
+        $calc->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            CalculationParameters::create(
+                CalculationMethod::NONE,
+                Madhab::SHAFI,
+                HighLatitudeRule::MIDDLE_OF_NIGHT,
+                PolarCircleRule::NEAREST_LATITUDE,
+                18.0,
+                new AngleIsha(17.0),
+                new AngleMaghrib(6.0),
+                0,
+                10,
+                15,
+                28,
+                0.0,
+                false,
+                PrayerAdjustments::empty(),
+                PrayerAdjustments::empty(),
+            ),
         );
     }
 }

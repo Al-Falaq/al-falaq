@@ -139,4 +139,13 @@ final class PrayerScheduleTest extends TestCase
         );
         self::assertSame('2025-01-15T06:10:00+08:00', $row['fajr']);
     }
+
+    public function testNightLengthReturnsMaghribToIshaInterval(): void
+    {
+        $schedule = self::klSchedule();
+        $interval = $schedule->nightLength();
+
+        self::assertInstanceOf(\DateInterval::class, $interval);
+        self::assertSame(0, $interval->invert); // maghrib before isha -> positive
+    }
 }

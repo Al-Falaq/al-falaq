@@ -13,6 +13,7 @@ use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Services\NightResolver;
 use AlFalaq\AlFalaq\Prayer\Strategies\AngleIsha;
+use AlFalaq\AlFalaq\Prayer\Strategies\IntervalIsha;
 use AlFalaq\AlFalaq\Prayer\Strategies\MiddleOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\MinutesAfterSunsetMaghrib;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight;
@@ -162,6 +163,269 @@ final class NightResolverTest extends TestCase
         self::assertTrue($correction->called, 'The portions path must still compute portions.');
     }
 
+    public function testSeventhOfNightBranchAtHighLatitude(): void
+    {
+        // Latitude >= 55 with MSC/seasonal-safe engages the seventh-of-night
+        // temp in both fajrTemp and ishaTemp, bypassing the angle temp call.
+        $utc = new \DateTimeZone('UTC');
+        $day = new SolarTime(
+            new \DateTimeImmutable('2025-06-21 12:00:00', $utc),
+            new \DateTimeImmutable('2025-06-21 03:00:00', $utc),
+            new \DateTimeImmutable('2025-06-21 21:00:00', $utc),
+        );
+        $resolver = new NightResolver(
+            self::stubSolar($day, null), // angle temp must NOT be called on seventh path
+            new MiddleOfNightCorrection(),
+            new SeasonAdjustedTwilight(),
+        );
+        $coordinates = Coordinates::fromDegrees(60.0, 10.0); // >= 55
+        $date = CivilDate::fromYmd(2025, 6, 21);
+        $base = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters();
+
+        $temps = $resolver->resolve(
+            $coordinates,
+            $date,
+            0.0,
+            $base->withHighLatitudeRule(HighLatitudeRule::SEASONAL_TWILIGHT),
+            $day,
+            64800,
+        );
+
+        self::assertNotNull($temps['fajr']);
+        self::assertNotNull($temps['isha']);
+        self::assertTrue($temps['fajr'] < $day->sunrise);
+        self::assertTrue($temps['isha'] > $day->sunset);
+    }
+
+    public function testSeasonalSafeWithoutSeventhAtLowLatitude(): void
+    {
+        // Latitude < 55 with SEASONAL_TWILIGHT: seasonal-safe path engages
+        // but seventh-of-night does NOT, so angle temp is still computed.
+        $utc = new \DateTimeZone('UTC');
+        $day = new SolarTime(
+            new \DateTimeImmutable('2025-06-21 12:00:00', $utc),
+            new \DateTimeImmutable('2025-06-21 03:00:00', $utc),
+            new \DateTimeImmutable('2025-06-21 21:00:00', $utc),
+        );
+        // Angle temp after the seasonal safe cap, so it is used as-is.
+        $fajrTemp = new \DateTimeImmutable('2025-06-21 02:00:00', $utc);
+        $resolver = new NightResolver(
+            self::stubSolar($day, $fajrTemp, $fajrTemp), // evening = fajr temp
+            new MiddleOfNightCorrection(),
+            new SeasonAdjustedTwilight(),
+        );
+        $coordinates = Coordinates::fromDegrees(3.1390, 101.6869); // < 55
+        $date = CivilDate::fromYmd(2025, 6, 21);
+        $base = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters();
+
+        $temps = $resolver->resolve(
+            $coordinates,
+            $date,
+            0.0,
+            $base->withHighLatitudeRule(HighLatitudeRule::SEASONAL_TWILIGHT),
+            $day,
+            64800,
+        );
+
+        self::assertSame($fajrTemp, $temps['fajr']);
+    }
+
+    public function testIshaIntervalEarlyReturn(): void
+    {
+        // IshaRule with minutesAfterMaghrib returns early without computing angle temp.
+        $utc = new \DateTimeZone('UTC');
+        $day = new SolarTime(
+            new \DateTimeImmutable('2025-06-21 12:00:00', $utc),
+            new \DateTimeImmutable('2025-06-21 03:00:00', $utc),
+            new \DateTimeImmutable('2025-06-21 21:00:00', $utc),
+        );
+        $resolver = new NightResolver(
+            self::stubSolar($day, null), // angle temp must NOT be called for interval isha
+            new MiddleOfNightCorrection(),
+            new SeasonAdjustedTwilight(),
+        );
+        $coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 6, 21);
+        $params = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new IntervalIsha(90), // interval-based Isha
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        $temps = $resolver->resolve(
+            $coordinates,
+            $date,
+            0.0,
+            $params,
+            $day,
+            43200,
+        );
+
+        self::assertSame(
+            $day->sunset->modify('+90 minutes')->format('Y-m-d H:i:s'),
+            $temps['isha']->format('Y-m-d H:i:s'),
+        );
+    }
+
+    public function testUmmAlQuraRamadanIshaOverride(): void
+    {
+        // UMM_AL_QURA during Ramadan overrides isha minutes to 120.
+        $utc = new \DateTimeZone('UTC');
+        $day = new SolarTime(
+            new \DateTimeImmutable('2025-06-21 12:00:00', $utc),
+            new \DateTimeImmutable('2025-06-21 03:00:00', $utc),
+            new \DateTimeImmutable('2025-06-21 21:00:00', $utc),
+        );
+        $resolver = new NightResolver(
+            self::stubSolar($day, null),
+            new MiddleOfNightCorrection(),
+            new SeasonAdjustedTwilight(),
+        );
+        $coordinates = Coordinates::fromDegrees(21.4225241, 39.8261818);
+        $date = CivilDate::fromYmd(2025, 6, 21);
+        $params = CalculationParameters::create(
+            CalculationMethod::UMM_AL_QURA,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new IntervalIsha(90), // overridden by Ramadan rule to 120
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            true, // isRamadan = true
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        $temps = $resolver->resolve(
+            $coordinates,
+            $date,
+            0.0,
+            $params,
+            $day,
+            43200,
+        );
+
+        self::assertSame(
+            $day->sunset->modify('+120 minutes')->format('Y-m-d H:i:s'),
+            $temps['isha']->format('Y-m-d H:i:s'),
+        );
+    }
+
+    public function testFajrTempNonePathNullThrows(): void
+    {
+        // NONE rule (portions === null): hourAngle returns null for fajr,
+        // triggering the null check throw (no safe cap in NONE mode).
+        $utc = new \DateTimeZone('UTC');
+        $day = new SolarTime(
+            new \DateTimeImmutable('2025-01-15 12:00:00', $utc),
+            new \DateTimeImmutable('2025-01-15 06:00:00', $utc),
+            new \DateTimeImmutable('2025-01-15 18:00:00', $utc),
+        );
+        // morning=null → fajr hourAngle returns null.
+        $resolver = new NightResolver(
+            self::stubSolar($day, null),
+            new MiddleOfNightCorrection(),
+            new SeasonAdjustedTwilight(),
+        );
+        $coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 1, 15);
+        $params = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::NONE, // NONE → portions === null
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        $this->expectException(AstronomicalException::class);
+        $this->expectExceptionMessage('Unable to compute Fajr');
+
+        $resolver->resolve(
+            $coordinates,
+            $date,
+            0.0,
+            $params,
+            $day,
+            43200,
+        );
+    }
+
+    public function testIshaTempNonePathNullThrows(): void
+    {
+        // NONE rule (portions === null): hourAngle returns null for isha
+        // (evening), triggering the null check throw.
+        $utc = new \DateTimeZone('UTC');
+        $day = new SolarTime(
+            new \DateTimeImmutable('2025-01-15 12:00:00', $utc),
+            new \DateTimeImmutable('2025-01-15 06:00:00', $utc),
+            new \DateTimeImmutable('2025-01-15 18:00:00', $utc),
+        );
+        // evening=null → isha hourAngle returns null; morning set → fajr works.
+        $resolver = new NightResolver(
+            self::stubSolar($day, new \DateTimeImmutable('2025-01-15 03:00:00', $utc), null),
+            new MiddleOfNightCorrection(),
+            new SeasonAdjustedTwilight(),
+        );
+        $coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+        $date = CivilDate::fromYmd(2025, 1, 15);
+        $params = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::NONE, // NONE → portions === null
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        $this->expectException(AstronomicalException::class);
+        $this->expectExceptionMessage('Unable to compute Isha');
+
+        $resolver->resolve(
+            $coordinates,
+            $date,
+            0.0,
+            $params,
+            $day,
+            43200,
+        );
+    }
+
     /**
      * Day engine double with a canned solar day and angle temps.
      *
@@ -175,7 +439,7 @@ final class NightResolverTest extends TestCase
         ?\DateTimeImmutable $angleTemp,
         ?\DateTimeImmutable $eveningTemp = null,
     ): SolarDayEngine {
-        return new class ($day, $angleTemp, $eveningTemp ?? $angleTemp) implements SolarDayEngine {
+        return new class ($day, $angleTemp, $eveningTemp) implements SolarDayEngine {
             public function __construct(
                 private readonly SolarTime $day,
                 private readonly ?\DateTimeImmutable $morning,
