@@ -98,3 +98,9 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   and yields no table, the KHEU `mora.gov.bn` host resolves but its HTTPS
   endpoint fails on an expired certificate) — drift gates, never claimed as
   parity.
+
+## See also
+
+- [Prayer Times](user/prayer-times.md) — the published user guide
+- [Calculation Methods](user/calculation-methods.md)
+- [High Latitude Rules](user/high-latitude.md)

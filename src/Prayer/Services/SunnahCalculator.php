@@ -8,6 +8,7 @@ use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\SunnahTimes;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
@@ -62,7 +63,7 @@ final class SunnahCalculator
         $fajr = $this->tomorrow->fajr;
 
         if ($fajr <= $maghrib) {
-            throw new \AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException('Degenerate Sunnah night: fajr must be after maghrib.');
+            throw new ValidationException('Degenerate Sunnah night: fajr must be after maghrib.');
         }
 
         $nightSeconds = $fajr->getTimestamp() - $maghrib->getTimestamp();
@@ -71,7 +72,7 @@ final class SunnahCalculator
             $moved = $maghrib->modify(sprintf('+%d seconds', (int) round($nightSeconds * $fraction)));
 
             if ($moved === false) {
-                throw new \AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException('Unable to compute Sunnah fraction.');
+                throw new ValidationException('Unable to compute Sunnah fraction.');
             }
 
             return Minutes::roundedHalfUp($moved);

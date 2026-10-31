@@ -152,3 +152,7 @@ php vendor/bin/phpunit --no-coverage tests/Goldens/HijriGoldensTest.php
 Two consecutive runs must produce no diff; that is the determinism gate.
 Trailing-zero and rounding conventions are the generator's, and the committed
 CSVs are its output — if parity fails, fix the calendar, never the golden.
+
+## See also
+
+- [Hijri Converter](user/hijri-converter.md) — the published user guide

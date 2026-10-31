@@ -15,6 +15,7 @@ jobs:
           extensions: date
           coverage: none
       - run: composer install --no-progress
+      - run: composer changelog:check
       - run: composer lint
       - run: composer cs
       - run: composer stan

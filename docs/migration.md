@@ -1,6 +1,11 @@
-# migration (M1-M5)
+# Architecture migration (M1-M5)
 
-## Unreleased — architecture deepening (breaking surface)
+> This is the contributor-facing record of the M1-M5 architecture rounds.
+> For the current user-facing upgrade guide, including the 0.2.0 `ClockView`
+> removal and the `TWILIGHT_ANGLE` break, see
+> [`docs/user/migration.md`](user/migration.md).
+
+## 0.1.0 — architecture deepening (M1-M5)
 
 One batch from the C1–C6 + synthesis rounds. `default()` / `defaultFor()` /
 `::default` factories are unaffected throughout — only explicit construction
@@ -93,3 +98,7 @@ the previous shapes could not express the required behaviour.
    outside those spans they raise `HijriOutOfRangeException` instead of
    extrapolating. `HijriOutOfRangeException::forDate()` now takes a range label
    as its third argument.
+
+## See also
+
+- [Migration](user/migration.md) — the current user-facing upgrade guide

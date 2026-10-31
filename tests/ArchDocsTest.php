@@ -124,4 +124,84 @@ final class ArchDocsTest extends ArchSupport
 
         self::assertSame([], $violations);
     }
+
+    /**
+     * Every `docs/*.md` path cited by the code exists.
+     *
+     * The error messages are why docs/ cannot be renamed freely:
+     * InvalidCoordinatesException cites docs/prayer.md and
+     * UndefinedScheduleException cites docs/polar.md.
+     */
+    public function testErrorMessagesCiteExistingDocs(): void
+    {
+        $references = [];
+
+        foreach (self::srcPhpFiles() as $path) {
+            preg_match_all('/docs\/[a-z0-9-]+\.md/', (string) file_get_contents($path), $matches);
+
+            foreach ($matches[0] as $reference) {
+                $references[$reference] = true;
+            }
+        }
+
+        self::assertGreaterThanOrEqual(3, count($references), 'The docs-reference scan found too few citations.');
+
+        foreach (array_keys($references) as $reference) {
+            self::assertTrue(
+                is_file(dirname(__DIR__) . '/' . $reference),
+                sprintf('%s is cited by src/ but does not exist.', $reference),
+            );
+        }
+    }
+
+    /**
+     * Every top-level contributor page is listed in the docs map.
+     */
+    public function testContributorDocsAreMapped(): void
+    {
+        $mapPath = dirname(__DIR__) . '/docs/README.md';
+        self::assertFileExists($mapPath);
+        $map = (string) file_get_contents($mapPath);
+        $pages = glob(dirname(__DIR__) . '/docs/*.md') ?: [];
+        $pages = array_values(array_filter(
+            $pages,
+            static fn(string $path): bool => basename($path) !== 'README.md',
+        ));
+
+        self::assertGreaterThanOrEqual(8, count($pages), 'The docs scan found too few contributor pages.');
+
+        foreach ($pages as $path) {
+            $file = basename($path);
+            self::assertStringContainsString(
+                '](' . $file . ')',
+                $map,
+                sprintf('docs/README.md does not map %s.', $file),
+            );
+        }
+    }
+
+    /**
+     * Every relative Markdown link in the docs map resolves.
+     */
+    public function testDocsMapLinksResolve(): void
+    {
+        $mapPath = dirname(__DIR__) . '/docs/README.md';
+        self::assertFileExists($mapPath);
+        $map = (string) file_get_contents($mapPath);
+        preg_match_all('/\]\(([^)#]+\.md)(?:#[^)]+)?\)/', $map, $matches);
+        $targets = array_values(array_unique($matches[1]));
+
+        self::assertGreaterThanOrEqual(8, count($targets), 'The docs map found too few links.');
+
+        foreach ($targets as $target) {
+            if (str_starts_with($target, 'http://') || str_starts_with($target, 'https://')) {
+                continue;
+            }
+
+            self::assertTrue(
+                is_file(dirname(__DIR__) . '/docs/' . $target),
+                sprintf('docs/README.md link target %s does not exist.', $target),
+            );
+        }
+    }
 }

@@ -16,3 +16,7 @@ substitute throws `UndefinedScheduleException` too.
 
 `UndefinedScheduleException::polar()` names the active rule and points at this
 guide. See `docs/prayer.md` for the algorithm appendix.
+
+## See also
+
+- [Polar Regions](user/polar-regions.md) — the published user guide

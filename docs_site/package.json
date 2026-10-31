@@ -8,7 +8,8 @@
     "build": "astro build",
     "build:logo": "node scripts/build-logo.mjs",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "audit": "npm audit --omit=dev --audit-level=moderate"
   },
   "dependencies": {
     "@astrojs/starlight": "0.42.6",

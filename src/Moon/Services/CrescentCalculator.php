@@ -257,8 +257,6 @@ final class CrescentCalculator
         ];
     }
 
-
-
     /**
      * Geocentric altitude for equatorial (ra, dec) at LST (pin _altaz).
      *
@@ -278,6 +276,5 @@ final class CrescentCalculator
 
         return rad2deg(asin($this->clamp($sinAlt)));
     }
-
 
 }

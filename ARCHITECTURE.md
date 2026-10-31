@@ -1,9 +1,9 @@
 # Architecture
 
 This document explains how `al-falaq/al-falaq` is structured, how data flows
-through it, and where to extend it. For installation and usage, see
-`README.md`; for per-feature guides, see `docs/`; for wiring snippets, see
-`docs/integrations.md`.
+through it, and where to extend it. For installation and usage, see `README.md`
+and `docs/user/`; for contributor algorithm appendices, see `docs/`; for
+wiring snippets, see `docs/integrations.md`.
 
 ## 1. System overview
 
@@ -178,9 +178,11 @@ Supporting directories:
   `goldens.py` (single entrypoint: `--list` contracts, delegating regen per
   target; `composer goldens`),
   `coverage_gate.php` (coverage ratchet).
-- `docs/` — per-context guides (`prayer.md`, `qibla.md`, `moon.md`,
-  `hijri.md`, `sunnah.md`, `polar.md`), `integrations.md` (wiring recipes),
-  `migration.md`.
+- `docs/` — contributor-facing algorithm appendices and internals
+  (`prayer.md`, `qibla.md`, `moon.md`, `hijri.md`, `sunnah.md`, `polar.md`,
+  `migration.md`), `integrations.md` (executable wiring recipes), and
+  `README.md` (the scope map). The published user guide lives in
+  `docs/user/`; `docs/plans/` holds historical implementation plans.
 
 ## 4. Data flow
 

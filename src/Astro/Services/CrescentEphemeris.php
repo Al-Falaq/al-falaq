@@ -412,7 +412,6 @@ final class CrescentEphemeris
         return $this->unwindAngle($greenwich + $longitudeDeg);
     }
 
-
     /**
      * Corrected hour angle in float hours, NaN when unreachable (Meeus Ch.15 p. 102).
      *
@@ -495,9 +494,6 @@ final class CrescentEphemeris
         ));
     }
 
-
-
-
     /**
      * Pack a geocentric triple, refusing non-finite engine residuals.
      *
@@ -520,18 +516,5 @@ final class CrescentEphemeris
 
         return ['ra' => $ra, 'dec' => $dec, 'distanceKm' => $distanceKm];
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }

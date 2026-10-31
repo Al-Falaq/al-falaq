@@ -422,6 +422,215 @@ PHP;
         self::assertSame([], $violations);
     }
 
+    /**
+     * Source must import its own names, never inline a fully-qualified name.
+     *
+     * The tokenizer sees `use`/`namespace` as T_NAME_QUALIFIED and docblocks
+     * as T_DOC_COMMENT, so only a real code reference (`new \AlFalaq\...`)
+     * trips the gate.
+     */
+    public function testNoInlineSourceFqcns(): void
+    {
+        $violations = [];
+        $checked = 0;
+
+        foreach (self::srcPhpFiles() as $path) {
+            $checked++;
+
+            foreach (self::inlineSourceFqcns((string) file_get_contents($path)) as $found) {
+                $violations[] = sprintf('%s:%d: inline %s; import it instead.', $path, $found['line'], $found['name']);
+            }
+        }
+
+        self::assertGreaterThanOrEqual(90, $checked, 'The source scan found too few files; the gate would pass vacuously.');
+        self::assertSame([], $violations);
+    }
+
+    /**
+     * Scanner regression probe: imports, namespaces, and docblocks are not
+     * inline references.
+     */
+    public function testInlineFqcnScannerIgnoresImportsAndComments(): void
+    {
+        $code = <<<'PHP'
+<?php
+namespace Probe;
+
+use AlFalaq\AlFalaq\Imported;
+
+/** \AlFalaq\AlFalaq\Docblock is prose, not code. */
+final class Probe
+{
+    public function make(): object
+    {
+        return new \AlFalaq\AlFalaq\Inline();
+    }
+}
+PHP;
+
+        self::assertSame(
+            ['\\AlFalaq\\AlFalaq\\Inline'],
+            array_column(self::inlineSourceFqcns($code), 'name'),
+        );
+    }
+
+    /**
+     * Every src file uses at most one consecutive blank line.
+     *
+     * Blank lines inside multi-line strings, heredocs, nowdocs, and
+     * docblocks are not formatting violations; the check runs on source
+     * with those token contents neutralized so their internal newlines
+     * cannot trigger the gate.
+     */
+    public function testNoConsecutiveBlankLines(): void
+    {
+        $violations = [];
+        $checked = 0;
+
+        foreach (self::srcPhpFiles() as $path) {
+            $checked++;
+            $code = self::neutralizeMultilineTokens((string) file_get_contents($path));
+
+            if (preg_match_all('/(?:\r?\n[ \t]*){3,}/', $code, $matches, PREG_OFFSET_CAPTURE) === false) {
+                continue;
+            }
+
+            foreach ($matches[0] as [$match, $offset]) {
+                $line = substr_count(substr($code, 0, (int) $offset), "\n") + 1;
+                $violations[] = sprintf('%s:%d: %d consecutive blank lines.', $path, $line, substr_count($match, "\n") - 1);
+            }
+        }
+
+        self::assertGreaterThanOrEqual(90, $checked, 'The source scan found too few files; the gate would pass vacuously.');
+        self::assertSame([], $violations);
+    }
+
+    /**
+     * Scanner regression probe: blank lines inside multiline strings,
+     * heredocs, nowdocs, and docblocks are not formatting violations.
+     */
+    public function testBlankLineScannerIgnoresStringsAndComments(): void
+    {
+        $code = <<<'PHP'
+<?php
+namespace Probe;
+
+final class Probe
+{
+    public function make(): object
+    {
+        $sql = "SELECT * FROM
+
+
+            users";
+
+        $heredoc = <<<HTML
+
+
+        <div></div>
+        HTML;
+
+        /**
+         * Docblock with blank lines inside.
+         *
+         * First paragraph.
+
+
+         * Second paragraph.
+         */
+        return new \AlFalaq\AlFalaq\Inline();
+    }
+}
+PHP;
+
+        self::assertSame([], self::blankLineViolations($code), 'Blank lines inside strings/heredocs/docblocks must not be flagged.');
+    }
+
+    /**
+     * Neutralize newlines inside multi-line string/comment/heredoc/nowdoc
+     * tokens so their internal blank lines cannot trigger the gate, while
+     * preserving byte offsets for line-number reporting.
+     *
+     * @param string $code PHP source.
+     * @return string Source with multiline token newlines replaced by spaces.
+     */
+    private static function neutralizeMultilineTokens(string $code): string
+    {
+        $code = str_replace(["\r\n", "\r"], "\n", $code);
+        $result = '';
+        $allMultilineIds = [
+            T_DOC_COMMENT,
+            T_COMMENT,
+            T_CONSTANT_ENCAPSED_STRING,
+            T_START_HEREDOC,
+            T_END_HEREDOC,
+            T_ENCAPSED_AND_WHITESPACE,
+        ];
+        // nowdoc constants may not exist in every PHP version; add only defined ones.
+        foreach (['T_START_NOWDOC', 'T_NOWDOC', 'T_END_NOWDOC'] as $name) {
+            if (defined($name)) {
+                $allMultilineIds[] = constant($name);
+            }
+        }
+        $multilineIds = array_unique($allMultilineIds);
+
+        foreach (token_get_all($code) as $token) {
+            if (is_array($token) && in_array($token[0], $multilineIds, true)) {
+                $result .= str_replace("\n", ' ', $token[1]);
+            } else {
+                $result .= is_array($token) ? $token[1] : $token;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Consecutive-blank-line violations in a source string (multiline
+     * tokens neutralized).
+     *
+     * @param string $code PHP source.
+     * @return list<array{line: int, count: int}>
+     */
+    private static function blankLineViolations(string $code): array
+    {
+        $violations = [];
+        $code = self::neutralizeMultilineTokens($code);
+
+        if (preg_match_all('/(?:\r?\n[ \t]*){3,}/', $code, $matches, PREG_OFFSET_CAPTURE) === false) {
+            return $violations;
+        }
+
+        foreach ($matches[0] as [$match, $offset]) {
+            $line = substr_count(substr($code, 0, (int) $offset), "\n") + 1;
+            $violations[] = ['line' => $line, 'count' => substr_count($match, "\n") - 1];
+        }
+
+        return $violations;
+    }
+
+    /**
+     * Inline FQCNs in a source string (comments and imports excluded).
+     *
+     * @param string $code PHP source.
+     * @return list<array{name: string, line: int}> Fully-qualified names in code position.
+     */
+    private static function inlineSourceFqcns(string $code): array
+    {
+        $names = [];
+
+        foreach (token_get_all($code) as $token) {
+            if (is_array($token)
+                && $token[0] === T_NAME_FULLY_QUALIFIED
+                && str_starts_with($token[1], '\\AlFalaq\\AlFalaq\\')
+            ) {
+                $names[] = ['name' => $token[1], 'line' => $token[2]];
+            }
+        }
+
+        return $names;
+    }
+
     public function testConventionAllowListsDoNotRot(): void
     {
         foreach (self::SERVICES_WITHOUT_DIRECT_FACTORY as $class => $factory) {

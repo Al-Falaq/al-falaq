@@ -88,3 +88,7 @@ KL 2025-03-29 (`dt = 74.61 s`, `jd = 2460763.973662`):
 `lag = -0.0226 h`, `age = 0.1000 d`, `agem = 0.1000 d`.
 
 `age` = `moon_age_days`, `agem` = `moon_age_at_moonset_days`.
+
+## See also
+
+- [Moon Sighting](user/moon-sighting.md) — the published user guide

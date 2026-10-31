@@ -55,14 +55,14 @@ final class UndefinedScheduleException extends AstronomicalException
     /**
      * Build a polar-undefined error pointing at the resolving rule.
      *
-     * @param \AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $coordinates Observer location.
-     * @param \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $date Civil date with no sunrise/sunset.
+     * @param Coordinates $coordinates Observer location.
+     * @param CivilDate $date Civil date with no sunrise/sunset.
      * @param string $rule PolarCircleRule case that was active.
      * @return self Ready to throw.
      */
     public static function polar(
-        \AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates $coordinates,
-        \AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate $date,
+        Coordinates $coordinates,
+        CivilDate $date,
         string $rule,
     ): self {
         return new self(

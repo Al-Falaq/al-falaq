@@ -25,7 +25,7 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 
 ## Development Workflow
 
-- Canonical gate: `composer ci` = `lint + cs + stan + test`
+- Canonical gate: `composer ci` = `lint + cs + stan + changelog:check + test`
 - `composer bench` — performance tripwire harness (`--budget` enforces the loose
   50ms/30000ms tripwires; the printed 2ms/1000ms/16MB PRD budgets are headroom
   references, gated later — see `examples/bench.php`)
@@ -41,9 +41,15 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - Actions are pinned to full commit SHAs with a `# vX.Y.Z` comment; Dependabot
   (`.github/dependabot.yml`, github-actions, weekly) refreshes them. Keep the
   comment when bumping by hand — it is what Dependabot tracks.
+- Docs-site dependencies are audit-gated in `docs.yml`
+  (`npm audit --omit=dev --audit-level=moderate`); Dependabot tracks both
+  `github-actions` and the `npm` package in `docs_site/`.
 - `composer mutation` — Infection gate (MSI ≥ 85, about 10 min). `composer.json`
   sets `config.process-timeout: 0` so the script survives Composer's default
   300 s process timeout; CI sets the same via `COMPOSER_PROCESS_TIMEOUT`.
+- `composer changelog` regenerates `docs/user/changelog.md` from `CHANGELOG.md`;
+  `composer changelog:check` fails when the published page is stale (also in the
+  release gate). Never hand-edit the generated page.
 
 ## Testing Instructions
 
@@ -125,3 +131,7 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   the `Interface` suffix. Do not "simplify" it away.
 - Gotcha: `composer update` without `config.platform.php=8.2.0` resolves
   8.4-only deps and breaks the 8.2/8.3 CI legs.
+- `docs/` is contributor-facing (algorithm appendices, internals,
+  error-message targets); `docs/user/` is the published user guide. Keep
+  `docs/README.md` current; new top-level `docs/*.md` pages must be added to
+  its map.

@@ -181,3 +181,7 @@ in this order, UTC `DateTimeImmutable`; `toArray(): array<string,string>` maps
 same keys to `Y-m-d\TH:i:s+00:00`; `DisplaySchedule::toArray()` same keys in
 display zone; `json_encode($schedule->toArray())` for consumers; no other keys
 without a minor bump.
+
+## See also
+
+- [Integration](user/integration.md) — the published user guide

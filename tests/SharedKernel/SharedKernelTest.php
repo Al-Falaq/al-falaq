@@ -154,4 +154,68 @@ final class SharedKernelTest extends TestCase
         self::assertStringContainsString('longitude', $lon);
         self::assertStringContainsString('[-180, 180]', $lon);
     }
+
+    public function testMinutesAddShiftsForwardAcrossMidnight(): void
+    {
+        $base = new \DateTimeImmutable('2025-12-31 23:59:00', new \DateTimeZone('UTC'));
+        $moved = Minutes::add($base, 2);
+
+        self::assertSame('2026-01-01 00:01:00', $moved->format('Y-m-d H:i:s'));
+        self::assertSame('2025-12-31 23:59:00', $base->format('Y-m-d H:i:s'));
+    }
+
+    public function testMinutesAddShiftsBackwardAcrossYearBoundary(): void
+    {
+        $base = new \DateTimeImmutable('2025-01-01 00:01:00', new \DateTimeZone('UTC'));
+        $moved = Minutes::add($base, -2);
+
+        self::assertSame('2024-12-31 23:59:00', $moved->format('Y-m-d H:i:s'));
+    }
+
+    public function testMinutesAddPreservesCallerZone(): void
+    {
+        $base = new \DateTimeImmutable('2025-03-01 12:00:00', new \DateTimeZone('Asia/Kuala_Lumpur'));
+        $moved = Minutes::add($base, 90);
+
+        self::assertSame('Asia/Kuala_Lumpur', $moved->getTimezone()->getName());
+        self::assertSame('2025-03-01 13:30:00', $moved->format('Y-m-d H:i:s'));
+    }
+
+    public function testAngleToRadians(): void
+    {
+        self::assertEqualsWithDelta(0.0, Angle::fromDegrees(0.0)->toRadians(), 1e-12);
+        self::assertEqualsWithDelta(M_PI / 2.0, Angle::fromDegrees(90.0)->toRadians(), 1e-12);
+        self::assertEqualsWithDelta(M_PI, Angle::fromDegrees(180.0)->toRadians(), 1e-12);
+        self::assertEqualsWithDelta(2.0 * M_PI, Angle::fromDegrees(360.0)->toRadians(), 1e-12);
+        self::assertEqualsWithDelta(-M_PI / 2.0, Angle::fromDegrees(-90.0)->toRadians(), 1e-12);
+    }
+
+    public function testCoordinatesToStringUsesSixDecimals(): void
+    {
+        self::assertSame('3.139000,101.686900', (string) Coordinates::fromDegrees(3.139, 101.6869));
+        self::assertSame('-33.868800,151.209300', (string) Coordinates::fromDegrees(-33.8688, 151.2093));
+    }
+
+    public function testCivilDateCompareToOrdersByYearMonthDay(): void
+    {
+        $base = CivilDate::fromYmd(2025, 1, 15);
+
+        self::assertSame(-1, $base->compareTo(CivilDate::fromYmd(2025, 1, 16)));
+        self::assertSame(1, $base->compareTo(CivilDate::fromYmd(2025, 1, 14)));
+        self::assertSame(-1, $base->compareTo(CivilDate::fromYmd(2025, 2, 1)));
+        self::assertSame(1, $base->compareTo(CivilDate::fromYmd(2024, 12, 31)));
+        self::assertSame(0, $base->compareTo(CivilDate::fromYmd(2025, 1, 15)));
+
+        $dates = [
+            CivilDate::fromYmd(2025, 2, 1),
+            CivilDate::fromYmd(2024, 12, 31),
+            CivilDate::fromYmd(2025, 1, 15),
+        ];
+        usort($dates, static fn(CivilDate $a, CivilDate $b): int => $a->compareTo($b));
+
+        self::assertSame(
+            ['2024-12-31', '2025-01-15', '2025-02-01'],
+            array_map(static fn(CivilDate $date): string => $date->isoformat(), $dates),
+        );
+    }
 }
