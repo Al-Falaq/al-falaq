@@ -282,6 +282,13 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
 
         $asr = $this->adjusted($asrTemp, $eff, Prayer::ASR);
 
+        // Asr ordering: clamp up to Dhuhr first, then down to Maghrib once it
+        // exists. The second clamp is the final authority, so the schedule
+        // always keeps asr <= maghrib; it preserves dhuhr <= asr whenever
+        // dhuhr <= maghrib, which the empty-adjustment ordering sweeps assert
+        // for the supported grid. Caller offsets are bounded to ±60 minutes
+        // but can still invert the anchors at high latitude, and in that case
+        // the Maghrib clamp wins by design.
         if ($asr < $dhuhr) {
             $asr = $dhuhr;
         }
