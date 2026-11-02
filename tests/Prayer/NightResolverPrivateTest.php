@@ -23,7 +23,6 @@ final class NightResolverPrivateTest extends TestCase
     private function invokeOn(object $instance, string $method, array $args): mixed
     {
         $ref = new \ReflectionMethod($instance, $method);
-        $ref->setAccessible(true);
 
         return $ref->invokeArgs($instance, $args);
     }
@@ -115,8 +114,9 @@ final class NightResolverPrivateTest extends TestCase
             ['morning' => 0, 'evening' => 0],
             0,
         ]);
-
         self::assertInstanceOf(\DateTimeImmutable::class, $result);
+        // hourAngle returns 2025-01-15 03:00:00 UTC; midnight rule passes it through unchanged.
+        self::assertSame('2025-01-15 03:00:00', $result->format('Y-m-d H:i:s'));
     }
 
     public function testIshaTempViaReflection(): void
@@ -159,8 +159,9 @@ final class NightResolverPrivateTest extends TestCase
             ['morning' => 0, 'evening' => 0],
             0,
         ]);
-
         self::assertInstanceOf(\DateTimeImmutable::class, $result);
+        // hourAngle returns 2025-01-15 03:00:00 UTC; midnight rule passes it through unchanged.
+        self::assertSame('2025-01-15 03:00:00', $result->format('Y-m-d H:i:s'));
     }
 
     public function testAddSecondsViaReflection(): void

@@ -147,5 +147,10 @@ final class PrayerScheduleTest extends TestCase
 
         self::assertInstanceOf(\DateInterval::class, $interval);
         self::assertSame(0, $interval->invert); // maghrib before isha -> positive
+
+        // Interval must equal maghrib->isha span.
+        $expectedSeconds = $schedule->timeFor(Prayer::ISHA)->getTimestamp()
+            - $schedule->timeFor(Prayer::MAGHRIB)->getTimestamp();
+        self::assertSame($expectedSeconds, $interval->h * 3600 + $interval->i * 60 + $interval->s);
     }
 }

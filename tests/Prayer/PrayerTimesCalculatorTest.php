@@ -544,10 +544,10 @@ final class PrayerTimesCalculatorTest extends TestCase
         self::assertInstanceOf(MeanSolarCalculator::class, $calc->solar());
     }
 
-    public function testCalculateUsesIntervalMaghribWhenNoMinutesAfterSunset(): void
+    public function testCalculateUsesAngleMaghribWhenNoMinutesAfterSunset(): void
     {
-        // MaghribRule with angle only (no minutesAfterSunset) -> hourAngle path.
-        $params = CalculationParameters::create(
+        // Angle-based Maghrib rule (no minutesAfterSunset) -> hourAngle path.
+        $angleParams = CalculationParameters::create(
             CalculationMethod::NONE,
             Madhab::SHAFI,
             HighLatitudeRule::MIDDLE_OF_NIGHT,
@@ -565,13 +565,42 @@ final class PrayerTimesCalculatorTest extends TestCase
             PrayerAdjustments::empty(),
         );
 
-        $schedule = PrayerTimesCalculator::default()->calculate(
-            Coordinates::fromDegrees(3.1390, 101.6869),
-            CivilDate::fromYmd(2025, 1, 15),
-            $params,
+        // Interval-based Maghrib for comparison: minutesAfterSunset=0 -> maghrib = sunset.
+        $intervalParams = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
         );
 
-        self::assertTrue($schedule->timeFor(Prayer::MAGHRIB) < $schedule->timeFor(Prayer::ISHA));
+        $angleSchedule = PrayerTimesCalculator::default()->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            $angleParams,
+        );
+        $intervalSchedule = PrayerTimesCalculator::default()->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            $intervalParams,
+        );
+
+        // Angle-based maghrib should be later than interval-based (sunset + 0 min)
+        // because the sun reaches the depression angle after sunset.
+        self::assertTrue(
+            $angleSchedule->timeFor(Prayer::MAGHRIB)->getTimestamp()
+                > $intervalSchedule->timeFor(Prayer::MAGHRIB)->getTimestamp(),
+        );
     }
 
     public function testCalculateWithDhuhrAdjustment(): void
@@ -601,15 +630,42 @@ final class PrayerTimesCalculatorTest extends TestCase
             $params,
         );
 
-        self::assertTrue($schedule->timeFor(Prayer::DHUHR) > $schedule->timeFor(Prayer::SUNRISE));
+        // Same schedule without adjustments should be exactly 300 seconds earlier.
+        $baselineParams = CalculationParameters::create(
+            CalculationMethod::NONE,
+            Madhab::SHAFI,
+            HighLatitudeRule::MIDDLE_OF_NIGHT,
+            PolarCircleRule::NEAREST_LATITUDE,
+            18.0,
+            new AngleIsha(17.0),
+            new MinutesAfterSunsetMaghrib(0),
+            0,
+            10,
+            15,
+            28,
+            0.0,
+            false,
+            PrayerAdjustments::empty(),
+            PrayerAdjustments::empty(),
+        );
+
+        $baselineSchedule = PrayerTimesCalculator::default()->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            $baselineParams,
+        );
+
+        self::assertSame(
+            $baselineSchedule->timeFor(Prayer::DHUHR)->getTimestamp() + 300,
+            $schedule->timeFor(Prayer::DHUHR)->getTimestamp(),
+        );
     }
 
     public function testAsrTempNullThrows(): void
     {
         // Stubbed engine where afternoon() returns null but isSolarDefined
         // returns true, triggering the asrTemp === null throw.
-        $utc = new \DateTimeZone('UTC');
-        $day = new \DateTimeImmutable('2025-01-15 12:00:00', $utc);
+        $day = new \DateTimeImmutable('2025-01-15 12:00:00', new \DateTimeZone('UTC'));
         $calc = new PrayerTimesCalculator(
             new class implements \AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine {
                 public function declination(float $j): float
@@ -664,7 +720,6 @@ final class PrayerTimesCalculatorTest extends TestCase
     {
         // Stubbed engine where asr computes before dhuhr, triggering the
         // asr = dhuhr clamp.
-        $utc = new \DateTimeZone('UTC');
         $calc = new PrayerTimesCalculator(
             new class implements \AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine {
                 public function declination(float $j): float
@@ -722,7 +777,6 @@ final class PrayerTimesCalculatorTest extends TestCase
     {
         // Stubbed engine where asr computes after maghrib, triggering the
         // asr = maghrib clamp.
-        $utc = new \DateTimeZone('UTC');
         $calc = new PrayerTimesCalculator(
             new class implements \AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine {
                 public function declination(float $j): float
@@ -821,7 +875,6 @@ final class PrayerTimesCalculatorTest extends TestCase
     {
         // Stubbed engine: isSolarDefined returns true but hourAngle returns
         // null for the maghrib angle, triggering the throw in maghribBase().
-        $utc = new \DateTimeZone('UTC');
         $calc = new PrayerTimesCalculator(
             new class implements \AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine {
                 public function declination(float $j): float

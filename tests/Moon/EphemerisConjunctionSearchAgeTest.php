@@ -16,26 +16,27 @@ final class EphemerisConjunctionSearchAgeTest extends TestCase
 {
     public function testAgeDaysAtConjunctionSunset(): void
     {
-        // Near a conjunction at sunset time, arcl[0] <= arcls[1] and
-        // arclAt(jd + step) >= arclAt(jd), triggering line 83.
+        // Conjunction (new moon) on 2025-03-29 at 10:58 UTC; sunset in Kuala
+        // Lumpur (~11:15 UTC) is 17 minutes after conjunction. The age search
+        // samples ARCL backward from sunset; if sunset is at/after conjunction,
+        // ARCL is at its minimum and the floor (0.1 days) is returned.
         $search = EphemerisConjunctionSearch::default();
 
-        // 2025-01-29 is near a new moon; sunset on that date should be
-        // very close to the conjunction, making arcl[0] <= arcls[1].
-        $age = $search->ageDays(2460692.5);
+        $age = $search->ageDays(2460756.0);
 
         self::assertTrue($age >= 0.1);
+        self::assertTrue($age <= 30.0);
         self::assertTrue(is_finite($age));
     }
 
     public function testAgeDaysSearchWindowExhausted(): void
     {
-        // This is very hard to trigger - requires 30 days of search without
-        // finding a minimum. Test that the method returns the search window
-        // max value without error for any reasonable input.
+        // Requires 30 days of sampling without finding a local minimum in
+        // ARCL. Conjunction occurs every ~29.5 days, so this path is
+        // unreachable in practice; test that the method returns the search
+        // window max without error for any input.
         $search = EphemerisConjunctionSearch::default();
 
-        // Test with various Julian days to ensure no error
         for ($jd = 2460000.0; $jd <= 2461000.0; $jd += 100.0) {
             $age = $search->ageDays($jd);
             self::assertTrue($age >= 0.1);

@@ -19,7 +19,6 @@ final class ValueObjectPrivateConstructorTest extends TestCase
         $ref = new \ReflectionClass(Minutes::class);
         $constructor = $ref->getConstructor();
         self::assertNotNull($constructor);
-        $constructor->setAccessible(true);
         $instance = $ref->newInstanceWithoutConstructor();
         $constructor->invoke($instance);
         self::assertInstanceOf(Minutes::class, $instance);
@@ -30,7 +29,6 @@ final class ValueObjectPrivateConstructorTest extends TestCase
         $ref = new \ReflectionClass(CivilDate::class);
         $constructor = $ref->getConstructor();
         self::assertNotNull($constructor);
-        $constructor->setAccessible(true);
         $instance = $ref->newInstanceWithoutConstructor();
         $constructor->invoke($instance, 2025, 1, 15);
         self::assertInstanceOf(CivilDate::class, $instance);

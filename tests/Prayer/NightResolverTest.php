@@ -167,14 +167,60 @@ final class NightResolverTest extends TestCase
     {
         // Latitude >= 55 with MSC/seasonal-safe engages the seventh-of-night
         // temp in both fajrTemp and ishaTemp, bypassing the angle temp call.
+        // Night length = 21600 seconds (sunset 21:00 -> next sunrise 03:00).
+        // Seventh = intdiv(21600, 7) = 3085 seconds.
         $utc = new \DateTimeZone('UTC');
         $day = new SolarTime(
             new \DateTimeImmutable('2025-06-21 12:00:00', $utc),
             new \DateTimeImmutable('2025-06-21 03:00:00', $utc),
             new \DateTimeImmutable('2025-06-21 21:00:00', $utc),
         );
+        // Stubbed engine that fails if hourAngle is called (seventh path must
+        // bypass the angle temp computation).
+        $calledHourAngle = false;
+        $stubbedSolar = new class implements SolarDayEngine {
+            public function declination(float $j): float
+            {
+                return 0.0;
+            }
+
+            public function equationOfTime(float $j): float
+            {
+                return 0.0;
+            }
+
+            public function solarTime(Coordinates $c, CivilDate $d, mixed $e): SolarTime
+            {
+                return new SolarTime(
+                    new \DateTimeImmutable('2025-06-21 12:00:00', new \DateTimeZone('UTC')),
+                    new \DateTimeImmutable('2025-06-21 03:00:00', new \DateTimeZone('UTC')),
+                    new \DateTimeImmutable('2025-06-21 21:00:00', new \DateTimeZone('UTC')),
+                );
+            }
+
+            public function hourAngleFloat(Coordinates $c, CivilDate $d, mixed $e, float $a, bool $at): ?float
+            {
+                return null;
+            }
+
+            public function hourAngle(Coordinates $c, CivilDate $d, mixed $e, float $a, bool $at): ?\DateTimeImmutable
+            {
+                // Should not be called on seventh-of-night path.
+                throw new \RuntimeException('hourAngle should not be called on seventh-of-night path');
+            }
+
+            public function afternoon(Coordinates $c, CivilDate $d, mixed $e, mixed $s): ?\DateTimeImmutable
+            {
+                return null;
+            }
+
+            public function isSolarDefined(Coordinates $c, CivilDate $d, mixed $e): bool
+            {
+                return true;
+            }
+        };
         $resolver = new NightResolver(
-            self::stubSolar($day, null), // angle temp must NOT be called on seventh path
+            $stubbedSolar,
             new MiddleOfNightCorrection(),
             new SeasonAdjustedTwilight(),
         );
@@ -188,13 +234,16 @@ final class NightResolverTest extends TestCase
             0.0,
             $base->withHighLatitudeRule(HighLatitudeRule::SEASONAL_TWILIGHT),
             $day,
-            64800,
+            21600,
         );
 
         self::assertNotNull($temps['fajr']);
         self::assertNotNull($temps['isha']);
-        self::assertTrue($temps['fajr'] < $day->sunrise);
-        self::assertTrue($temps['isha'] > $day->sunset);
+        // intdiv(21600, 7) = 3085 seconds
+        // Sunrise 03:00 - 3085s = 02:08:35
+        // Sunset 21:00 + 3085s = 21:51:25
+        self::assertSame('2025-06-21 02:08:35', $temps['fajr']->format('Y-m-d H:i:s'));
+        self::assertSame('2025-06-21 21:51:25', $temps['isha']->format('Y-m-d H:i:s'));
     }
 
     public function testSeasonalSafeWithoutSeventhAtLowLatitude(): void

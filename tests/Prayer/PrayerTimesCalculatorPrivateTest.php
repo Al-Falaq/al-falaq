@@ -36,7 +36,6 @@ final class PrayerTimesCalculatorPrivateTest extends TestCase
     private function invokeOn(object $instance, string $method, array $args): mixed
     {
         $ref = new \ReflectionMethod($instance, $method);
-        $ref->setAccessible(true);
 
         return $ref->invokeArgs($instance, $args);
     }
@@ -54,20 +53,18 @@ final class PrayerTimesCalculatorPrivateTest extends TestCase
     public function testAdjustedViaReflection(): void
     {
         $calc = $this->calculator();
-        $utc = new \DateTimeZone('UTC');
-        $base = new \DateTimeImmutable('2025-01-15 12:00:00', $utc);
+        $base = new \DateTimeImmutable('2025-01-15 12:00:00', new \DateTimeZone('UTC'));
         $eff = PrayerAdjustments::empty()->with(Prayer::DHUHR, 5);
 
         $result = $this->invokeOn($calc, 'adjusted', [$base, $eff, Prayer::DHUHR]);
-
         self::assertInstanceOf(\DateTimeImmutable::class, $result);
+        self::assertSame('2025-01-15 12:05:00', $result->format('Y-m-d H:i:s'));
     }
 
     public function testMaghribBaseViaReflection(): void
     {
         $calc = $this->calculator();
-        $utc = new \DateTimeZone('UTC');
-        $sunset = new \DateTimeImmutable('2025-01-15 11:21:00', $utc);
+        $sunset = new \DateTimeImmutable('2025-01-15 11:21:00', new \DateTimeZone('UTC'));
         $rule = new AngleMaghrib(6.0);
 
         $result = $this->invokeOn($calc, 'maghribBase', [
@@ -77,15 +74,15 @@ final class PrayerTimesCalculatorPrivateTest extends TestCase
             $rule,
             $sunset,
         ]);
-
         self::assertInstanceOf(\DateTimeImmutable::class, $result);
+        // Sunset 11:21 + 6° depression ≈ 11:43:38
+        self::assertSame('2025-01-15 11:43:38', $result->format('Y-m-d H:i:s'));
     }
 
     public function testMaghribBaseMinutesAfterSunsetViaReflection(): void
     {
         $calc = $this->calculator();
-        $utc = new \DateTimeZone('UTC');
-        $sunset = new \DateTimeImmutable('2025-01-15 11:21:00', $utc);
+        $sunset = new \DateTimeImmutable('2025-01-15 11:21:00', new \DateTimeZone('UTC'));
         $rule = new MinutesAfterSunsetMaghrib(3);
 
         $result = $this->invokeOn($calc, 'maghribBase', [
@@ -95,7 +92,8 @@ final class PrayerTimesCalculatorPrivateTest extends TestCase
             $rule,
             $sunset,
         ]);
-
         self::assertInstanceOf(\DateTimeImmutable::class, $result);
+        // Sunset 11:21 + 3 minutes = 11:24
+        self::assertSame('2025-01-15 11:24:00', $result->format('Y-m-d H:i:s'));
     }
 }

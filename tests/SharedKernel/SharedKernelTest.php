@@ -277,7 +277,6 @@ final class SharedKernelTest extends TestCase
         $kaabaRef = new \ReflectionClass(Kaaba::class);
         $kaabaCtor = $kaabaRef->getConstructor();
         self::assertNotNull($kaabaCtor);
-        $kaabaCtor->setAccessible(true);
         $kaabaInstance = $kaabaRef->newInstanceWithoutConstructor();
         $kaabaCtor->invoke($kaabaInstance);
         self::assertInstanceOf(Kaaba::class, $kaabaInstance);
@@ -287,7 +286,6 @@ final class SharedKernelTest extends TestCase
         $minutesRef = new \ReflectionClass(Minutes::class);
         $minutesCtor = $minutesRef->getConstructor();
         self::assertNotNull($minutesCtor);
-        $minutesCtor->setAccessible(true);
         $minutesInstance = $minutesRef->newInstanceWithoutConstructor();
         $minutesCtor->invoke($minutesInstance);
         self::assertInstanceOf(Minutes::class, $minutesInstance);
@@ -314,7 +312,6 @@ final class SharedKernelTest extends TestCase
         $coordRef = new \ReflectionClass(Coordinates::class);
         $coordCtor = $coordRef->getConstructor();
         self::assertNotNull($coordCtor);
-        $coordCtor->setAccessible(true);
         $coordInstance = $coordRef->newInstanceWithoutConstructor();
         $coordCtor->invoke($coordInstance, 3.0, 10.0);
         self::assertSame(3.0, $coordInstance->latitude);
@@ -322,7 +319,6 @@ final class SharedKernelTest extends TestCase
         $civilRef = new \ReflectionClass(CivilDate::class);
         $civilCtor = $civilRef->getConstructor();
         self::assertNotNull($civilCtor);
-        $civilCtor->setAccessible(true);
         $civilInstance = $civilRef->newInstanceWithoutConstructor();
         $civilCtor->invoke($civilInstance, 2025, 1, 15);
         self::assertSame('2025-01-15', $civilInstance->isoformat());
@@ -335,7 +331,6 @@ final class SharedKernelTest extends TestCase
         $ref = new \ReflectionClass(CivilDate::class);
         $ctor = $ref->getConstructor();
         self::assertNotNull($ctor);
-        $ctor->setAccessible(true);
         $instance = $ref->newInstanceWithoutConstructor();
         (new \ReflectionProperty($instance, 'year'))->setValue($instance, 99999);
         (new \ReflectionProperty($instance, 'month'))->setValue($instance, 6);
