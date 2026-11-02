@@ -47,6 +47,14 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - `composer mutation` — Infection gate (MSI ≥ 85, about 10 min). `composer.json`
   sets `config.process-timeout: 0` so the script survives Composer's default
   300 s process timeout; CI sets the same via `COMPOSER_PROCESS_TIMEOUT`.
+  The `mutation` CI job is deliberately PR-only and conditional: it waits for
+  `static` + `test` (`needs:`), skips drafts, skips PRs that touch no signal
+  path (`src/`, `tests/`, `tools/`, `infection.json.dist`, `phpunit.xml`,
+  `composer.json`, `composer.lock`), and superseded PR runs are cancelled by
+  the workflow `concurrency` group. Do not move it back to `push` triggers:
+  same-repo branches then ran the job twice per push (once for `push`, once for
+  `pull_request`). Direct pushes to `main` bypass the gate by design — if that
+  becomes routine, add a scheduled `main` run instead of a push trigger.
 - `composer changelog` regenerates `docs/user/changelog.md` from `CHANGELOG.md`;
   `composer changelog:check` fails when the published page is stale (also in the
   release gate). Never hand-edit the generated page.
