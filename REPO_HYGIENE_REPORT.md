@@ -409,3 +409,68 @@ gh api repos/Al-Falaq/al-falaq/actions/runs/<id>/jobs --jq '.jobs[] | .steps[] |
 ---
 
 *Report generated 2026-10-22 against `ebcc3aa`. No source file was modified in the course of this review.*
+
+---
+
+## Appendix C — Tier delivery verification
+
+*Verification added 2026-11-02 20:10:03 (+08) against `cd374de` (`ebcc3aa..cd374de`, 47 commits: tier-1/2/3 implementation branches + PRs #42/#43/#46 + Dependabot npm bumps). Read-only re-analysis of the current tree against the §13 action list; every item checked against source, tests, docs, and CI config, and all gates re-executed (§C.4). No source file was modified.*
+
+**Verdict: 19 of 20 tier items fully delivered; 1 partial (item 18 — 3 of 4 named functions); four items were implemented beyond the proposal.**
+
+### C.1 Tier 1 (items 1–6) — 6/6 delivered ✅
+
+| # | Item | Evidence |
+|---|---|---|
+| 1 | Inline redundant `declination()` (P2) | Implemented as a formula owner, not just inlined: new private `declinationFrom($lambda, $epsilonApp)` (`MeanSolarCalculator.php:53-61`) consumes the already-computed values; `solarTriplet()` uses it at `:445`. **Measured effect: single-day p50 2.373 → 0.946 ms; year 862 → 347 ms.** |
+| 2 | Bench budget honesty (P1) | Budget line is now *"bench: PRD reference (NOT gated, hardware- and load-dependent)"* (`examples/bench.php:67`) with honest caveats at `:18-22`. Moot anyway — p50 now beats the 2 ms reference. |
+| 3 | Local mutation fix (P3) | `composer.json:36` sets `process-timeout: 0`. **Proven end-to-end: `composer mutation` completed locally in 7m40s, EXIT=0** (previously hard-died at Composer's 300 s timeout). AGENTS.md documents it. |
+| 4 | Single Kaaba owner (P4) | New `SharedKernel/ValueObjects/Kaaba.php`; `GeodesyCalculator::MAKKAH_LATITUDE/LONGITUDE` are now **aliases** of `Kaaba::LATITUDE/LONGITUDE` (`GeodesyCalculator.php:22,:27`); `MakkahHandler` uses `Kaaba::coordinates()` (`:33`). Drift test delivered: `tests/SharedKernel/KaabaTest.php` incl. `testMakkahHandlerResolvesToTheSharedKaabaCoordinates`. |
+| 5 | api-reference completeness (P6) | Page rewritten to name *"every public class-like"* and gated by new `tests/ArchApiReferenceTest.php` — bidirectional (public class missing from docs **and** documented class that no longer exists) with a vacuity floor against 81 public class-likes. Spot-checks: `NightResolver`, `EphemerisConjunctionSearch`, `JulianDay`, `Prayer`, `TwilightModel`, `SphericalCalculator`, `Wgs84KarneyCalculator`, `MakkahHandler`, `Kaaba` — all present. **Exceeds the proposal.** |
+| 6 | T2-method golden gap (P5) | `turkey`, `kemenag`, `muis`, `brunei` now carry **6 data rows each** (was 2), each row citing source + access date + timezone (e.g. `takwim:namazvakitleri.diyanet.gov.tr@2026-10-10 …/+03:00`); dedicated generator `tools/gen_t2_drift_goldens.php`; golden file inventory asserted in `PrayerGoldensTest`. |
+
+### C.2 Tier 2 (items 7–13) — 7/7 delivered ✅
+
+| # | Item | Evidence |
+|---|---|---|
+| 7 | Catch width (P8) | `catch (AstronomicalException)` at `GregorianToHijriConverter.php:131`. |
+| 8 | NightResolver dead `portions` (P7) | Portions now resolved **lazily, only for the portions mode** (`NightResolver.php:92-94`); stale comment replaced with accurate ones (`:65-68`, `:89-91`). New `NightResolverExtraTest` + `NightResolverPrivateTest`. |
+| 9 | Wither collapse (P16) | Private `copyWith()` helper with named-argument withers (`CalculationParameters.php:145`, 10 call sites); file reduced 591 → **425 lines**. |
+| 10 | Dead seams (P10/P11) | `ClockView.php` **deleted** (−21 lines, no remaining references); `SolarPosition.php` **deleted**; `position()` gone (0 hits in `src/`). Bonus: `declination()`/`equationOfTime()` kept but now explicitly documented as the *"Meeus pin-parity oracle (tests only)"* — P12's mystery resolved by documentation. |
+| 11 | Six unenforced arch rules (P21) | Now all enforced in `ArchShapeTest`: contracts-interfaces-only (`:201`), `*Interface` suffix rule (`:226`), one-class-per-file (`:257` + scanner self-test `:272`), ValueObjects-readonly (`:308`; final at `:16`), Traits-private (`:342`), Services-`default()` (`:394`) — with non-rotating allow-lists (`testConventionAllowListsDoNotRot`, `:634`). |
+| 12 | Missing wiring recipes (P19) | `docs/integrations.md` gained **Timetable** (`:65`), **Sunnah** (`:83`), **Crescent visibility** (`:103`), **Hijri conversion** (`:122`). |
+| 13 | Wiring test (P19) | **Exceeds the proposal:** `CalculatorWiringTest` extracts and **executes every PHP block in `docs/integrations.md` as written** (`:176`) with extractor self-tests (`:283-364`). Doc and code structurally cannot drift. |
+
+### C.3 Tier 3 (items 14–20) — 7/7, one partial ⚠️
+
+| # | Item | Evidence |
+|---|---|---|
+| 14 | Cosmetic trio (P13/P14/P15) | Docblock deduplicated; **zero** runs of 3+ blank lines repo-wide; inline FQCNs imported (commit `c50fffa`) — and the hygiene graduated from a one-off tidy to **enforced arch rules** (`testNoInlineSourceFqcns` `:432`, `testNoConsecutiveBlankLines` `:485`, both with scanner self-tests). |
+| 15 | Changelog sync (P20) | `docs/user/changelog.md` generated by `tools/sync_changelog.php` ("Do not edit by hand"); `composer changelog` / `changelog:check` scripts, `changelog:check` inside `composer ci` and the release workflow; ran it: **"in sync"**. |
+| 16 | npm supply chain (P22) | Dependabot `npm` package-ecosystem for `/docs_site` (`.github/dependabot.yml:24-27`) + audit step in `docs.yml` (`:64-65`). Residual advisories **cleared**: `npm audit --omit=dev` → **0 vulnerabilities** (bumps merged via PR #44). |
+| 17 | Convention documentation (P17/P18) | `TimetableService::default()` (`:32`) and `NextPrayerResolver::default()` (`:23`) now exist; `AGENTS.md` documents the two real exceptions (`NightResolver` wiring, `SunnahCalculator::fromCalculator()`) and the Hijri-traits public-methods design. |
+| 18 | VO unit tests | **3 of 4.** Direct tests delivered: `Minutes::roundedHalfUp` (half-up, hour rollover, UTC guard, micro edge — `SharedKernelTest:70-141`), `Minutes::add` (negative/day rollover), `Angle::toRadians` (5 deltas incl. −90°), `CivilDate::compareTo` (5 cases + `usort`). **Gap: `Coordinates::__toString()` (`Coordinates.php:86`) still has no test anywhere in `tests/`.** |
+| 19 | Asr clamp comment | Present (`PrayerTimesCalculator.php:285-291`): explains the order, cites the ordering sweeps, and declares *"the Maghrib clamp wins by design"* for offset-inverted anchors. |
+| 20 | docs/ vs docs/user/ scoping (P24) | New `docs/README.md` documentation map: audience table, per-topic canonical-owner ↔ user-counterpart page map, editing rules. |
+
+### C.4 Gates re-run at verification time
+
+| Gate | At report time (`ebcc3aa`) | At verification (`cd374de`) |
+|---|---|---|
+| Unit tests | 436 / 49,724 assertions | **598 tests / 50,505 assertions OK** |
+| Coverage ratchet | 97.2% (min 95) | **98.0%** |
+| Mutation | 90%/91% CI; hard-fails locally | **MSI 92% / covered MSI 93%**, **EXIT 0 locally in 7m40s** |
+| Bench p50 / year / peak | 2.373 ms / 862 ms / 6.0 MB | **0.946 ms / 347 ms / 6.0 MB** |
+| phpstan max / cs `@PER` | 0 errors / 0 of 156 files | 0 errors / 0 of 175 files |
+| `composer arch` | pass | pass — **32 tests** (adds ApiReference + new shape rules) |
+| Lint / validate / changelog | ✅ / ✅ | ✅ / ✅ / **"in sync"** |
+| Docs-site `npm audit --omit=dev` | 3 moderate | **0 vulnerabilities** |
+
+### C.5 Residuals — honest ledger (outside or at the edge of the tier scope)
+
+1. **`Coordinates::__toString()`** is the only letter-level miss (T3-18 explicitly named it): the method exists (`Coordinates.php:86`) but no test references it. One small test closes it.
+2. **P23 is unchanged** — `Mabims1992Evaluator`'s null-age branch (`:38-47`) still returns before the finiteness check. P23 was never part of the 20-tier list (it lives only in §5.2, "Low"), so this is not a delivery miss; flagged so it is not forgotten.
+3. **`Minutes` shows 2 uncovered lines** — both are the structurally unreachable `$moved === false` guards (`Minutes.php:34-35`, `:55-56`); a coverage artifact, not a defect.
+4. Items **upgraded beyond the proposal**: T1-5 (three-way reference gate), T2-11 (scanner self-tests + 3 bonus scanners), T2-13 (doc-executing wiring test), T3-14 (hygiene rules now enforced), T3-16 (advisories eliminated, not merely gated).
+
+*Verification appended 2026-11-02 20:10:03 (+08) against `cd374de`. No source file was modified during this verification pass.*
