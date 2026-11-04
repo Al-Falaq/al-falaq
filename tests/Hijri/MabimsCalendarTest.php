@@ -10,6 +10,8 @@ use AlFalaq\AlFalaq\Hijri\Exceptions\HijriOutOfRangeException;
 use AlFalaq\AlFalaq\Hijri\Strategies\MabimsCalendar;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use DateTimeImmutable;
+use DateTimeZone;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -53,6 +55,18 @@ final class MabimsCalendarTest extends TestCase
     }
 
     /**
+     * The bound country is exposed independently of the generic name() key.
+     *
+     * @return void
+     */
+    public function testCountryAccessorReturnsTheBoundState(): void
+    {
+        foreach (MabimsCountry::cases() as $country) {
+            self::assertSame($country, (new MabimsCalendar($country))->country());
+        }
+    }
+
+    /**
      * One day before the anchor is out of span for every country.
      *
      * @return void
@@ -65,6 +79,25 @@ final class MabimsCalendarTest extends TestCase
         } catch (HijriOutOfRangeException $exception) {
             self::assertStringContainsString('(MY)', $exception->getMessage());
         }
+    }
+
+    /**
+     * The sentinel day is one past the last supported month.
+     *
+     * @return void
+     */
+    public function testSentinelDayIsOutOfRange(): void
+    {
+        $starts = MabimsMonthStarts::forCountry(MabimsCountry::MY);
+        $sentinel = new DateTimeImmutable($starts[count($starts) - 1], new DateTimeZone('UTC'));
+        $date = CivilDate::fromYmd(
+            (int) $sentinel->format('Y'),
+            (int) $sentinel->format('n'),
+            (int) $sentinel->format('j'),
+        );
+
+        $this->expectException(HijriOutOfRangeException::class);
+        (new MabimsCalendar(MabimsCountry::MY))->fromGregorian($date);
     }
 
     /**

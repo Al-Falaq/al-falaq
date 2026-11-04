@@ -33,8 +33,11 @@ final class TabularCalendar implements HijriCalendar
     /** Leap-year remainders mod 30 (Type IIa: years 2,5,7,10,13,16,18,21,24,26,29 — 11 leaps per 30-year / 10631-day cycle, pin-verbatim). */
     private const LEAP_YEARS_IN_CYCLE = [2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29];
 
-    /** Supported span, used in range errors. */
-    private const RANGE = '1 Muharram 1 AH onward';
+    /** Arithmetic span label: the closed form requires a positive Hijri year. */
+    private const ARITHMETIC_RANGE = '1 Muharram 1 AH onward';
+
+    /** Conversion span label: results must be representable as a CivilDate. */
+    private const CIVIL_RANGE = 'Hijri dates mapping to Gregorian 1900–2100';
 
     /** Whole-day conversion nudge in [-2, 2]. */
     private readonly int $adjustmentDays;
@@ -76,7 +79,7 @@ final class TabularCalendar implements HijriCalendar
     public function monthLength(int $year, int $month): int
     {
         if ($year < 1) {
-            throw HijriOutOfRangeException::forDate('tabular', sprintf('%04d-%02d', $year, $month), self::RANGE);
+            throw HijriOutOfRangeException::forDate('tabular', sprintf('%04d-%02d', $year, $month), self::ARITHMETIC_RANGE);
         }
 
         if ($month < 1 || $month > 12) {
@@ -99,10 +102,6 @@ final class TabularCalendar implements HijriCalendar
     public function fromGregorian(CivilDate $date): HijriDate
     {
         $jd = JulianDay::fromCivilDate($date)->toFloat() + (float) $this->adjustmentDays;
-
-        if ($jd < self::EPOCH_JD) {
-            throw HijriOutOfRangeException::forDate('tabular', $date->isoformat(), self::RANGE);
-        }
 
         return $this->jdToHijri($jd);
     }
@@ -129,11 +128,16 @@ final class TabularCalendar implements HijriCalendar
 
         $jd = $this->hijriToJd($date->year, $date->month, $date->day) - (float) $this->adjustmentDays;
 
-        try {
-            return $this->jdToGregorian($jd);
-        } catch (ValidationException) {
-            throw HijriOutOfRangeException::forDate('tabular', $date->isoformat(), self::RANGE);
+        // Reject outside the CivilDate window before the proleptic Gregorian
+        // inverse runs: huge Hijri years overflow its int arithmetic.
+        $minimum = JulianDay::fromCivilDate(CivilDate::fromYmd(CivilDate::MIN_YEAR, 1, 1))->toFloat();
+        $maximum = JulianDay::fromCivilDate(CivilDate::fromYmd(CivilDate::MAX_YEAR, 12, 31))->toFloat();
+
+        if ($jd < $minimum || $jd > $maximum) {
+            throw HijriOutOfRangeException::forDate('tabular', $date->isoformat(), self::CIVIL_RANGE);
         }
+
+        return $this->jdToGregorian($jd);
     }
 
     /**

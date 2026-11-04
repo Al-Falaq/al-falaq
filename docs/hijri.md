@@ -7,7 +7,7 @@ roll the date at sunset.
 
 | Calendar | Class | Key | Coverage | Character |
 |---|---|---|---|---|
-| Tabular (arithmetic Type IIa) | `TabularCalendar` | `tabular` | 1-1-1 AH onward, Gregorian 1900–2100 via `CivilDate` | Closed form, no data. Drifts ±1–2 days from observation — never present it as an observed date. |
+| Tabular (arithmetic Type IIa) | `TabularCalendar` | `tabular` | Gregorian 1900–2100 (`CivilDate`); Hijri arithmetic year ≥ 1 | Closed form, no data. Drifts ±1–2 days from observation — never present it as an observed date. |
 | Umm al-Qura | `UmmAlQuraCalendar` | `uqu` | 1423-01 … 1500-12 AH | Rule-generated month-start table (Makkah crescent rule). |
 | Neo-MABIMS | `MabimsCalendar` | `mabims` | 1445-01 … 1500-12 AH | Per-country rule-generated month-start table (MY/ID/SG/BN). |
 
@@ -103,14 +103,18 @@ Nothing saturates and nothing wraps.
 
 | Situation | Exception |
 |---|---|
-| Gregorian day outside the calendar's span (e.g. UQ before `2002-03-15`) | `HijriOutOfRangeException` (message names the calendar, the date and the span) |
+| `convert()` instant whose resolved civil date is outside `CivilDate` (1900–2100) | `ValidationException` from `CivilDate`; the domain cannot represent the day |
+| Gregorian day outside a table-backed calendar's span (e.g. UQ before `2002-03-15`) | `HijriOutOfRangeException` (message names the calendar, the date and the span) |
 | Hijri month outside the shipped table | `HijriOutOfRangeException` |
 | Shift or offset that would leave the span | `HijriOutOfRangeException` |
-| A Hijri date whose Gregorian result falls outside `CivilDate` (1900–2100) | `HijriOutOfRangeException` |
-| Impossible day for a real month (e.g. day 30 of a 29-day month) | `ValidationException` |
+| A Hijri date whose Gregorian result falls outside `CivilDate` (1900–2100), including tabular `toGregorian()` | `HijriOutOfRangeException` with the calendar's effective conversion range |
+| Impossible day for a real month (e.g. day 30 of a 29-day month) | `ValidationException`; `shift()` validates even when the shift is zero |
+| Shift magnitude beyond ±3650 days | `ValidationException` (the calendar is not walked) |
 | `changeAtSunset` without coordinates or parameters | `ConfigurationException` |
 | `changeAtSunset` where the full schedule is undefined but maghrib is defined | converts using the maghrib-only fallback |
-| `changeAtSunset` on 2100-12-31 (last supported civil day) | Maghrib resolves via the maghrib-only fallback (`calculate()` throws `UndefinedScheduleException` at the edge, caught internally); only an instant at/after maghrib still throws `ValidationException` from the `plusDays(1)` rollover past 1900–2100. With `PolarCircleRule::NEAREST_DAY` the pipeline may instead resolve to the prior solvable date (e.g. 2100-12-30) and use that schedule's maghrib — when the calculator is wired via `PrayerTimesCalculator::defaultFor()`; under the converter's default wiring the `NEAREST_DAY` rule still takes the maghrib-only fallback above |
+| `changeAtSunset` on `1900-01-01` (first supported civil day) | the backward probe is skipped; the current UTC day is used |
+| `changeAtSunset` when the previous UTC day's schedule is undefined | the backward probe is skipped; the current UTC day is used |
+| `changeAtSunset` on 2100-12-31 (last supported civil day) | before maghrib: the full schedule is undefined at the edge but maghrib is defined, so the maghrib-only fallback resolves the day; at/after maghrib the rollover needs 2101-01-01, which is outside `CivilDate`, so `ValidationException` |
 | Non-int argument to a typed contract parameter | `TypeError` |
 
 `HijriOutOfRangeException` extends `ValidationException`, so a `catch (ValidationException)` catches both; catch the former first when the distinction matters.
@@ -127,7 +131,9 @@ Gregorian). Leap years are the remainders `{2, 5, 7, 10, 13, 16, 18, 21, 24, 26,
 even months 29, Dhu al-Hijjah 30 in leap years. `adjustmentDays` (int, −2…2)
 shifts the whole conversion, playing the role of .NET `HijriAdjustment`.
 Anchors: `2025-03-01 → 1446-09-01`, `1937-03-14 → 1356-01-01`,
-`1355-11-25 → 1937-02-06`.
+`1355-11-25 → 1937-02-06`. Arithmetic (`monthLength()`, `shift()`) accepts
+any year ≥ 1, but `toGregorian()` is bounded by `CivilDate` (1900–2100) and
+raises `HijriOutOfRangeException` outside that window.
 
 ### Umm al-Qura and MABIMS tables
 

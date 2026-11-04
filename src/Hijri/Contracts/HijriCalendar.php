@@ -45,8 +45,14 @@ interface HijriCalendar
     /**
      * Shift a Hijri date by whole Hijri days.
      *
+     * The starting date must be valid in the calendar (day within the month's
+     * length); an impossible date raises `ValidationException` even when
+     * `$days` is zero. Shifts are limited to ±3650 days; larger magnitudes
+     * raise `ValidationException`. Shifting off either end of the calendar's
+     * span raises `HijriOutOfRangeException`.
+     *
      * @param HijriDate $date Starting date.
-     * @param int $days Signed day count; zero is the identity.
+     * @param int $days Signed day count within [-3650, 3650]; zero returns the validated date unchanged.
      * @return HijriDate Shifted date.
      */
     public function shift(HijriDate $date, int $days): HijriDate;

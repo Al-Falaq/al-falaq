@@ -12,6 +12,10 @@ use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
  * No implementation ships: callers own the correction table. `offsetDaysFor()`
  * returns 0 for an unknown date, and the converter treats 0 as a no-op shift
  * (a stored explicit 0 is indistinguishable from a missing entry by design).
+ *
+ * `HijriCalendar::name()` identifies the calendar family, not the MABIMS
+ * member state: every `MabimsCalendar` reports `'mabims'`. A per-country
+ * correction table must additionally read `MabimsCalendar::country()`.
  */
 interface OffsetStore
 {

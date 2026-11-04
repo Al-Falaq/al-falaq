@@ -147,7 +147,9 @@ $hijriAtSunset = $converter->convert(
 
 Other calendars are `TabularCalendar()` and
 `MabimsCalendar(MabimsCountry::MY)`. An optional `OffsetStore`
-implementation applies official day corrections after conversion.
+implementation applies official day corrections after conversion; for MABIMS,
+`MabimsCalendar::country()` identifies the member state so per-country
+corrections can be keyed correctly (`name()` is `'mabims'` for all four).
 
 ## Clock input (edges only)
 

@@ -15,6 +15,11 @@ Versioned snapshots of the whole documentation site are kept per release — use
 
 ### Added
 
+- `MabimsCalendar::country()` exposes the bound member state so a per-country
+  `OffsetStore` can distinguish MY/ID/SG/BN; `name()` remains the generic
+  `'mabims'` pin key. `CivilDate::MIN_YEAR`/`MAX_YEAR` centralize the
+  1900–2100 window, and `HijriDataException` reports malformed generated
+  month-start data instead of silently normalizing an impossible day.
 - `tests/ArchShapeTest.php` now enforces the remaining `AGENTS.md`
   conventions: `Contracts/` interfaces-only, the exact `*Interface` suffix
   set, one named class per file, `readonly` value objects (property-free
@@ -36,6 +41,13 @@ Versioned snapshots of the whole documentation site are kept per release — use
 
 ### Changed
 
+- `HijriCalendar::shift()` now validates the starting date even when the
+  shift is zero, so an impossible date (e.g. day 30 of a 29-day month) can no
+  longer pass through or skip a day; the contract also documents the
+  ±3650-day magnitude cap. `TabularCalendar::toGregorian()` now rejects dates
+  outside the Gregorian 1900–2100 window with a truthful
+  `HijriOutOfRangeException` instead of a misleading range label or a raw
+  `TypeError` for huge years.
 - `GregorianToHijriConverter` now takes the `maghribAt()` fallback for every
   astronomical "schedule undefined" case (`AstronomicalException`), not only
   `UndefinedScheduleException`; validation errors still surface.
@@ -97,6 +109,10 @@ Versioned snapshots of the whole documentation site are kept per release — use
 
 ### Fixed
 
+- The sunset frame no longer fails when the backward probe has no previous
+  day to ask about: at `1900-01-01` the probe is skipped, and when the
+  previous UTC day's schedule is undefined (e.g. polar night) while the
+  current day's maghrib is defined, the current UTC day is used.
 - The public-API reference is checked in both directions: a documented class
   that no longer exists fails the build.
 - The bench harness printed a budget it did not meet and enforced a gate 25x

@@ -13,6 +13,7 @@ use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
@@ -75,6 +76,10 @@ final class GregorianToHijriConverter
     /**
      * Pick the civil date the calendar will be asked about.
      *
+     * The backward probe is best-effort: at the lower `CivilDate` edge, or
+     * when the previous UTC day's schedule is undefined, the current UTC day
+     * is used instead of failing a conversion whose own maghrib is defined.
+     *
      * @param \DateTimeImmutable $dateTime Source instant (zone-aware).
      * @param Coordinates|null $coordinates Observer, required for the sunset path.
      * @param CalculationParameters|null $parameters Method, required for the sunset path.
@@ -101,10 +106,22 @@ final class GregorianToHijriConverter
             return $utc->plusDays(1);
         }
 
-        $previous = $utc->plusDays(-1);
+        try {
+            $previous = $utc->plusDays(-1);
+        } catch (ValidationException) {
+            // 1900-01-01 is the first CivilDate; there is no previous day to
+            // probe, so the instant belongs to the current UTC day.
+            return $utc;
+        }
 
-        if ($dateTime < $this->maghrib($coordinates, $parameters, $previous)) {
-            return $previous;
+        try {
+            if ($dateTime < $this->maghrib($coordinates, $parameters, $previous)) {
+                return $previous;
+            }
+        } catch (AstronomicalException) {
+            // The previous day's schedule can be undefined (for example polar
+            // night) while the current day's maghrib is defined. Without a
+            // previous maghrib there is no evidence of a backward roll.
         }
 
         return $utc;

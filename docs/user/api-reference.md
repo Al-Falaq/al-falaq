@@ -14,7 +14,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | Class | Key members |
 | --- | --- |
 | `SharedKernel\ValueObjects\Coordinates` | `fromDegrees(mixed $lat, mixed $lon): self` (lat −90…90, lon −180…180); `fromArray(array): self` (exactly `[0 => lat, 1 => lon]`); `equals()`, `toArray()` |
-| `SharedKernel\ValueObjects\CivilDate` | `fromYmd(int, int, int): self` (1900–2100); `fromDateTime(DateTimeImmutable): self` (own-zone date); `plusDays(int): self`; `dayOfYear(): int`; `toUtcMidnight()`; `isoformat()` |
+| `SharedKernel\ValueObjects\CivilDate` | `MIN_YEAR = 1900`, `MAX_YEAR = 2100`; `fromYmd(int, int, int): self` (1900–2100); `fromDateTime(DateTimeImmutable): self` (own-zone date); `plusDays(int): self`; `dayOfYear(): int`; `toUtcMidnight()`; `isoformat()` |
 | `SharedKernel\ValueObjects\Angle` | `fromDegrees(mixed): self`; `normalized(): self` (`[0, 360)` with ulp re-clamp); `toRadians(): float` |
 | `SharedKernel\ValueObjects\Minutes` | `add(DateTimeImmutable, int): DateTimeImmutable`; `roundedHalfUp(DateTimeImmutable $utc): DateTimeImmutable` (UTC-only, half-up) |
 | `SharedKernel\ValueObjects\JulianDay` | `fromCivilDate(CivilDate): self` (Fliegel–Van Flandern, day number at 00:00 UTC); `day` (raw float); `toFloat(): float` (astronomy internals) |
@@ -91,16 +91,17 @@ Conventions: public services are `final` with explicit constructor injection and
 | Class | Key members |
 | --- | --- |
 | `Hijri\Services\GregorianToHijriConverter` | `default(): self`; `convert(DateTimeImmutable, HijriCalendar, ?Coordinates, ?CalculationParameters, bool $changeAtSunset = false, ?OffsetStore $offsets = null): HijriDate` |
-| `Hijri\Contracts\HijriCalendar` | `fromGregorian(CivilDate): HijriDate`; `toGregorian(HijriDate): CivilDate`; `monthLength(int, int): int`; `shift(HijriDate, int): HijriDate`; `name(): string` |
+| `Hijri\Contracts\HijriCalendar` | `fromGregorian(CivilDate): HijriDate`; `toGregorian(HijriDate): CivilDate`; `monthLength(int, int): int`; `shift(HijriDate, int): HijriDate` (validates the start date; ±3650-day cap); `name(): string` |
 | `Hijri\Contracts\OffsetStore` | `offsetDaysFor(HijriDate, HijriCalendar): int` (caller-implemented; 0 = no-op) |
 | `Hijri\Strategies\TabularCalendar` | `__construct(int $adjustmentDays = 0 [-2,2])`; `name() = 'tabular'` |
 | `Hijri\Strategies\UmmAlQuraCalendar` | `name() = 'uqu'`; coverage 1423-01…1500-12 AH |
-| `Hijri\Strategies\MabimsCalendar` | `__construct(MabimsCountry)`; `name() = 'mabims'`; coverage 1445-01…1500-12 AH |
+| `Hijri\Strategies\MabimsCalendar` | `__construct(MabimsCountry)`; `country(): MabimsCountry`; `name() = 'mabims'`; coverage 1445-01…1500-12 AH |
 | `Hijri\ValueObjects\HijriDate` | `__construct(int $year >= 1, int $month 1–12, int $day 1–30)`; `isoformat()`; `compareTo()`; `equals()` |
 | `Hijri\Enums\HijriMonth` | int enum 1–12; `label(string $locale): string` (`en`/`ar`) |
 | `Hijri\Enums\MabimsCountry` | `MY, ID, SG, BN`; `referenceCoordinates()`; `fromString(string)` (case-insensitive) |
 | `Hijri\Traits\LooksUpMonthStarts`, `Hijri\Traits\ShiftsHijriDays` | Helpers shared by the month-start calendars: `LooksUpMonthStarts` contributes `fromGregorian`/`toGregorian`/`monthLength`, `ShiftsHijriDays` contributes `shift` |
 | `Hijri\Exceptions\HijriOutOfRangeException` | `forDate(string $calendar, string $iso, string $range)`; extends `ValidationException` |
+| `Hijri\Exceptions\HijriDataException` | `forMonthStart(string $iso)`; malformed generated table data; extends `AlFalaqException` |
 
 ## The one stable internal export
 

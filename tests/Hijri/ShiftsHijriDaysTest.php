@@ -7,6 +7,7 @@ namespace AlFalaq\AlFalaq\Tests\Hijri;
 use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
 use AlFalaq\AlFalaq\Hijri\Exceptions\HijriOutOfRangeException;
 use AlFalaq\AlFalaq\Hijri\Strategies\TabularCalendar;
+use AlFalaq\AlFalaq\Hijri\Strategies\UmmAlQuraCalendar;
 use AlFalaq\AlFalaq\Hijri\Traits\ShiftsHijriDays;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
@@ -86,15 +87,39 @@ final class ShiftsHijriDaysTest extends TestCase
     }
 
     /**
-     * Zero days is the identity and performs no range probe.
+     * Zero days is the identity after the starting date is validated.
      *
      * @return void
      */
-    public function testZeroDaysIsAProbeFreeIdentity(): void
+    public function testZeroDaysIsTheIdentity(): void
     {
         $start = new HijriDate(9999, 12, 30);
 
         self::assertSame($start, $this->fakeCalendar()->shift($start, 0));
+    }
+
+    /**
+     * An impossible starting date raises even when the shift is zero.
+     *
+     * @return void
+     */
+    public function testZeroDaysStillValidatesTheStartingDate(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        (new UmmAlQuraCalendar())->shift(new HijriDate(1423, 2, 30), 0);
+    }
+
+    /**
+     * An impossible starting date cannot silently skip a day when shifted.
+     *
+     * @return void
+     */
+    public function testImpossibleStartDateRaisesBeforeWalking(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        (new UmmAlQuraCalendar())->shift(new HijriDate(1423, 2, 30), 1);
     }
 
     /**
