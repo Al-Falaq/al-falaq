@@ -587,17 +587,26 @@ final class MeanSolarCalculator implements SolarDayEngine
      * Pin a7baa8b `SolarTime.afternoon` verbatim: cotangent form
      * arccot(shadow + tan|lat - dec|); the pin's TODO cites the Swift
      * original (adhan-swift `SolarTime.afternoonShadowAngle`), kept here
-     * as provenance — no independent derivation.
+     * as provenance — no independent derivation. Negative cotangents
+     * (|lat − dec| past 90 degrees with a large custom shadow factor)
+     * flow through verbatim like the pin; only exact cancellation
+     * (inverse === 0.0, the pin's ZeroDivisionError point) maps to the
+     * unreachable NaN sentinel, since PHP 8 would otherwise raise a
+     * DivisionByZeroError that escapes the library exception contract.
      *
      * @param float $latitude Observer latitude in degrees.
      * @param float $declination Current declination in degrees.
      * @param float $shadowLength Shadow factor (1.0 Shafi, 2.0 Hanafi).
-     * @return float Solar altitude in degrees.
+     * @return float Solar altitude in degrees, or NAN on exact cancellation.
      */
     private function afternoonAngle(float $latitude, float $declination, float $shadowLength): float
     {
         $tangent = abs($latitude - $declination);
         $inverse = $shadowLength + tan(deg2rad($tangent));
+
+        if ($inverse === 0.0) {
+            return NAN;
+        }
 
         return rad2deg(atan(1.0 / $inverse));
     }

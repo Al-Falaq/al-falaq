@@ -108,6 +108,12 @@ Versioned snapshots of the whole documentation site are kept per release — use
   matching the `COMPOSER_PROCESS_TIMEOUT=0` that CI already exports.
 - Inline source FQCNs and deleted-code blank-line runs were removed; new arch
   gates reject both patterns so they cannot regrow.
+- `MeanSolarCalculator::afternoonAngle()` maps an exactly-cancelled Asr
+  cotangent denominator (`shadowLength === -tan(|lat - dec|)`, the pin's
+  `ZeroDivisionError` point, reachable for custom shadow factors past
+  ~2.3 at high latitudes) to the unreachable `NAN` sentinel instead of
+  letting PHP 8 raise a `DivisionByZeroError` that escapes the library
+  exception contract. Negative cotangents keep flowing through verbatim.
 
 ## [0.1.1] - 2026-10-14
 
