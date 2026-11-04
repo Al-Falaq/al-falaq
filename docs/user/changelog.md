@@ -119,6 +119,12 @@ Versioned snapshots of the whole documentation site are kept per release — use
   `+00:00`, which the old `getTimezone()->getName() !== 'UTC'` check
   falsely rejected. The check now tests `getOffset() !== 0`; non-UTC
   offsets still reject with the same message.
+- `Astro\Services\GeodesyEngine::inverse()` now validates its four float
+  inputs at the engine boundary (finite latitudes within [-90, 90] and
+  longitudes within [-180, 180]), matching `KarneyInverse::inverse`, so a
+  direct call can no longer turn out-of-range coordinates into silent
+  finite garbage. Wired callers already passed validated `Coordinates`,
+  so no public-path output changes.
 
 ## [0.1.1] - 2026-10-14
 
