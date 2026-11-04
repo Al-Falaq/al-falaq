@@ -14,11 +14,16 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 final readonly class SolarTime
 {
     /**
-     * Internal solar-day triple (all UTC).
+     * Internal solar-day triple, UTC-anchored.
      *
-     * @param \DateTimeImmutable $transit Solar noon (UTC).
-     * @param \DateTimeImmutable $sunrise Sunrise (UTC).
-     * @param \DateTimeImmutable $sunset Sunset (UTC).
+     * Accepts any zero-offset zone — named `UTC`, a `+00:00` offset zone, or
+     * an `@`-epoch construction (whose zone reports `+00:00`, not `UTC`) —
+     * and rejects every other offset, since downstream math reads these
+     * instants against UTC midnights.
+     *
+     * @param \DateTimeImmutable $transit Solar noon (zero-offset UTC).
+     * @param \DateTimeImmutable $sunrise Sunrise (zero-offset UTC).
+     * @param \DateTimeImmutable $sunset Sunset (zero-offset UTC).
      */
     public function __construct(
         public \DateTimeImmutable $transit,
@@ -26,7 +31,7 @@ final readonly class SolarTime
         public \DateTimeImmutable $sunset,
     ) {
         foreach (['transit' => $transit, 'sunrise' => $sunrise, 'sunset' => $sunset] as $name => $instant) {
-            if ($instant->getTimezone()->getName() !== 'UTC') {
+            if ($instant->getOffset() !== 0) {
                 throw new ValidationException(sprintf('SolarTime::%s must be UTC.', $name));
             }
         }

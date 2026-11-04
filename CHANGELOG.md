@@ -108,6 +108,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ~2.3 at high latitudes) to the unreachable `NAN` sentinel instead of
   letting PHP 8 raise a `DivisionByZeroError` that escapes the library
   exception contract. Negative cotangents keep flowing through verbatim.
+- `Astro\ValueObjects\SolarTime` accepts any zero-offset zone: an
+  `@`-epoch instant or a `+00:00` zone is UTC but reports the zone name
+  `+00:00`, which the old `getTimezone()->getName() !== 'UTC'` check
+  falsely rejected. The check now tests `getOffset() !== 0`; non-UTC
+  offsets still reject with the same message.
 
 ## [0.1.1] - 2026-10-14
 
