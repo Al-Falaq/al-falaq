@@ -79,10 +79,12 @@ polar behaviour is exactly the prayer pipeline's. When the full schedule is
 undefined but maghrib itself is defined (e.g. `PolarCircleRule::NONE` on a
 polar-transition day, where today's sunset exists but tomorrow's sunrise does
 not), the bridge resolves maghrib alone via the pipeline's maghrib-only
-computation. The failure mode follows the maghrib rule: a day with no sunset
-at all (polar day or night) raises `UndefinedScheduleException`, while a rule
-that needs a solar angle the sun never reaches (e.g. Tehran's 4.5° maghrib at
-a latitude where the sun sets but stays above −4.5°) raises
+computation. A non-`NONE` polar rule may instead resolve the day to another
+date or latitude before the bridge sees it. When the active rule leaves the
+day undefined, the failure mode follows the maghrib rule: a day with no
+sunset at all (polar day or night) raises `UndefinedScheduleException`, while
+a rule that needs a solar angle the sun never reaches (e.g. Tehran's 4.5°
+maghrib at a latitude where the sun sets but stays above −4.5°) raises
 `AstronomicalException` — neither is guessed.
 
 ## Official day corrections
@@ -115,7 +117,8 @@ Nothing saturates and nothing wraps.
 | `changeAtSunset` where the full schedule is undefined but maghrib is defined | converts using the maghrib-only fallback |
 | `changeAtSunset` on `1900-01-01` (first supported civil day) | the backward probe is skipped; the current UTC day is used |
 | `changeAtSunset` when the previous UTC day's schedule is undefined | the backward probe is skipped; the current UTC day is used |
-| `changeAtSunset` on 2100-12-31 (last supported civil day) | before maghrib: the full schedule is undefined at the edge but maghrib is defined, so the maghrib-only fallback resolves the day; at/after maghrib the rollover needs 2101-01-01, which is outside `CivilDate`, so `ValidationException` |
+| `changeAtSunset` on 2100-12-31 with `PolarCircleRule::NEAREST_DAY` wired via `PrayerTimesCalculator::defaultFor()` | `calculate()` resolves to the prior solvable date (2100-12-30), so every instant whose UTC civil date is 2100-12-31 is after that schedule's maghrib and the `plusDays(1)` rollover raises `ValidationException` from `CivilDate` |
+| `changeAtSunset` on 2100-12-31 with the converter's default wiring or a rule that keeps the requested date | before maghrib: the full schedule is undefined at the edge but maghrib is defined, so the maghrib-only fallback resolves the day; at/after maghrib the rollover needs 2101-01-01, which is outside `CivilDate`, so `ValidationException` |
 | Non-int argument to a typed contract parameter | `TypeError` |
 
 `HijriOutOfRangeException` extends `ValidationException`, so a `catch (ValidationException)` catches both; catch the former first when the distinction matters.

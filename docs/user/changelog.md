@@ -151,7 +151,11 @@ Versioned snapshots of the whole documentation site are kept per release — use
   `@`-epoch instant or a `+00:00` zone is UTC but reports the zone name
   `+00:00`, which the old `getTimezone()->getName() !== 'UTC'` check
   falsely rejected. The check now tests `getOffset() !== 0`; non-UTC
-  offsets still reject with the same message.
+  offsets still reject with the same message. The same zero-offset rule now
+  governs `Minutes::roundedHalfUp()`, `PrayerSchedule`, and
+  `NextPrayerResolver`; `Minutes` normalizes accepted instants to named UTC,
+  so explicitly-wired engines returning `@`-epoch or `+00:00` values flow
+  through `calculate()`.
 - `Astro\Services\GeodesyEngine::inverse()` now validates its four float
   inputs at the engine boundary (finite latitudes within [-90, 90] and
   longitudes within [-180, 180]), matching `KarneyInverse::inverse`, so a
@@ -162,6 +166,7 @@ Versioned snapshots of the whole documentation site are kept per release — use
   interval now raises `ConfigurationException` at the pipeline boundary.
   It previously raised `AstronomicalException`, which the Hijri sunset
   bridge could mistake for an undefined schedule and retry.
+  `docs/user/errors.md` now lists this source.
 - `SunnahCalculator` no longer duplicates `SunnahTimes`' degenerate-night
   guard; the value object stays the single owner, and the sign-aware
   seconds modifier keeps the intermediate arithmetic well-formed so the
@@ -178,8 +183,9 @@ Versioned snapshots of the whole documentation site are kept per release — use
 - `maghribAt()` docs now separate "no sunset" (`UndefinedScheduleException`)
   from an unreachable angle-based maghrib (`AstronomicalException`), with a
   regression test pinning Tehran's 4.5° maghrib at 64°N where the sun sets
-  but never reaches the angle. `docs/hijri.md` no longer claims polar day
-  raises the wrong exception type.
+  but never reaches the angle. `docs/hijri.md` now qualifies the polar-day
+  `UndefinedScheduleException` to rules that leave the day undefined and
+  documents the `NEAREST_DAY` 2100-12-31 edge.
 - Method-count docs now agree with the enum: 18 presets plus `NONE` = 19
   cases. The M1 freeze shipped 17 presets plus `NONE` (11 pin cells and six
   table-confirmed conventions); UOIF is the Wave-2 18th preset, never part

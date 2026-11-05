@@ -16,7 +16,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `SharedKernel\ValueObjects\Coordinates` | `fromDegrees(mixed $lat, mixed $lon): self` (lat −90…90, lon −180…180); `fromArray(array): self` (exactly `[0 => lat, 1 => lon]`); `equals()`, `toArray()` |
 | `SharedKernel\ValueObjects\CivilDate` | `MIN_YEAR = 1900`, `MAX_YEAR = 2100`; `fromYmd(int, int, int): self` (1900–2100); `fromDateTime(DateTimeImmutable): self` (own-zone date); `plusDays(int): self`; `dayOfYear(): int`; `toUtcMidnight()`; `isoformat()` |
 | `SharedKernel\ValueObjects\Angle` | `fromDegrees(mixed): self`; `normalized(): self` (`[0, 360)` with ulp re-clamp); `toRadians(): float` |
-| `SharedKernel\ValueObjects\Minutes` | `add(DateTimeImmutable, int): DateTimeImmutable`; `roundedHalfUp(DateTimeImmutable $utc): DateTimeImmutable` (UTC-only, half-up) |
+| `SharedKernel\ValueObjects\Minutes` | `add(DateTimeImmutable, int): DateTimeImmutable`; `roundedHalfUp(DateTimeImmutable $utc): DateTimeImmutable` (zero-offset UTC; normalized to named UTC, half-up) |
 | `SharedKernel\ValueObjects\JulianDay` | `fromCivilDate(CivilDate): self` (Fliegel–Van Flandern, day number at 00:00 UTC); `day` (raw float); `toFloat(): float` (astronomy internals) |
 | `SharedKernel\ValueObjects\Kaaba` | `LATITUDE = 21.4225241`, `LONGITUDE = 39.8261818`; `coordinates(): Coordinates` — the single owner of the Kaaba position (the Qibla contract constants reference it) |
 | `SharedKernel\Contracts\DomainException` | Marker interface every domain exception implements — catch this for everything |
@@ -53,7 +53,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `Prayer\Contracts\PolarCircleHandler` | `resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array{coordinates: Coordinates, date: CivilDate}` |
 | `Prayer\Services\PrayerTimesCalculator` | `default(): self`; `defaultFor(CalculationParameters): self`; `calculate(Coordinates\|array, CivilDate, CalculationParameters): PrayerSchedule`; `maghribAt(...): DateTimeImmutable` |
 | `Prayer\Services\TimetableService` | `default(): self`; `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` |
-| `Prayer\Services\NextPrayerResolver` | `default(): self`; `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be UTC) |
+| `Prayer\Services\NextPrayerResolver` | `default(): self`; `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be zero-offset UTC) |
 | `Prayer\Services\SunnahCalculator` | `fromCalculator(PrayerTimesCalculatorInterface, Coordinates, CivilDate, CalculationParameters): self`; `__construct(PrayerSchedule $today, PrayerSchedule $tomorrow)`; `calculate(): SunnahTimes` |
 | `Prayer\Services\NightResolver` | The step that owns the fajr/isha resolution (seasonal / NONE-raw / portions). Exposed for introspection; not a driving port |
 | `Prayer\Strategies\AngleIsha`, `Prayer\Strategies\IntervalIsha` | `IshaRule` implementations (angle vs minutes-after-Maghrib) |

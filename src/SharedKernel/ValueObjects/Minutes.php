@@ -14,16 +14,18 @@ final class Minutes
     private function __construct() {}
 
     /**
-     * Round to the minute, half-up, with hour/day rollover (UTC only).
+     * Round to the minute, half-up, with hour/day rollover (zero-offset UTC only).
      *
-     * @param \DateTimeImmutable $utc Instant in UTC; other zones throw.
-     * @return \DateTimeImmutable Truncated/rounded copy, seconds zeroed.
+     * @param \DateTimeImmutable $utc Instant in zero-offset UTC; other offsets throw.
+     * @return \DateTimeImmutable Truncated/rounded copy in named UTC, seconds zeroed.
      */
     public static function roundedHalfUp(\DateTimeImmutable $utc): \DateTimeImmutable
     {
-        if ($utc->getTimezone()->getName() !== 'UTC') {
+        if ($utc->getOffset() !== 0) {
             throw new ValidationException('Minutes::roundedHalfUp expects a UTC DateTimeImmutable. Convert first.');
         }
+
+        $utc = $utc->setTimezone(new \DateTimeZone('UTC'));
 
         $seconds = (int) $utc->format('s');
         $truncated = $utc->setTime((int) $utc->format('G'), (int) $utc->format('i'), 0, 0);

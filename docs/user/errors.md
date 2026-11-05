@@ -38,7 +38,7 @@ try {
 }
 ```
 
-**`ConfigurationException` — "your wiring contradicts itself."** Two flavours. `CalculationMethod::NONE->defaultParameters()` (NONE has no defaults — build `CalculationParameters::create()` by hand) and `isRamadan` on any method but Umm al-Qura throw while you *build* the parameters, before any astronomy runs. `changeAtSunset: true` without coordinates *and* parameters throws when you call `GregorianToHijriConverter::convert()`, which is the earliest it can be detected — the call itself supplies the place. Either way the failure lands in your setup or request edge, never at dawn:
+**`ConfigurationException` — "your wiring contradicts itself."** Several flavours. `CalculationMethod::NONE->defaultParameters()` (NONE has no defaults — build `CalculationParameters::create()` by hand) and `isRamadan` on any method but Umm al-Qura throw while you *build* the parameters, before any astronomy runs. `changeAtSunset: true` without coordinates *and* parameters throws when you call `GregorianToHijriConverter::convert()`, which is the earliest it can be detected — the call itself supplies the place. A custom `MaghribRule` or `IshaRule` that reports neither an angle nor an interval throws when the pipeline reaches it; that is a wiring error, not an astronomical one. Either way the failure lands in your setup or request edge, never at dawn:
 
 ```php
 $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()

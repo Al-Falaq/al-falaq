@@ -79,6 +79,16 @@ final class SharedKernelTest extends TestCase
         Minutes::roundedHalfUp(new \DateTimeImmutable('2015-07-12 12:34:30', new \DateTimeZone('America/New_York')));
     }
 
+    public function testAcceptsZeroOffsetMinutesInputAndNormalizesToNamedUtc(): void
+    {
+        $base = new \DateTimeImmutable('2015-07-12 12:34:30', new \DateTimeZone('+00:00'));
+
+        $rounded = Minutes::roundedHalfUp($base);
+
+        self::assertSame('12:35:00', $rounded->format('H:i:s'));
+        self::assertSame('UTC', $rounded->getTimezone()->getName());
+    }
+
     public function testComputesJulianDayForAKnownDate(): void
     {
         // 2000-01-01 00:00 UTC => JD 2451544.5
