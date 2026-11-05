@@ -8,7 +8,6 @@ use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\SunnahTimes;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
@@ -62,18 +61,12 @@ final class SunnahCalculator
         $maghrib = $this->today->maghrib;
         $fajr = $this->tomorrow->fajr;
 
-        if ($fajr <= $maghrib) {
-            throw new ValidationException('Degenerate Sunnah night: fajr must be after maghrib.');
-        }
-
         $nightSeconds = $fajr->getTimestamp() - $maghrib->getTimestamp();
 
+        // SunnahTimes owns the degenerate-night invariant; the sign-aware
+        // format keeps the computation well-formed so its ctor reports it.
         $at = static function (float $fraction) use ($maghrib, $nightSeconds): \DateTimeImmutable {
-            $moved = $maghrib->modify(sprintf('+%d seconds', (int) round($nightSeconds * $fraction)));
-
-            if ($moved === false) {
-                throw new ValidationException('Unable to compute Sunnah fraction.');
-            }
+            $moved = $maghrib->modify(sprintf('%+d seconds', (int) round($nightSeconds * $fraction)));
 
             return Minutes::roundedHalfUp($moved);
         };

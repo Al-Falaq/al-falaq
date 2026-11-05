@@ -14,7 +14,6 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\NightPortions;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
@@ -225,11 +224,7 @@ final class NightResolver
         $ishaAngle = $parameters->ishaRule->angle();
 
         if ($ishaAngle === null) {
-            throw new AstronomicalException(sprintf(
-                'Unable to compute Isha: no angle or interval defined (coordinates=%s, date=%s).',
-                (string) $coords,
-                $date->isoformat(),
-            ));
+            throw new ConfigurationException('Invalid IshaRule: no angle or interval defined.');
         }
 
         if ($useSeasonalSafe) {
@@ -272,12 +267,6 @@ final class NightResolver
 
     private function addSeconds(\DateTimeImmutable $base, int $seconds): \DateTimeImmutable
     {
-        $moved = $base->modify(sprintf('%+d seconds', $seconds));
-
-        if ($moved === false) {
-            throw new ValidationException('Unable to add seconds.');
-        }
-
-        return $moved;
+        return $base->modify(sprintf('%+d seconds', $seconds));
     }
 }

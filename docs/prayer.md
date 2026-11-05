@@ -45,10 +45,13 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   sunrise + their offsets.
 - **NONE method:** `defaultParameters()` throws `ConfigurationException` (no
   defaults); custom configs are built via `CalculationParameters::create()`.
-- **Method-default freeze state (M1):** 18 methods, dual-entered from the pin
-  (freeze `c151828`, `sha256 3bb6df93…9356`) — plus UOIF (19th, Wave-2
-  addition with no pin cell: 12/12 preset drift-gated via
-  `tools/gen_self_prayer_goldens.php`, never pin parity); `dhuhrOffsetMinutes` 0 everywhere
+- **Method-default freeze state (M1):** 17 presets at freeze (18 enum cases
+  with NONE; freeze `c151828`, `sha256 3bb6df93…9356`): 11 map to pin
+  `MethodsParameters.py` cells, and six are table-confirmed conventions
+  (TURKEY/TEHRAN/MOROCCO/KEMENAG/MUIS/BRUNEI — provenance below); plus UOIF
+  (Wave 2) = 18 presets (19 cases with NONE). UOIF is 12/12, drift-gated via
+  `tools/gen_self_prayer_goldens.php` and never part of the M1 parity export;
+  `dhuhrOffsetMinutes` 0 everywhere
   (the aid column conflated `methodAdjustments.dhuhr`); ishraq 15 / dhuha 28
   (pin ctor defaults; the aid said 0/15 — corrected); KARACHI SHAFI per pin;
   `methodAdjustments` exactly per pin (MWL/EGYPTIAN/KARACHI/NA/SINGAPORE/JAKIM

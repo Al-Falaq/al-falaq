@@ -29,13 +29,7 @@ final class Minutes
         $truncated = $utc->setTime((int) $utc->format('G'), (int) $utc->format('i'), 0, 0);
 
         if ($seconds >= 30) {
-            $moved = $truncated->modify('+1 minute');
-
-            if ($moved === false) {
-                throw new ValidationException('Unable to round minutes.');
-            }
-
-            return $moved;
+            return $truncated->modify('+1 minute');
         }
 
         return $truncated;
@@ -50,12 +44,6 @@ final class Minutes
      */
     public static function add(\DateTimeImmutable $utc, int $minutes): \DateTimeImmutable
     {
-        $moved = $utc->modify(sprintf('%+d minutes', $minutes));
-
-        if ($moved === false) {
-            throw new ValidationException('Unable to add minutes.');
-        }
-
-        return $moved;
+        return $utc->modify(sprintf('%+d minutes', $minutes));
     }
 }

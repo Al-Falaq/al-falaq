@@ -11,7 +11,6 @@ use AlFalaq\AlFalaq\Prayer\Contracts\MaghribRule;
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
 use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\TwilightModel;
-use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
@@ -30,7 +29,7 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
@@ -103,18 +102,20 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
      *
      * Runs the pipeline's own solar/maghrib computation and returns before
      * the Fajr/Isha correction phases, so strict high-latitude configs with
-     * an undefined schedule still resolve maghrib where the sun sets. Throws
-     * UndefinedScheduleException only when maghrib itself is undefined.
-     * Class-only capability (like highLatitudeCorrection()); the interface
-     * keeps the single calculate() command.
+     * an undefined full schedule can still resolve maghrib when its own rule
+     * is defined. Throws UndefinedScheduleException when the day has no
+     * sunset, or AstronomicalException when an angle-based rule never reaches
+     * its angle. Class-only capability (like highLatitudeCorrection()); the
+     * interface keeps the single calculate() command.
      *
      * The tomorrow-rise probe and the polar resolve are skipped by design,
      * not by omission: they gate the full schedule's night length (Fajr/Isha
      * portions), which maghrib never consumes. Maghrib needs only today's
-     * sunset, so a polar-transition day (sun sets today, no sunrise
-     * tomorrow) resolves here while calculate() still throws. Every call
-     * below is the same private solar/maghrib call calculate() performs, in
-     * the same order — no astronomy is reimplemented.
+     * solar day (sunset for interval rules, a reachable angle otherwise), so
+     * a polar-transition day (sun sets today, no sunrise tomorrow) resolves
+     * here while calculate() still throws. Every call below is the same
+     * private solar/maghrib call calculate() performs, in the same order — no
+     * astronomy is reimplemented.
      *
      * @param Coordinates|array{0: mixed, 1: mixed} $coordinates VO or [lat, lon] pair.
      * @param CivilDate $date Civil date to compute.
@@ -248,11 +249,11 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
 
         $day = $this->solar->solarTime($effCoords, $effDate, $elev);
 
-        try {
-            $tomorrowDate = $effDate->plusDays(1);
-        } catch (ValidationException) {
-            throw UndefinedScheduleException::polar($effCoords, $effDate, $parameters->polarCircleRule->value);
-        }
+        // isSolarDefined() already proves tomorrow's sunrise exists, so the
+        // CivilDate edge (2100-12-31) cannot reach this call for a conforming
+        // engine; a raw ValidationException here is the truthful error for an
+        // engine that violates that contract.
+        $tomorrowDate = $effDate->plusDays(1);
 
         $tomorrowSunrise = $this->solar->solarTime($effCoords, $tomorrowDate, $elev)->sunrise;
         $nightSec = $tomorrowSunrise->getTimestamp() - $day->sunset->getTimestamp();
@@ -336,11 +337,7 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
         $maghribAngle = $rule->angle();
 
         if ($maghribAngle === null) {
-            throw new AstronomicalException(sprintf(
-                'Unable to compute Maghrib: no angle or interval defined (coordinates=%s, date=%s).',
-                (string) $coords,
-                $date->isoformat(),
-            ));
+            throw new ConfigurationException('Invalid MaghribRule: no angle or interval defined.');
         }
 
         $maghribTemp = $this->solar->hourAngle($coords, $date, $elevationM, -$maghribAngle, true);

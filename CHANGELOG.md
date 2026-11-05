@@ -152,6 +152,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   direct call can no longer turn out-of-range coordinates into silent
   finite garbage. Wired callers already passed validated `Coordinates`,
   so no public-path output changes.
+- A `MaghribRule` or `IshaRule` that reports neither an angle nor an
+  interval now raises `ConfigurationException` at the pipeline boundary.
+  It previously raised `AstronomicalException`, which the Hijri sunset
+  bridge could mistake for an undefined schedule and retry.
+- `SunnahCalculator` no longer duplicates `SunnahTimes`' degenerate-night
+  guard; the value object stays the single owner, and the sign-aware
+  seconds modifier keeps the intermediate arithmetic well-formed so the
+  value object's constructor reports the invalid night.
+- Unreachable `DateTimeImmutable::modify()`/`getTimezone()` failure guards
+  were removed from `Minutes`, `CivilDate`, `SunnahTimes`,
+  `SunnahCalculator`, and `NightResolver`: every modifier is generated and
+  valid, so the legacy `false` branch cannot run.
+- Reflection-only constructor/private-method coverage tests
+  (`ValueObjectPrivateConstructorTest`, `NightResolverPrivateTest`,
+  `PrayerTimesCalculatorPrivateTest`, and two `SharedKernelTest` cases)
+  were removed; the claimed pcov limitation was false, and the same
+  behavior is covered through public APIs.
+- `maghribAt()` docs now separate "no sunset" (`UndefinedScheduleException`)
+  from an unreachable angle-based maghrib (`AstronomicalException`), with a
+  regression test pinning Tehran's 4.5° maghrib at 64°N where the sun sets
+  but never reaches the angle. `docs/hijri.md` no longer claims polar day
+  raises the wrong exception type.
+- Method-count docs now agree with the enum: 18 presets plus `NONE` = 19
+  cases. The M1 freeze shipped 17 presets plus `NONE` (11 pin cells and six
+  table-confirmed conventions); UOIF is the Wave-2 18th preset, never part
+  of pin parity.
 
 ## [0.1.1] - 2026-10-14
 

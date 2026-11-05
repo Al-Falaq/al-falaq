@@ -75,14 +75,15 @@ $hijri = $converter->convert(
 
 The maghrib instant comes through `PrayerTimesCalculatorInterface`
 (`calculate()`, falling back to `maghribAt()`), so high-latitude and
-polar behaviour is exactly the prayer pipeline's: an undefined maghrib (e.g.
-`PolarCircleRule::NONE` above the Arctic Circle in June) propagates an
-`AstronomicalException` from the maghrib-only probe rather than guessing.
-When the full schedule is undefined but maghrib itself is defined (e.g.
-`PolarCircleRule::NONE` on a polar-transition day, where today's sunset exists
-but tomorrow's sunrise does not), the bridge resolves maghrib alone via the
-pipeline's maghrib-only computation; only a truly undefined maghrib (e.g.
-polar night) still propagates.
+polar behaviour is exactly the prayer pipeline's. When the full schedule is
+undefined but maghrib itself is defined (e.g. `PolarCircleRule::NONE` on a
+polar-transition day, where today's sunset exists but tomorrow's sunrise does
+not), the bridge resolves maghrib alone via the pipeline's maghrib-only
+computation. The failure mode follows the maghrib rule: a day with no sunset
+at all (polar day or night) raises `UndefinedScheduleException`, while a rule
+that needs a solar angle the sun never reaches (e.g. Tehran's 4.5° maghrib at
+a latitude where the sun sets but stays above −4.5°) raises
+`AstronomicalException` — neither is guessed.
 
 ## Official day corrections
 

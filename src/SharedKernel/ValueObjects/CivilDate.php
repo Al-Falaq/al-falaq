@@ -94,10 +94,6 @@ final readonly class CivilDate
     {
         $moved = $this->toUtcMidnight()->modify(sprintf('%+d days', $days));
 
-        if ($moved === false) {
-            throw new ValidationException('Unable to add days to civil date.');
-        }
-
         return self::fromDateTime($moved);
     }
 
