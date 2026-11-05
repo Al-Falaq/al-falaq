@@ -7,7 +7,6 @@ namespace AlFalaq\AlFalaq\Qibla\Strategies;
 use AlFalaq\AlFalaq\Astro\Services\KarneyInverse;
 use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
 use AlFalaq\AlFalaq\Qibla\Traits\ClampsMakkahSelf;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Angle;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
@@ -51,10 +50,6 @@ final class Wgs84KarneyCalculator implements GeodesyCalculator
         );
 
         $direction = Angle::fromDegrees($solved['direction'])->normalized()->degrees;
-
-        if (! is_finite($solved['distanceKm'])) {
-            throw new AstronomicalException('Wgs84KarneyCalculator produced a non-finite distance.');
-        }
 
         return self::clampMakkahSelf(['direction' => $direction, 'distanceKm' => $solved['distanceKm']]);
     }

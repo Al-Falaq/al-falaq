@@ -104,10 +104,11 @@ final class CrescentGeometryTest extends TestCase
         $this->geometry(arcvGeoDeg: INF);
     }
 
-    public function testNegativeWidthIsStoredRaw(): void
+    public function testNegativeWidthIsRejected(): void
     {
-        $geometry = $this->geometry(widthArcmin: -0.5);
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('CrescentGeometry::widthArcmin must be >= 0.');
 
-        self::assertSame(-0.5, $geometry->widthArcmin);
+        $this->geometry(widthArcmin: -0.5);
     }
 }

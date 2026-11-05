@@ -48,6 +48,17 @@ Versioned snapshots of the whole documentation site are kept per release — use
   outside the Gregorian 1900–2100 window with a truthful
   `HijriOutOfRangeException` instead of a misleading range label or a raw
   `TypeError` for huge years.
+- `Moon\ValueObjects\CrescentGeometry` now rejects a negative `widthArcmin` at
+  construction, making the value object the single owner of the width
+  invariant; the four criterion evaluators no longer repeat unreachable
+  finiteness/width guards. `CrescentCalculator::atSunset()` validates
+  `deltaTOverride` before the sunset search, so an invalid override always
+  raises `ValidationException` instead of losing to a polar-night
+  `AstronomicalException`.
+- `QiblaResult` drops a dead Makkah-self exemption branch (the distance-zero
+  pair never admitted an out-of-range bearing), and
+  `Wgs84KarneyCalculator` relies on `KarneyInverse`'s documented finite-result
+  invariant instead of duplicating that guard.
 - `GregorianToHijriConverter` now takes the `maghribAt()` fallback for every
   astronomical "schedule undefined" case (`AstronomicalException`), not only
   `UndefinedScheduleException`; validation errors still surface.
@@ -109,6 +120,12 @@ Versioned snapshots of the whole documentation site are kept per release — use
 
 ### Fixed
 
+- The moon-age regression tests now exercise the real 2025-03-29 conjunction:
+  the conjunction-at-sunset floor and the previous-lunation branch are pinned
+  to recorded values, replacing tests that claimed those branches while
+  querying an unrelated Julian day. Reflection-only constructor/private-method
+  tests for the moon-age search and the WGS84 strategy were removed; the same
+  behavior is covered through the public API.
 - The sunset frame no longer fails when the backward probe has no previous
   day to ask about: at `1900-01-01` the probe is skipped, and when the
   previous UTC day's schedule is undefined (e.g. polar night) while the

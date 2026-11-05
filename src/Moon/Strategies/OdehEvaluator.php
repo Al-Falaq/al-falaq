@@ -7,7 +7,6 @@ namespace AlFalaq\AlFalaq\Moon\Strategies;
 use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * Odeh (2006) V-criterion with visibility classes A/B/C/D (M3).
@@ -28,14 +27,6 @@ final class OdehEvaluator implements CrescentEvaluator
     {
         $arcl = $geometry->elongationDeg;
         $width = $geometry->widthArcmin;
-
-        if (! is_finite($arcl) || ! is_finite($width)) {
-            throw new ValidationException('Odeh inputs must be finite.');
-        }
-
-        if ($width < 0.0) {
-            throw new ValidationException('Odeh width must be >= 0.');
-        }
 
         if ($arcl < 6.4) {
             return new CrescentVerdict('odeh', false, $this->v($geometry, $width), 'D');

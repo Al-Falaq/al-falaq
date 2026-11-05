@@ -7,7 +7,6 @@ namespace AlFalaq\AlFalaq\Moon\Strategies;
 use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * MABIMS-1992 criterion: (alt ≥ 2° and elongation ≥ 3°) or age at moonset ≥ 8 h.
@@ -41,10 +40,6 @@ final class Mabims1992Evaluator implements CrescentEvaluator
                 $geometry->elongationDeg,
                 $visible ? 'visible' : 'not-visible',
             );
-        }
-
-        if (! is_finite($geometry->moonAltitude) || ! is_finite($geometry->elongationDeg) || ! is_finite($age)) {
-            throw new ValidationException('MABIMS-1992 inputs must be finite.');
         }
 
         $visible = ($geometry->moonAltitude >= 2.0 && $geometry->elongationDeg >= 3.0) || $age >= 8.0;

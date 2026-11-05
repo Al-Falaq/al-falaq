@@ -6,7 +6,6 @@ namespace AlFalaq\AlFalaq\Tests\Moon;
 
 use AlFalaq\AlFalaq\Moon\Strategies\NeoMabims2021Evaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -75,19 +74,5 @@ final class NeoMabims2021EvaluatorTest extends TestCase
         $verdict = (new NeoMabims2021Evaluator())->evaluate($this->geometry(5.0, 6.4));
 
         self::assertTrue($verdict->visible);
-    }
-
-    public function testRejectsNonFiniteViaReflection(): void
-    {
-        // CrescentGeometry validates finiteness in its ctor, so the evaluator's
-        // is_finite guard is defense-in-depth only reachable by bypassing the VO.
-        $geo = (new \ReflectionClass(CrescentGeometry::class))->newInstanceWithoutConstructor();
-        (new \ReflectionProperty($geo, 'moonAltitude'))->setValue($geo, NAN);
-        (new \ReflectionProperty($geo, 'elongationDeg'))->setValue($geo, 10.0);
-
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Neo-MABIMS inputs must be finite.');
-
-        (new NeoMabims2021Evaluator())->evaluate($geo);
     }
 }

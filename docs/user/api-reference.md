@@ -72,7 +72,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `Qibla\Contracts\GeodesyCalculator` | `MAKKAH_LATITUDE = 21.4225241`, `MAKKAH_LONGITUDE = 39.8261818` (both referencing `SharedKernel\ValueObjects\Kaaba`), `SELF_DISTANCE_KM = 0.001`; `inverse(Coordinates): array{direction, distanceKm}` |
 | `Qibla\ValueObjects\QiblaResult` | `__construct(float $direction [0,360), float $distanceKm)`; `magneticHeading(mixed $declinationEast): float` |
 | `Qibla\Strategies\SphericalCalculator`, `Qibla\Strategies\Wgs84KarneyCalculator` | The two `GeodesyCalculator` implementations (spherical default; WGS84/Karney opt-in) |
-| `Qibla\Traits\ClampsMakkahSelf` | Helper that clamps the bearing to 0.0 below `GeodesyCalculator::SELF_DISTANCE_KM` |
+| `Qibla\Traits\ClampsMakkahSelf` | Helper that clamps bearing and distance to 0.0 below `GeodesyCalculator::SELF_DISTANCE_KM` |
 
 ## Moon — crescent geometry and criteria
 

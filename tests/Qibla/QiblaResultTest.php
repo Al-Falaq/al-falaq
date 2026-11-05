@@ -67,7 +67,7 @@ final class QiblaResultTest extends TestCase
 
     public function testOutOfRangeDirectionWithZeroDistanceIsRejected(): void
     {
-        // The Makkah-self exemption needs BOTH distance 0 and direction 0.
+        // A zero distance does not excuse an out-of-range bearing.
         $this->expectException(ValidationException::class);
 
         new QiblaResult(360.0, 0.0);
@@ -75,8 +75,7 @@ final class QiblaResultTest extends TestCase
 
     public function testNonFiniteDirectionWithZeroDistanceIsRejected(): void
     {
-        // Non-finite bearings throw even when the distance is zero: the
-        // Makkah-self exemption needs direction exactly 0.0, not NaN.
+        // A zero distance does not excuse a non-finite bearing.
         $this->expectException(ValidationException::class);
 
         new QiblaResult(NAN, 0.0);

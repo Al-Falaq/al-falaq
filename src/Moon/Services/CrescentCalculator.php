@@ -116,6 +116,13 @@ final class CrescentCalculator
      */
     public function atSunset(Coordinates $coordinates, CivilDate $date, ?float $deltaTOverride = null): CrescentGeometry
     {
+        if ($deltaTOverride !== null && ! is_finite($deltaTOverride)) {
+            throw new ValidationException(sprintf(
+                'deltaTOverride must be a finite number of seconds, got %s.',
+                var_export($deltaTOverride, true),
+            ));
+        }
+
         $sunsetHours = $this->solar->hourAngleFloat($coordinates, $date, 0.0, self::SUNSET_DEPRESSION_DEG, true);
 
         if ($sunsetHours === null) {
@@ -131,12 +138,6 @@ final class CrescentCalculator
         $jdMidnightUt = JulianDay::fromCivilDate($date)->toFloat();
         $jdSunsetUt = $jdMidnightUt + $sunsetHours / 24.0;
         $decimalYear = (float) $date->year + ($date->dayOfYear() - 1) / 365.25;
-        if ($deltaTOverride !== null && ! is_finite($deltaTOverride)) {
-            throw new ValidationException(sprintf(
-                'deltaTOverride must be a finite number of seconds, got %s.',
-                var_export($deltaTOverride, true),
-            ));
-        }
 
         $deltaT = $deltaTOverride ?? DeltaTProvider::forYear($decimalYear);
         $jdSunsetTt = $jdSunsetUt + $deltaT / 86400.0;

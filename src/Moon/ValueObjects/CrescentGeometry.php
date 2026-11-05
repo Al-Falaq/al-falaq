@@ -22,7 +22,7 @@ final readonly class CrescentGeometry
      * @param float $deltaAzimuthDeg Azimuth difference (DAZ) in degrees.
      * @param float $illuminatedFraction (1 − cos ARCL)/2; expected 0–1, stored raw.
      * @param float $arcvGeoDeg Geocentric ARCV in degrees (geocentric moon minus geocentric sun).
-     * @param float $widthArcmin Raw width in arcmin (stored; clamped only in evaluators).
+     * @param float $widthArcmin Crescent width in arcmin; must be ≥ 0 (evaluators clamp the sub-epsilon floor).
      * @param float|null $ageAtMoonsetHours Age at moonset; null iff lagMinutes null.
      */
     public function __construct(
@@ -56,6 +56,10 @@ final readonly class CrescentGeometry
             if ($value !== null && ! is_finite($value)) {
                 throw new ValidationException(sprintf('CrescentGeometry::%s must be finite or null.', $name));
             }
+        }
+
+        if ($widthArcmin < 0.0) {
+            throw new ValidationException('CrescentGeometry::widthArcmin must be >= 0.');
         }
 
         if (($lagMinutes === null) !== ($ageAtMoonsetHours === null)) {
