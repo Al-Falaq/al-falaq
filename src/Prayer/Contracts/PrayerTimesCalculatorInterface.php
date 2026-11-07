@@ -37,8 +37,9 @@ interface PrayerTimesCalculatorInterface
      * the Fajr/Isha correction phases, so strict high-latitude configs with
      * an undefined full schedule can still resolve maghrib when its own rule
      * is defined (sunset/interval, or a reachable solar angle). Throws
-     * UndefinedScheduleException when the day has no sunset, or
-     * AstronomicalException when an angle-based rule never reaches its angle.
+     * UndefinedScheduleException when the solar day is undefined (sunrise,
+     * transit, or sunset missing), or AstronomicalException when an
+     * angle-based rule never reaches its angle.
      *
      * @param Coordinates $coordinates Observer location.
      * @param CivilDate $date Civil date to compute.

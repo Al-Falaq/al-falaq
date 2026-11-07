@@ -151,11 +151,13 @@ Versioned snapshots of the whole documentation site are kept per release — use
   `@`-epoch instant or a `+00:00` zone is UTC but reports the zone name
   `+00:00`, which the old `getTimezone()->getName() !== 'UTC'` check
   falsely rejected. The check now tests `getOffset() !== 0`; non-UTC
-  offsets still reject with the same message. The same zero-offset rule now
-  governs `Minutes::roundedHalfUp()`, `PrayerSchedule`, and
-  `NextPrayerResolver`; `Minutes` normalizes accepted instants to named UTC,
-  so explicitly-wired engines returning `@`-epoch or `+00:00` values flow
-  through `calculate()`.
+  offsets still reject with the same message. Accepted instants are
+  normalized to named UTC, so a zone such as `Europe/London` (offset 0 in
+  winter) cannot cross its DST transition inside interval math. The same
+  zero-offset rule now governs `Minutes::roundedHalfUp()`, `PrayerSchedule`,
+  and `NextPrayerResolver`; `Minutes` normalizes accepted instants to named
+  UTC, so explicitly-wired engines returning `@`-epoch or `+00:00` values
+  flow through `calculate()`.
 - `Astro\Services\GeodesyEngine::inverse()` now validates its four float
   inputs at the engine boundary (finite latitudes within [-90, 90] and
   longitudes within [-180, 180]), matching `KarneyInverse::inverse`, so a
@@ -165,8 +167,10 @@ Versioned snapshots of the whole documentation site are kept per release — use
 - A `MaghribRule` or `IshaRule` that reports neither an angle nor an
   interval now raises `ConfigurationException` at the pipeline boundary.
   It previously raised `AstronomicalException`, which the Hijri sunset
-  bridge could mistake for an undefined schedule and retry.
-  `docs/user/errors.md` now lists this source.
+  bridge could mistake for an undefined schedule and retry. The Umm al-Qura
+  Ramadan interval override now validates the rule's own accessors first,
+  so an invalid custom `IshaRule` cannot be masked by the 120-minute
+  override. `docs/user/errors.md` now lists this source.
 - `SunnahCalculator` no longer duplicates `SunnahTimes`' degenerate-night
   guard; the value object stays the single owner, and the sign-aware
   seconds modifier keeps the intermediate arithmetic well-formed so the
@@ -180,8 +184,9 @@ Versioned snapshots of the whole documentation site are kept per release — use
   `PrayerTimesCalculatorPrivateTest`, and two `SharedKernelTest` cases)
   were removed; the claimed pcov limitation was false, and the same
   behavior is covered through public APIs.
-- `maghribAt()` docs now separate "no sunset" (`UndefinedScheduleException`)
-  from an unreachable angle-based maghrib (`AstronomicalException`), with a
+- `maghribAt()` docs now separate an undefined solar day
+  (`UndefinedScheduleException`: sunrise, transit, or sunset missing) from an
+  unreachable angle-based maghrib (`AstronomicalException`), with a
   regression test pinning Tehran's 4.5° maghrib at 64°N where the sun sets
   but never reaches the angle. `docs/hijri.md` now qualifies the polar-day
   `UndefinedScheduleException` to rules that leave the day undefined and

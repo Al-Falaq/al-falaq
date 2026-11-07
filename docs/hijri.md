@@ -81,11 +81,12 @@ polar-transition day, where today's sunset exists but tomorrow's sunrise does
 not), the bridge resolves maghrib alone via the pipeline's maghrib-only
 computation. A non-`NONE` polar rule may instead resolve the day to another
 date or latitude before the bridge sees it. When the active rule leaves the
-day undefined, the failure mode follows the maghrib rule: a day with no
-sunset at all (polar day or night) raises `UndefinedScheduleException`, while
-a rule that needs a solar angle the sun never reaches (e.g. Tehran's 4.5°
-maghrib at a latitude where the sun sets but stays above −4.5°) raises
-`AstronomicalException` — neither is guessed.
+day undefined, the failure mode follows the maghrib rule: a day whose solar
+day is undefined (sunrise, transit, or sunset missing — typically polar day
+or night) raises `UndefinedScheduleException`, while a rule that needs a
+solar angle the sun never reaches (e.g. Tehran's 4.5° maghrib at a latitude
+where the sun sets but stays above −4.5°) raises `AstronomicalException` —
+neither is guessed.
 
 ## Official day corrections
 

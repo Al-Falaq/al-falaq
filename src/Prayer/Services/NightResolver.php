@@ -211,6 +211,14 @@ final class NightResolver
         int $seventh,
     ): \DateTimeImmutable {
         $ishaMinutes = $parameters->ishaRule->minutesAfterMaghrib();
+        $ishaAngle = $parameters->ishaRule->angle();
+
+        // Validate the rule's own accessors before the Umm al-Qura Ramadan
+        // override: the override supplies an interval, but it must not mask a
+        // custom rule that defines neither variant.
+        if ($ishaMinutes === null && $ishaAngle === null) {
+            throw new ConfigurationException('Invalid IshaRule: no angle or interval defined.');
+        }
 
         if ($parameters->isRamadan && $parameters->method === CalculationMethod::UMM_AL_QURA) {
             $ishaMinutes = 120;
@@ -220,8 +228,6 @@ final class NightResolver
             // Pin _set_isha: interval from raw sunset, not adjusted maghrib.
             return Minutes::add($day->sunset, $ishaMinutes);
         }
-
-        $ishaAngle = $parameters->ishaRule->angle();
 
         if ($ishaAngle === null) {
             throw new ConfigurationException('Invalid IshaRule: no angle or interval defined.');

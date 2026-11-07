@@ -912,6 +912,36 @@ final class PrayerTimesCalculatorTest extends TestCase
         );
     }
 
+    public function testIshaRuleNoAngleOrIntervalThrowsEvenWithUmmAlQuraRamadanOverride(): void
+    {
+        // The Ramadan interval override must not mask a rule that defines
+        // neither variant.
+        $rule = new class implements IshaRule {
+            public function minutesAfterMaghrib(): ?int
+            {
+                return null;
+            }
+            public function angle(): ?float
+            {
+                return null;
+            }
+            public function validate(): void {}
+        };
+
+        $parameters = CalculationMethod::UMM_AL_QURA->defaultParameters()
+            ->withIshaRule($rule)
+            ->withRamadan(true);
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Invalid IshaRule: no angle or interval defined.');
+
+        PrayerTimesCalculator::defaultFor($parameters)->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            $parameters,
+        );
+    }
+
     public function testMaghribBaseHourAngleNullThrows(): void
     {
         // Stubbed engine: isSolarDefined returns true but hourAngle returns

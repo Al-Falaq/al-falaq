@@ -103,9 +103,10 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
      * Runs the pipeline's own solar/maghrib computation and returns before
      * the Fajr/Isha correction phases, so strict high-latitude configs with
      * an undefined full schedule can still resolve maghrib when its own rule
-     * is defined. Throws UndefinedScheduleException when the day has no
-     * sunset, or AstronomicalException when an angle-based rule never reaches
-     * its angle. Class-only capability (like highLatitudeCorrection()); the
+     * is defined. Throws UndefinedScheduleException when the solar day is
+     * undefined (sunrise, transit, or sunset missing), or AstronomicalException
+     * when an angle-based rule never reaches its angle. Class-only capability
+     * (like highLatitudeCorrection()); the
      * interface keeps the single calculate() command.
      *
      * The tomorrow-rise probe and the polar resolve are skipped by design,
