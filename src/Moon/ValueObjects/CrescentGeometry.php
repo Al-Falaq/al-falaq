@@ -8,6 +8,10 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * Crescent geometry at local sunset: everything evaluators need, nothing else.
+ *
+ * Invariants are rechecked on restoration: `unserialize()` bypasses the
+ * constructor, so an old payload cannot smuggle a negative width past the
+ * value object into the evaluators.
  */
 final readonly class CrescentGeometry
 {
@@ -37,32 +41,48 @@ final readonly class CrescentGeometry
         public float $widthArcmin,
         public ?float $ageAtMoonsetHours,
     ) {
+        $this->assertValid();
+    }
+
+    /**
+     * Revalidate a restored instance (unserialize bypasses the constructor).
+     */
+    public function __wakeup(): void
+    {
+        $this->assertValid();
+    }
+
+    /**
+     * Enforce the bundle invariants on construction and restoration.
+     */
+    private function assertValid(): void
+    {
         foreach ([
-            'sunAltitude' => $sunAltitude,
-            'moonAltitude' => $moonAltitude,
-            'elongationDeg' => $elongationDeg,
-            'moonAgeHours' => $moonAgeHours,
-            'deltaAzimuthDeg' => $deltaAzimuthDeg,
-            'illuminatedFraction' => $illuminatedFraction,
-            'arcvGeoDeg' => $arcvGeoDeg,
-            'widthArcmin' => $widthArcmin,
+            'sunAltitude' => $this->sunAltitude,
+            'moonAltitude' => $this->moonAltitude,
+            'elongationDeg' => $this->elongationDeg,
+            'moonAgeHours' => $this->moonAgeHours,
+            'deltaAzimuthDeg' => $this->deltaAzimuthDeg,
+            'illuminatedFraction' => $this->illuminatedFraction,
+            'arcvGeoDeg' => $this->arcvGeoDeg,
+            'widthArcmin' => $this->widthArcmin,
         ] as $name => $value) {
             if (! is_finite($value)) {
                 throw new ValidationException(sprintf('CrescentGeometry::%s must be finite.', $name));
             }
         }
 
-        foreach (['lagMinutes' => $lagMinutes, 'ageAtMoonsetHours' => $ageAtMoonsetHours] as $name => $value) {
+        foreach (['lagMinutes' => $this->lagMinutes, 'ageAtMoonsetHours' => $this->ageAtMoonsetHours] as $name => $value) {
             if ($value !== null && ! is_finite($value)) {
                 throw new ValidationException(sprintf('CrescentGeometry::%s must be finite or null.', $name));
             }
         }
 
-        if ($widthArcmin < 0.0) {
+        if ($this->widthArcmin < 0.0) {
             throw new ValidationException('CrescentGeometry::widthArcmin must be >= 0.');
         }
 
-        if (($lagMinutes === null) !== ($ageAtMoonsetHours === null)) {
+        if (($this->lagMinutes === null) !== ($this->ageAtMoonsetHours === null)) {
             throw new ValidationException('CrescentGeometry: lagMinutes and ageAtMoonsetHours must both be null (no-moonset window) or both finite.');
         }
     }

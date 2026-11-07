@@ -45,9 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Moon\ValueObjects\CrescentGeometry` now rejects a negative `widthArcmin` at
   construction, making the value object the single owner of the width
   invariant; the four criterion evaluators no longer repeat unreachable
-  finiteness/width guards. `CrescentCalculator::atSunset()` validates
-  `deltaTOverride` before the sunset search, so an invalid override always
-  raises `ValidationException` instead of losing to a polar-night
+  finiteness/width guards. Restored instances are revalidated in
+  `__wakeup()`, so a serialized payload from before the guard cannot bypass
+  the constructor and reach the evaluators. `CrescentCalculator::atSunset()`
+  validates `deltaTOverride` before the sunset search, so an invalid override
+  always raises `ValidationException` instead of losing to a polar-night
   `AstronomicalException`.
 - `QiblaResult` drops a dead Makkah-self exemption branch (the distance-zero
   pair never admitted an out-of-range bearing), and

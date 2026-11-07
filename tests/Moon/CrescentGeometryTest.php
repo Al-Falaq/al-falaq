@@ -111,4 +111,31 @@ final class CrescentGeometryTest extends TestCase
 
         $this->geometry(widthArcmin: -0.5);
     }
+
+    public function testRestoredValidBundleRoundTrips(): void
+    {
+        $geometry = $this->geometry();
+
+        $restored = unserialize(serialize($geometry));
+
+        self::assertInstanceOf(CrescentGeometry::class, $restored);
+        self::assertSame($geometry->widthArcmin, $restored->widthArcmin);
+    }
+
+    public function testRestoredNegativeWidthIsRejected(): void
+    {
+        $serialized = serialize($this->geometry());
+        $tampered = str_replace(
+            's:11:"widthArcmin";d:0.0953;',
+            's:11:"widthArcmin";d:-0.5;',
+            $serialized,
+        );
+
+        self::assertNotSame($serialized, $tampered, 'The serialized payload must expose the width field.');
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('CrescentGeometry::widthArcmin must be >= 0.');
+
+        unserialize($tampered);
+    }
 }

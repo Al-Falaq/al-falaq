@@ -47,7 +47,8 @@ checks, and the committed KL/Makkah agreement matrix — see `tools/gen_moonsigh
   on TT (~70 s Delta-T; ~0.3° altitude bias if merged). Never simplify to one
   instant.
 - Zero width clamps via `max(width, 1e-6)′`; a negative width is rejected by
-  `CrescentGeometry` at construction (evaluators only see valid bundles).
+  `CrescentGeometry` at construction and on restoration (`__wakeup`), so
+  evaluators only see valid bundles.
 - `illumination = (1 − cos ARCL)/2`, `width = semi_diameter × (1 − cos ARCL)`
   with `semi_diameter = 0.27245 × parallax × 60′` — geometric proxies.
 
