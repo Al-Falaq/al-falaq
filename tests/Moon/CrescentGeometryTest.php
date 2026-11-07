@@ -126,8 +126,8 @@ final class CrescentGeometryTest extends TestCase
     {
         $serialized = serialize($this->geometry());
         $tampered = str_replace(
-            's:11:"widthArcmin";d:0.0953;',
-            's:11:"widthArcmin";d:-0.5;',
+            's:11:"widthArcmin";' . serialize(0.0953),
+            's:11:"widthArcmin";' . serialize(-0.5),
             $serialized,
         );
 
