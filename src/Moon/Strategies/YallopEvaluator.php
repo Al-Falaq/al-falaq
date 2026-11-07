@@ -7,7 +7,6 @@ namespace AlFalaq\AlFalaq\Moon\Strategies;
 use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
  * Yallop (1997) q-criterion with zones A–F (M3).
@@ -27,14 +26,6 @@ final class YallopEvaluator implements CrescentEvaluator
     {
         $arcv = $geometry->arcvGeoDeg;
         $width = $geometry->widthArcmin;
-
-        if (! is_finite($arcv) || ! is_finite($width)) {
-            throw new ValidationException('Yallop inputs must be finite.');
-        }
-
-        if ($width < 0.0) {
-            throw new ValidationException('Yallop width must be >= 0.');
-        }
 
         $w = max($width, 1e-6);
         $limit = -0.1018 * $w ** 3 + 0.7319 * $w ** 2 - 6.3226 * $w + 11.8371;

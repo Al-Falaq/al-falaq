@@ -300,10 +300,9 @@ final class SunnahCalculatorTest extends TestCase
 
     public function testEqualInstantNightIsRejected(): void
     {
-        // fajr == maghrib (not just before) still throws. Note: the guard
-        // here is defense-in-depth with SunnahTimes itself, which re-checks
-        // the same condition with the same exception — so this pins the
-        // boundary behavior rather than a single line.
+        // fajr == maghrib (not just before) still throws. SunnahTimes owns
+        // the degenerate-night invariant; this pins the boundary behavior
+        // end to end through the calculator.
         $utc = new \DateTimeZone('UTC');
         $anchor = new \DateTimeImmutable('2025-01-15 10:00:00', $utc);
         $at = static fn(string $time): \DateTimeImmutable => new \DateTimeImmutable($time, $utc);

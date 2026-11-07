@@ -13,8 +13,10 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 
 /**
- * The 19 frozen calculation methods (M1 freeze from pin a7baa8b, plus the
- * Wave-2 UOIF drift-gated preset — see issue #7).
+ * The 19 calculation-method cases: NONE plus 18 presets.
+ *
+ * The M1 freeze (c151828) shipped 17 presets plus NONE; the Wave-2 UOIF
+ * drift-gated preset (issue #7) completes the 18 presets.
  *
  * String values are lowercase canonical keys; NONE means "caller supplies
  * every parameter, no defaults".

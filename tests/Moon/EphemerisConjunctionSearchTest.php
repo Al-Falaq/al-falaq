@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Tests\Moon;
 
-use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
 use AlFalaq\AlFalaq\Moon\Services\EphemerisConjunctionSearch;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Ephemeris-backed conjunction search: age search + great-circle separation.
+ * Ephemeris-backed conjunction search: great-circle separation + default wiring.
+ *
+ * Age-search behavior lives in EphemerisConjunctionSearchAgeTest.
  */
 final class EphemerisConjunctionSearchTest extends TestCase
 {
@@ -43,16 +44,5 @@ final class EphemerisConjunctionSearchTest extends TestCase
 
         self::assertInstanceOf(EphemerisConjunctionSearch::class, $search);
         self::assertTrue($search->separation(0.0, 0.0, 1.0, 0.0) > 0.0);
-    }
-
-    public function testAgeDaysReturnsFloorForConjunctionAtSunset(): void
-    {
-        $search = EphemerisConjunctionSearch::default();
-
-        // Near the new moon, the age search returns the minimum floor (0.1 days).
-        $age = $search->ageDays(2460756.0);
-
-        self::assertTrue($age >= 0.1);
-        self::assertTrue(is_finite($age));
     }
 }

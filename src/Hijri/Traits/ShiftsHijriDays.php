@@ -31,14 +31,29 @@ trait ShiftsHijriDays
     /**
      * Shift a Hijri date by whole Hijri days.
      *
-     * The starting date must be valid in the using calendar (day within the month's length); results for impossible start dates are undefined.
+     * The starting date is validated against the using calendar first, so an
+     * impossible date (for example day 30 of a 29-day month) raises even when
+     * `$days` is zero. A shift is capped at ±3650 days (~10 years); larger
+     * magnitudes raise `ValidationException` without walking the calendar.
      *
      * @param HijriDate $date Starting date.
-     * @param int $days Signed day count within [-3650, 3650]; zero is the identity with no range probe.
+     * @param int $days Signed day count within [-3650, 3650]; zero returns the validated date unchanged.
      * @return HijriDate Shifted date.
      */
     public function shift(HijriDate $date, int $days): HijriDate
     {
+        $length = $this->monthLength($date->year, $date->month);
+
+        if ($date->day > $length) {
+            throw new ValidationException(sprintf(
+                'Invalid Hijri day %d for month %d in year %d: month has %d days.',
+                $date->day,
+                $date->month,
+                $date->year,
+                $length,
+            ));
+        }
+
         if ($days === 0) {
             return $date;
         }

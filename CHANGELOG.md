@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `MabimsCalendar::country()` exposes the bound member state so a per-country
+  `OffsetStore` can distinguish MY/ID/SG/BN; `name()` remains the generic
+  `'mabims'` pin key. `CivilDate::MIN_YEAR`/`MAX_YEAR` centralize the
+  1900–2100 window, and `HijriDataException` reports malformed generated
+  month-start data instead of silently normalizing an impossible day.
 - `tests/ArchShapeTest.php` now enforces the remaining `AGENTS.md`
   conventions: `Contracts/` interfaces-only, the exact `*Interface` suffix
   set, one named class per file, `readonly` value objects (property-free
@@ -30,6 +35,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `HijriCalendar::shift()` now validates the starting date even when the
+  shift is zero, so an impossible date (e.g. day 30 of a 29-day month) can no
+  longer pass through or skip a day; the contract also documents the
+  ±3650-day magnitude cap. `TabularCalendar::toGregorian()` now rejects dates
+  outside the Gregorian 1900–2100 window with a truthful
+  `HijriOutOfRangeException` instead of a misleading range label or a raw
+  `TypeError` for huge years.
+- `Moon\ValueObjects\CrescentGeometry` now rejects a negative `widthArcmin` at
+  construction, making the value object the single owner of the width
+  invariant; the four criterion evaluators no longer repeat unreachable
+  finiteness/width guards. Restored instances are revalidated in
+  `__wakeup()`, so a serialized payload from before the guard cannot bypass
+  the constructor and reach the evaluators. `CrescentCalculator::atSunset()`
+  validates `deltaTOverride` before the sunset search, so an invalid override
+  always raises `ValidationException` instead of losing to a polar-night
+  `AstronomicalException`.
+- `QiblaResult` drops a dead Makkah-self exemption branch (the distance-zero
+  pair never admitted an out-of-range bearing), and
+  `Wgs84KarneyCalculator` relies on `KarneyInverse`'s documented finite-result
+  invariant instead of duplicating that guard.
 - `GregorianToHijriConverter` now takes the `maghribAt()` fallback for every
   astronomical "schedule undefined" case (`AstronomicalException`), not only
   `UndefinedScheduleException`; validation errors still surface.
@@ -91,6 +116,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The moon-age regression tests now exercise the real 2025-03-29 conjunction:
+  the conjunction-at-sunset floor and the previous-lunation branch are pinned
+  to recorded values, replacing tests that claimed those branches while
+  querying an unrelated Julian day. Reflection-only constructor/private-method
+  tests for the moon-age search and the WGS84 strategy were removed; the same
+  behavior is covered through the public API.
+- The sunset frame no longer fails when the backward probe has no previous
+  day to ask about: at `1900-01-01` the probe is skipped, and when the
+  previous UTC day's schedule is undefined (e.g. polar night) while the
+  current day's maghrib is defined, the current UTC day is used.
 - The public-API reference is checked in both directions: a documented class
   that no longer exists fails the build.
 - The bench harness printed a budget it did not meet and enforced a gate 25x
@@ -102,6 +137,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matching the `COMPOSER_PROCESS_TIMEOUT=0` that CI already exports.
 - Inline source FQCNs and deleted-code blank-line runs were removed; new arch
   gates reject both patterns so they cannot regrow.
+- `MeanSolarCalculator::afternoonAngle()` maps an exactly-cancelled Asr
+  cotangent denominator (`shadowLength === -tan(|lat - dec|)`, the pin's
+  `ZeroDivisionError` point, reachable for custom shadow factors past
+  ~2.3 at high latitudes) to the unreachable `NAN` sentinel instead of
+  letting PHP 8 raise a `DivisionByZeroError` that escapes the library
+  exception contract. Negative cotangents keep flowing through verbatim.
+- `Astro\ValueObjects\SolarTime` accepts any zero-offset zone: an
+  `@`-epoch instant or a `+00:00` zone is UTC but reports the zone name
+  `+00:00`, which the old `getTimezone()->getName() !== 'UTC'` check
+  falsely rejected. The check now tests `getOffset() !== 0`; non-UTC
+  offsets still reject with the same message. Accepted instants are
+  normalized to named UTC, so a zone such as `Europe/London` (offset 0 in
+  winter) cannot cross its DST transition inside interval math. The same
+  zero-offset rule now governs `Minutes::roundedHalfUp()`, `PrayerSchedule`,
+  and `NextPrayerResolver`; `Minutes` normalizes accepted instants to named
+  UTC, so explicitly-wired engines returning `@`-epoch or `+00:00` values
+  flow through `calculate()`.
+- `Astro\Services\GeodesyEngine::inverse()` now validates its four float
+  inputs at the engine boundary (finite latitudes within [-90, 90] and
+  longitudes within [-180, 180]), matching `KarneyInverse::inverse`, so a
+  direct call can no longer turn out-of-range coordinates into silent
+  finite garbage. Wired callers already passed validated `Coordinates`,
+  so no public-path output changes.
+- A `MaghribRule` or `IshaRule` that reports neither an angle nor an
+  interval now raises `ConfigurationException` at the pipeline boundary.
+  It previously raised `AstronomicalException`, which the Hijri sunset
+  bridge could mistake for an undefined schedule and retry. The Umm al-Qura
+  Ramadan interval override now validates the rule's own accessors first,
+  so an invalid custom `IshaRule` cannot be masked by the 120-minute
+  override. `docs/user/errors.md` now lists this source.
+- `SunnahCalculator` no longer duplicates `SunnahTimes`' degenerate-night
+  guard; the value object stays the single owner, and the sign-aware
+  seconds modifier keeps the intermediate arithmetic well-formed so the
+  value object's constructor reports the invalid night.
+- Unreachable `DateTimeImmutable::modify()`/`getTimezone()` failure guards
+  were removed from `Minutes`, `CivilDate`, `SunnahTimes`,
+  `SunnahCalculator`, and `NightResolver`: every modifier is generated and
+  valid, so the legacy `false` branch cannot run.
+- Reflection-only constructor/private-method coverage tests
+  (`ValueObjectPrivateConstructorTest`, `NightResolverPrivateTest`,
+  `PrayerTimesCalculatorPrivateTest`, and two `SharedKernelTest` cases)
+  were removed; the claimed pcov limitation was false, and the same
+  behavior is covered through public APIs.
+- `maghribAt()` docs now separate an undefined solar day
+  (`UndefinedScheduleException`: sunrise, transit, or sunset missing) from an
+  unreachable angle-based maghrib (`AstronomicalException`), with a
+  regression test pinning Tehran's 4.5° maghrib at 64°N where the sun sets
+  but never reaches the angle. `docs/hijri.md` now qualifies the polar-day
+  `UndefinedScheduleException` to rules that leave the day undefined and
+  documents the `NEAREST_DAY` 2100-12-31 edge.
+- Method-count docs now agree with the enum: 18 presets plus `NONE` = 19
+  cases. The M1 freeze shipped 17 presets plus `NONE` (11 pin cells and six
+  table-confirmed conventions); UOIF is the Wave-2 18th preset, never part
+  of pin parity.
 
 ## [0.1.1] - 2026-10-14
 

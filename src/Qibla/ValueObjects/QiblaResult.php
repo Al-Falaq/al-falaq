@@ -26,9 +26,7 @@ final readonly class QiblaResult
         public float $distanceKm,
     ) {
         if (! is_finite($direction) || $direction < 0.0 || $direction >= 360.0) {
-            if (! ($distanceKm === 0.0 && $direction === 0.0)) {
-                throw new ValidationException('Qibla direction must be in [0, 360).');
-            }
+            throw new ValidationException('Qibla direction must be in [0, 360).');
         }
 
         if (! is_finite($distanceKm) || $distanceKm < 0.0) {

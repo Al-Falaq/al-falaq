@@ -134,7 +134,7 @@ This is deliberate. A wrong prayer time presented confidently is worse than an h
 ## Next steps
 
 - [Prayer Times](prayer-times/) — what each of the ten markers means and how it is computed
-- [Calculation Methods](calculation-methods/) — compare all 19 methods and pick yours
+- [Calculation Methods](calculation-methods/) — compare all 18 presets and pick yours
 - [Timezones & Display](timezone/) — the UTC-in, display-at-the-edge discipline
 - [Errors](errors/) — the full exception hierarchy and how to catch well
 - [Framework Integration](integration/) — wiring this into Laravel, Symfony, and WordPress

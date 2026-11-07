@@ -146,6 +146,21 @@ final class CrescentCalculatorTest extends TestCase
         );
     }
 
+    public function testNonFiniteOverrideWinsOverPolarNightFailure(): void
+    {
+        // Validation runs before the sunset search: an invalid override must
+        // surface as the caller's argument error, not as a polar-night
+        // AstronomicalException from the solar engine.
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('deltaTOverride must be a finite number of seconds');
+
+        CrescentCalculator::default()->atSunset(
+            Coordinates::fromDegrees(69.6492, 18.9553),
+            CivilDate::fromYmd(2025, 1, 1),
+            NAN,
+        );
+    }
+
     public function testEvaluatePassesDeltaTOverrideThrough(): void
     {
         $calculator = CrescentCalculator::default();

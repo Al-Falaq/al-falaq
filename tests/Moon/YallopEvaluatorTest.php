@@ -6,7 +6,6 @@ namespace AlFalaq\AlFalaq\Tests\Moon;
 
 use AlFalaq\AlFalaq\Moon\Strategies\YallopEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -18,7 +17,7 @@ final class YallopEvaluatorTest extends TestCase
      * Build geometry carrying only the Yallop inputs.
      *
      * @param float $arcvGeo Geocentric ARCV in degrees.
-     * @param float $width Width in arcmin (raw; may be 0.0).
+     * @param float $width Width in arcmin (non-negative; may be 0.0).
      * @return CrescentGeometry Valid bundle.
      */
     private function geometry(float $arcvGeo, float $width): CrescentGeometry
@@ -119,12 +118,5 @@ final class YallopEvaluatorTest extends TestCase
 
         self::assertTrue(is_finite($verdict->score));
         self::assertSame('B', $verdict->zone);
-    }
-
-    public function testNegativeWidthIsRejected(): void
-    {
-        $this->expectException(ValidationException::class);
-
-        (new YallopEvaluator())->evaluate($this->geometry(6.0, -0.5));
     }
 }

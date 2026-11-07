@@ -6,7 +6,6 @@ namespace AlFalaq\AlFalaq\Tests\Moon;
 
 use AlFalaq\AlFalaq\Moon\Strategies\OdehEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -20,7 +19,7 @@ final class OdehEvaluatorTest extends TestCase
      *
      * @param float $arcl Elongation in degrees.
      * @param float $malt Topocentric moon altitude in degrees.
-     * @param float $width Width in arcmin.
+     * @param float $width Width in arcmin (non-negative).
      * @return CrescentGeometry Valid bundle.
      */
     private function geometry(float $arcl, float $malt, float $width): CrescentGeometry
@@ -128,12 +127,5 @@ final class OdehEvaluatorTest extends TestCase
 
         self::assertTrue(is_finite($verdict->score));
         self::assertSame('B', $verdict->zone);
-    }
-
-    public function testNegativeWidthIsRejected(): void
-    {
-        $this->expectException(ValidationException::class);
-
-        (new OdehEvaluator())->evaluate($this->geometry(8.0, 6.0, -0.5));
     }
 }

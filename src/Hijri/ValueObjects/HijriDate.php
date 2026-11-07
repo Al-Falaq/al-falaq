@@ -10,7 +10,9 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
  * A validated Hijri date (universal day bound 1..30; the calendar tightens it).
  *
  * Day arithmetic lives on the calendar (`HijriCalendar::shift()`) — a Hijri
- * date cannot know its own month length without a calendar.
+ * date cannot know its own month length without a calendar. Calendar identity
+ * is likewise not part of the date: the converting `HijriCalendar` instance
+ * owns it (and `MabimsCalendar::country()` narrows it for MABIMS).
  */
 final readonly class HijriDate
 {

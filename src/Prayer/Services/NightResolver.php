@@ -14,7 +14,6 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\NightPortions;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
@@ -212,6 +211,14 @@ final class NightResolver
         int $seventh,
     ): \DateTimeImmutable {
         $ishaMinutes = $parameters->ishaRule->minutesAfterMaghrib();
+        $ishaAngle = $parameters->ishaRule->angle();
+
+        // Validate the rule's own accessors before the Umm al-Qura Ramadan
+        // override: the override supplies an interval, but it must not mask a
+        // custom rule that defines neither variant.
+        if ($ishaMinutes === null && $ishaAngle === null) {
+            throw new ConfigurationException('Invalid IshaRule: no angle or interval defined.');
+        }
 
         if ($parameters->isRamadan && $parameters->method === CalculationMethod::UMM_AL_QURA) {
             $ishaMinutes = 120;
@@ -222,14 +229,8 @@ final class NightResolver
             return Minutes::add($day->sunset, $ishaMinutes);
         }
 
-        $ishaAngle = $parameters->ishaRule->angle();
-
         if ($ishaAngle === null) {
-            throw new AstronomicalException(sprintf(
-                'Unable to compute Isha: no angle or interval defined (coordinates=%s, date=%s).',
-                (string) $coords,
-                $date->isoformat(),
-            ));
+            throw new ConfigurationException('Invalid IshaRule: no angle or interval defined.');
         }
 
         if ($useSeasonalSafe) {
@@ -272,12 +273,6 @@ final class NightResolver
 
     private function addSeconds(\DateTimeImmutable $base, int $seconds): \DateTimeImmutable
     {
-        $moved = $base->modify(sprintf('%+d seconds', $seconds));
-
-        if ($moved === false) {
-            throw new ValidationException('Unable to add seconds.');
-        }
-
-        return $moved;
+        return $base->modify(sprintf('%+d seconds', $seconds));
     }
 }

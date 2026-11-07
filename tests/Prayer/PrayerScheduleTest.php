@@ -78,6 +78,29 @@ final class PrayerScheduleTest extends TestCase
         );
     }
 
+    public function testZeroOffsetInputIsAccepted(): void
+    {
+        $utc = self::klSchedule();
+        $plusZero = new \DateTimeZone('+00:00');
+
+        $schedule = new PrayerSchedule(
+            $utc->imsak->setTimezone($plusZero),
+            $utc->fajr->setTimezone($plusZero),
+            $utc->sunrise->setTimezone($plusZero),
+            $utc->syuruk->setTimezone($plusZero),
+            $utc->ishraq->setTimezone($plusZero),
+            $utc->dhuha->setTimezone($plusZero),
+            $utc->dhuhr->setTimezone($plusZero),
+            $utc->asr->setTimezone($plusZero),
+            $utc->maghrib->setTimezone($plusZero),
+            $utc->isha->setTimezone($plusZero),
+        );
+
+        foreach ($schedule->all() as $key => $instant) {
+            self::assertSame(0, $instant->getOffset(), $key);
+        }
+    }
+
     public function testToArrayReturnsIsoStringsInScheduleOrder(): void
     {
         $row = self::klSchedule()->toArray();

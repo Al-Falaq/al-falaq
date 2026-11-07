@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Astro\Services;
 
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Angle;
 
 /**
@@ -24,15 +25,38 @@ final class GeodesyEngine
      *
      * Todhunter p.50 initial bearing + haversine atan2 distance; haversine
      * term clamped to [0,1] per determinism rule; bearing unwound to [0,360).
+     * Inputs are validated at the engine boundary exactly like
+     * KarneyInverse::inverse, so a direct call can never turn out-of-range
+     * or non-finite coordinates into silent finite garbage.
      *
-     * @param float $lat1 From-latitude in degrees.
-     * @param float $lon1 From-longitude in degrees.
-     * @param float $lat2 To-latitude in degrees.
-     * @param float $lon2 To-longitude in degrees.
+     * @param float $lat1 From-latitude in degrees, within [-90, 90].
+     * @param float $lon1 From-longitude in degrees, within [-180, 180].
+     * @param float $lat2 To-latitude in degrees, within [-90, 90].
+     * @param float $lon2 To-longitude in degrees, within [-180, 180].
      * @return array{direction: float, distanceKm: float} Bearing + distance.
      */
     public function inverse(float $lat1, float $lon1, float $lat2, float $lon2): array
     {
+        foreach (['lat1' => $lat1, 'lat2' => $lat2] as $name => $value) {
+            if (! is_finite($value) || ! (-90.0 <= $value && $value <= 90.0)) {
+                throw new ValidationException(sprintf(
+                    'Latitude must be within [-90.0, 90.0], got %s (%s).',
+                    var_export($value, true),
+                    $name,
+                ));
+            }
+        }
+
+        foreach (['lon1' => $lon1, 'lon2' => $lon2] as $name => $value) {
+            if (! is_finite($value) || ! (-180.0 <= $value && $value <= 180.0)) {
+                throw new ValidationException(sprintf(
+                    'Longitude must be within [-180.0, 180.0], got %s (%s).',
+                    var_export($value, true),
+                    $name,
+                ));
+            }
+        }
+
         $fromLat = deg2rad($lat1);
         $toLat = deg2rad($lat2);
         $deltaLon = deg2rad($lon2 - $lon1);

@@ -5,7 +5,7 @@ description: The typed exception hierarchy, when each failure fires, and how to 
 
 # Errors
 
-al-falaq fails the way it computes: precisely, with types. Every failure is a typed exception in one hierarchy, every message tells you how to fix the call, and nothing ever returns a silent `null` or a guessed time where the sky has no answer. Learn the four types once and your error handling is done.
+al-falaq fails the way it computes: precisely, with types. Every failure is a typed exception in one hierarchy, every message tells you how to fix the call, and nothing ever returns a silent `null` or a guessed time where the sky has no answer. Learn the hierarchy once and your error handling is done.
 
 ## The hierarchy
 
@@ -16,6 +16,7 @@ DomainException (marker interface — catch this for everything)
     │   ├── InvalidCoordinatesException
     │   └── HijriOutOfRangeException
     ├── ConfigurationException   — well-typed but inconsistent wiring: fix the setup
+    ├── HijriDataException       — shipped table data is corrupt: report a library defect
     └── AstronomicalException    — the sky has no answer: choose a strategy
         └── UndefinedScheduleException
 ```
@@ -37,7 +38,7 @@ try {
 }
 ```
 
-**`ConfigurationException` — "your wiring contradicts itself."** Two flavours. `CalculationMethod::NONE->defaultParameters()` (NONE has no defaults — build `CalculationParameters::create()` by hand) and `isRamadan` on any method but Umm al-Qura throw while you *build* the parameters, before any astronomy runs. `changeAtSunset: true` without coordinates *and* parameters throws when you call `GregorianToHijriConverter::convert()`, which is the earliest it can be detected — the call itself supplies the place. Either way the failure lands in your setup or request edge, never at dawn:
+**`ConfigurationException` — "your wiring contradicts itself."** Several flavours. `CalculationMethod::NONE->defaultParameters()` (NONE has no defaults — build `CalculationParameters::create()` by hand) and `isRamadan` on any method but Umm al-Qura throw while you *build* the parameters, before any astronomy runs. `changeAtSunset: true` without coordinates *and* parameters throws when you call `GregorianToHijriConverter::convert()`, which is the earliest it can be detected — the call itself supplies the place. A custom `MaghribRule` or `IshaRule` that reports neither an angle nor an interval throws when the pipeline reaches it; that is a wiring error, not an astronomical one. Either way the failure lands in your setup or request edge, never at dawn:
 
 ```php
 $params = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
@@ -72,6 +73,8 @@ try {
 ```
 
 **`HijriOutOfRangeException` — the calendar edge.** Extends `ValidationException`, so existing `catch (ValidationException)` blocks keep working; catch it first when the distinction matters (e.g. to show "this calendar starts in 2002" instead of a generic validation error).
+
+**`HijriDataException` — "the shipped table is corrupt."** This is not caller input: a generated month-start entry failed its `YYYY-MM-DD` round-trip (for example `2023-02-30`, which PHP would otherwise normalize to March 2). It extends `AlFalaqException` directly, not `ValidationException`, because retrying with different input cannot fix it — regenerate the tables with `tools/gen_hijri.py` or report the defect.
 
 ## Catching well
 

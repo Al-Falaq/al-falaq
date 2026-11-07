@@ -6,7 +6,6 @@ namespace AlFalaq\AlFalaq\Tests\Moon;
 
 use AlFalaq\AlFalaq\Moon\Strategies\Mabims1992Evaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -114,20 +113,5 @@ final class Mabims1992EvaluatorTest extends TestCase
         $verdict = (new Mabims1992Evaluator())->evaluate($this->geometryNoAge(2.0, 3.0));
 
         self::assertTrue($verdict->visible);
-    }
-
-    public function testRejectsNonFiniteViaReflection(): void
-    {
-        // CrescentGeometry validates finiteness in its ctor, so the evaluator's
-        // is_finite guard is defense-in-depth only reachable by bypassing the VO.
-        $geo = (new \ReflectionClass(CrescentGeometry::class))->newInstanceWithoutConstructor();
-        (new \ReflectionProperty($geo, 'moonAltitude'))->setValue($geo, NAN);
-        (new \ReflectionProperty($geo, 'elongationDeg'))->setValue($geo, 10.0);
-        (new \ReflectionProperty($geo, 'ageAtMoonsetHours'))->setValue($geo, 10.0);
-
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('MABIMS-1992 inputs must be finite.');
-
-        (new Mabims1992Evaluator())->evaluate($geo);
     }
 }

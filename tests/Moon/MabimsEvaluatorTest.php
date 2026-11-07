@@ -7,7 +7,6 @@ namespace AlFalaq\AlFalaq\Tests\Moon;
 use AlFalaq\AlFalaq\Moon\Strategies\Mabims1992Evaluator;
 use AlFalaq\AlFalaq\Moon\Strategies\NeoMabims2021Evaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
-use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -68,13 +67,6 @@ final class MabimsEvaluatorTest extends TestCase
         self::assertSame('neomabims2021', $pass->criterion);
         self::assertTrue($pass->visible);
         self::assertFalse($fail->visible);
-    }
-
-    public function testNeoRejectsNonFinite(): void
-    {
-        $this->expectException(ValidationException::class);
-
-        (new NeoMabims2021Evaluator())->evaluate($this->geometry(INF, 7.0, 5.0));
     }
 
     public function test1992AgeEpsilonEdges(): void

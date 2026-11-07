@@ -14,12 +14,12 @@ The Hijri calendar is lunar: months begin with the new crescent, so month length
 A Hijri calendar answers a deceptively simple question — *was this month 29 or 30 days?* — and the three systems answer it three different ways, with three different histories:
 
 - **Tabular (arithmetic Type IIa, "Kuwaiti" pattern).** The oldest approach: no observation at all, just arithmetic. A fixed 30-year cycle with 11 leap years (remainders {2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29} mod 30), odd months 30 days, even months 29, Dhu al-Hijjah 30 in leap years, anchored at 1 Muharram 1 AH = Julian Date 1948439.5 (19 July 622, proleptic Gregorian). It has been used for centuries for planning and conversion precisely because it needs no sky — and it drifts ±1–2 days from real sightings by construction. Never present it as observed.
-- **Umm al-Qura (Makkah rule, 1423H scheme).** Saudi Arabia's civil calendar, in its current form dating to 1423H (2002): on the 29th evening at Makkah, the month completes 29 days when the geocentric conjunction has already occurred by sunset and the moon sets after the sun, else 30. The table's generator tests those two conditions as a positive moonset lag and a moon age under 15 days — the age being a *side* test separating "just after conjunction" from "not yet", not a visibility threshold. Earlier variants (the 1392H scheme, the 1420–1422H interim criteria) are out of scope — inputs before 1 Muharram 1423H raise rather than return a wrong date.
+- **Umm al-Qura (Makkah rule, 1423H scheme).** The shipped `uqu` calendar implements the pin's 1423H Makkah rule (in its current form dating to 1423H / 2002): on the 29th evening at Makkah, the month completes 29 days when the geocentric conjunction has already occurred by sunset and the moon sets after the sun, else 30. The table's generator tests those two conditions as a positive moonset lag and a moon age under 15 days — the age being a *side* test separating "just after conjunction" from "not yet", not a visibility threshold. This is a rule-generated table, **not** the official Saudi 1356–1500 AH Umm al-Qura table (that table is deferred and would ship under its own key, e.g. `uqu-official`). Earlier variants (the 1392H scheme, the 1420–1422H interim criteria) are out of scope — inputs before 1 Muharram 1423H raise rather than return a wrong date.
 - **Neo-MABIMS (2021, per-country).** The current rule of the MABIMS ministerial forum (Brunei, Indonesia, Malaysia, Singapore): at each country's national proxy point, the crescent counts if altitude ≥ 3° and elongation ≥ 6.4° at sunset. It replaced the looser 1992 Labuan rule (2°/3° or 8-hour age) after sighting records showed the old thresholds admitted evenings nobody ever saw. See [Moon Sighting](moon-sighting/) for both committees' full stories.
 
 | Calendar | Class | Key | Coverage | Character |
 | --- | --- | --- | --- | --- |
-| Tabular (Type IIa) | `TabularCalendar` | `tabular` | 1 Muharram 1 AH onward | Closed form, no data. Drifts ±1–2 days from observation. |
+| Tabular (Type IIa) | `TabularCalendar` | `tabular` | 1900–2100 Gregorian (`CivilDate` window) | Closed form, no data. Drifts ±1–2 days from observation. |
 | Umm al-Qura | `UmmAlQuraCalendar` | `uqu` | 1423–1500 AH | Makkah crescent rule evaluated once at build time; conversion is a table lookup. |
 | Neo-MABIMS | `MabimsCalendar` | `mabims` | 1445–1500 AH | Per-country rule (MY/ID/SG/BN) evaluated once at build time; conversion is a lookup. |
 
@@ -58,7 +58,7 @@ $calendar->monthLength(1446, 9); // 29
 $calendar->shift(new HijriDate(1446, 9, 29), 1)->isoformat(); // '1446-10-01'
 ```
 
-`HijriDate` deliberately has no `plusDays()`: a Hijri date cannot know its own month length without a calendar, so day arithmetic lives on `HijriCalendar::shift()`, which crosses month and year boundaries correctly.
+`HijriDate` deliberately has no `plusDays()`: a Hijri date cannot know its own month length without a calendar, so day arithmetic lives on `HijriCalendar::shift()`, which crosses month and year boundaries correctly. `shift()` validates the starting date (even for a zero-day shift) and caps a single call at ±3650 days.
 
 ## Which civil day? Sunset rollover
 
@@ -119,9 +119,11 @@ Nothing saturates and nothing wraps. Outside a calendar's span you get `HijriOut
 | Situation | Result |
 | --- | --- |
 | Gregorian day before a table starts (e.g. Umm al-Qura before 2002-03-15) | `HijriOutOfRangeException` naming the calendar, date, and span |
+| Tabular Hijri date outside Gregorian 1900–2100 | `HijriOutOfRangeException` naming the effective conversion range |
 | Hijri month outside the shipped table | `HijriOutOfRangeException` |
 | A `shift()` or offset that would leave the span | `HijriOutOfRangeException` |
-| Day 30 of a 29-day month | `ValidationException` |
+| Day 30 of a 29-day month, including a zero-day `shift()` | `ValidationException` |
+| A single `shift()` beyond ±3650 days | `ValidationException` |
 | `changeAtSunset` without coordinates or parameters | `ConfigurationException` |
 
 Extend coverage by adding a table, never by widening a guard. The tabular calendar's `adjustmentDays` (−2…+2, same role as .NET's `HijriAdjustment`) is the sanctioned way to express regional tabular corrections without forking the arithmetic.

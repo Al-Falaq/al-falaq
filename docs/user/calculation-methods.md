@@ -1,13 +1,13 @@
 ---
 title: Calculation Methods
-description: Compare all 19 prayer calculation methods, understand angles versus intervals, and pick the right preset.
+description: Compare all 18 prayer calculation presets, understand angles versus intervals, and pick the right one.
 ---
 
 # Calculation Methods
 
 Every prayer timetable rests on a human convention: *how far below the horizon must the sun be for dawn to count as Fajr, and for night to count as Isha?* There is no single revealed angle — different scholarly bodies and national authorities adopted different ones, sometimes with extra administrative minutes. A calculation method is simply one such convention, frozen into numbers.
 
-al-falaq ships 19 of them. This page explains what varies between them, gives you the full comparison table, and helps you choose.
+al-falaq ships 18 presets, plus `NONE` for fully custom configurations (19 enum cases in all). This page explains what varies between them, gives you the full comparison table, and helps you choose.
 
 ## What varies: angles, intervals, and offsets
 

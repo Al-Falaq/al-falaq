@@ -8,15 +8,15 @@ use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 
 /**
- * One day of prayer instants, stored UTC-only (display via forZone()).
+ * One day of prayer instants, stored in zero-offset UTC (display via forZone()).
  *
- * The ctor rejects non-UTC inputs; user adjustments may break ordering —
+ * The ctor rejects non-UTC offsets; user adjustments may break ordering —
  * the calculator never silently reorders.
  */
 final readonly class PrayerSchedule
 {
     /**
-     * Bind all ten UTC instants (non-UTC inputs throw).
+     * Bind all ten zero-offset UTC instants (non-UTC offsets throw).
      *
      * @param \DateTimeImmutable $imsak Fajr minus imsak offset (UTC).
      * @param \DateTimeImmutable $fajr Dawn prayer (UTC).
@@ -42,7 +42,7 @@ final readonly class PrayerSchedule
         public \DateTimeImmutable $isha,
     ) {
         foreach (['imsak' => $imsak, 'fajr' => $fajr, 'sunrise' => $sunrise, 'syuruk' => $syuruk, 'ishraq' => $ishraq, 'dhuha' => $dhuha, 'dhuhr' => $dhuhr, 'asr' => $asr, 'maghrib' => $maghrib, 'isha' => $isha] as $name => $dt) {
-            if ($dt->getTimezone()->getName() !== 'UTC') {
+            if ($dt->getOffset() !== 0) {
                 throw new ValidationException(sprintf('PrayerSchedule::%s must be UTC.', $name));
             }
         }
