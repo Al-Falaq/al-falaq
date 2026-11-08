@@ -31,6 +31,20 @@ final class MabimsCalendar implements HijriCalendar
     public function __construct(private readonly MabimsCountry $country) {}
 
     /**
+     * Member state whose table this instance resolves.
+     *
+     * `name()` is the generic pin key `'mabims'` for every country, so callers
+     * keying per-country corrections (for example an `OffsetStore`) must use
+     * this accessor to distinguish MY, ID, SG and BN.
+     *
+     * @return MabimsCountry Bound member state.
+     */
+    public function country(): MabimsCountry
+    {
+        return $this->country;
+    }
+
+    /**
      * Stable calendar key.
      *
      * @return string Always 'mabims' (the pin's key).

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Hijri\Traits;
 
+use AlFalaq\AlFalaq\Hijri\Exceptions\HijriDataException;
 use AlFalaq\AlFalaq\Hijri\Exceptions\HijriOutOfRangeException;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
@@ -19,6 +20,8 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
  * Table layout: `starts[i]` is the first Gregorian day of month `i`, and the
  * final entry is a sentinel one month past the last supported month. Dates
  * before `starts[0]` or on/after the sentinel are out of span and raise.
+ * A stored day that is not a real `YYYY-MM-DD` date raises
+ * `HijriDataException` rather than normalizing into a different day.
  */
 trait LooksUpMonthStarts
 {
@@ -158,8 +161,8 @@ trait LooksUpMonthStarts
     {
         $dateTime = \DateTimeImmutable::createFromFormat('!Y-m-d', $iso, new \DateTimeZone('UTC'));
 
-        if ($dateTime === false) {
-            throw new \LogicException(sprintf('Malformed generated month start %s.', $iso));
+        if ($dateTime === false || $dateTime->format('Y-m-d') !== $iso) {
+            throw HijriDataException::forMonthStart($iso);
         }
 
         return CivilDate::fromDateTime($dateTime);

@@ -83,6 +83,26 @@ final class MeanSolarCalculatorPrivateTest extends TestCase
         self::assertIsFloat($result);
     }
 
+    public function testAfternoonAngleExactCancellationReturnsNan(): void
+    {
+        // shadow === -tan(|lat - dec|) makes the cotangent denominator exactly
+        // 0.0: the pin's ZeroDivisionError point. The guard must map it to the
+        // unreachable NaN sentinel instead of PHP 8's DivisionByZeroError.
+        $calc = $this->calculator();
+        $result = $this->invokeOn($calc, 'afternoonAngle', [0.0, 101.0, -tan(deg2rad(101.0))]);
+        self::assertNan($result);
+    }
+
+    public function testAfternoonAngleNegativeCotangentFlowsThrough(): void
+    {
+        // |lat - dec| past 90 degrees with a finite shadow keeps the pin's
+        // negative-angle passthrough; only the exact-zero denominator is special.
+        $calc = $this->calculator();
+        $result = $this->invokeOn($calc, 'afternoonAngle', [0.0, 101.0, 5.0]);
+        self::assertIsFloat($result);
+        self::assertLessThan(0.0, $result);
+    }
+
     public function testAssertElevationViaReflection(): void
     {
         $calc = $this->calculator();

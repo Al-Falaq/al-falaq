@@ -58,7 +58,7 @@ $nowUtc = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 $next = (new NextPrayerResolver())->resolve($today, $tomorrow, $nowUtc);
 ```
 
-Passing a zone-stamped "now" throws `ValidationException` immediately. That strictness catches the most common integration bug (a server-local `new DateTimeImmutable('now')` inheriting `date.timezone`) at the call site instead of shifting every badge by your UTC offset. If you use `psr/clock`, call `$clock->now()` at the edge and normalise to UTC before passing it in — the library never type-hints the interface, so any implementation works. Details are in [Framework Integration](integration/).
+Passing a non-UTC zone-stamped "now" throws `ValidationException` immediately. That strictness catches the most common integration bug (a server-local `new DateTimeImmutable('now')` inheriting `date.timezone`) at the call site instead of shifting every badge by your UTC offset. If you use `psr/clock`, call `$clock->now()` at the edge and normalise to UTC before passing it in — the library never type-hints the interface, so any implementation works. Details are in [Framework Integration](integration/).
 
 The Hijri bridge takes an instant too, but it is looser by design: it accepts any zone-aware `DateTimeImmutable` and reads whichever frame you asked for. Do not pre-normalise a wall-clock instant to UTC before handing it over — the default frame reads the civil date in the *instant's own zone*, so a needless `setTimezone()` near midnight changes the date it reports. Pass the instant your user's clock produced and let `changeAtSunset` choose the frame.
 

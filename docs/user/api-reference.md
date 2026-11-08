@@ -14,9 +14,9 @@ Conventions: public services are `final` with explicit constructor injection and
 | Class | Key members |
 | --- | --- |
 | `SharedKernel\ValueObjects\Coordinates` | `fromDegrees(mixed $lat, mixed $lon): self` (lat −90…90, lon −180…180); `fromArray(array): self` (exactly `[0 => lat, 1 => lon]`); `equals()`, `toArray()` |
-| `SharedKernel\ValueObjects\CivilDate` | `fromYmd(int, int, int): self` (1900–2100); `fromDateTime(DateTimeImmutable): self` (own-zone date); `plusDays(int): self`; `dayOfYear(): int`; `toUtcMidnight()`; `isoformat()` |
+| `SharedKernel\ValueObjects\CivilDate` | `MIN_YEAR = 1900`, `MAX_YEAR = 2100`; `fromYmd(int, int, int): self` (1900–2100); `fromDateTime(DateTimeImmutable): self` (own-zone date); `plusDays(int): self`; `dayOfYear(): int`; `toUtcMidnight()`; `isoformat()` |
 | `SharedKernel\ValueObjects\Angle` | `fromDegrees(mixed): self`; `normalized(): self` (`[0, 360)` with ulp re-clamp); `toRadians(): float` |
-| `SharedKernel\ValueObjects\Minutes` | `add(DateTimeImmutable, int): DateTimeImmutable`; `roundedHalfUp(DateTimeImmutable $utc): DateTimeImmutable` (UTC-only, half-up) |
+| `SharedKernel\ValueObjects\Minutes` | `add(DateTimeImmutable, int): DateTimeImmutable`; `roundedHalfUp(DateTimeImmutable $utc): DateTimeImmutable` (zero-offset UTC; normalized to named UTC, half-up) |
 | `SharedKernel\ValueObjects\JulianDay` | `fromCivilDate(CivilDate): self` (Fliegel–Van Flandern, day number at 00:00 UTC); `day` (raw float); `toFloat(): float` (astronomy internals) |
 | `SharedKernel\ValueObjects\Kaaba` | `LATITUDE = 21.4225241`, `LONGITUDE = 39.8261818`; `coordinates(): Coordinates` — the single owner of the Kaaba position (the Qibla contract constants reference it) |
 | `SharedKernel\Contracts\DomainException` | Marker interface every domain exception implements — catch this for everything |
@@ -31,7 +31,7 @@ Conventions: public services are `final` with explicit constructor injection and
 
 | Class | Key members |
 | --- | --- |
-| `Prayer\Enums\CalculationMethod` (19 cases) | `MUSLIM_WORLD_LEAGUE, EGYPTIAN, KARACHI, UMM_AL_QURA, DUBAI, MOON_SIGHTING_COMMITTEE, NORTH_AMERICA, KUWAIT, QATAR, SINGAPORE, TURKEY, TEHRAN, MOROCCO, JAKIM, KEMENAG, MUIS, BRUNEI, UOIF, NONE`; `defaultParameters(): CalculationParameters` (throws on `NONE`) |
+| `Prayer\Enums\CalculationMethod` (19 cases: 18 presets + NONE) | `MUSLIM_WORLD_LEAGUE, EGYPTIAN, KARACHI, UMM_AL_QURA, DUBAI, MOON_SIGHTING_COMMITTEE, NORTH_AMERICA, KUWAIT, QATAR, SINGAPORE, TURKEY, TEHRAN, MOROCCO, JAKIM, KEMENAG, MUIS, BRUNEI, UOIF, NONE`; `defaultParameters(): CalculationParameters` (throws on `NONE`) |
 | `Prayer\Enums\Prayer` (10 cases) | `IMSAK, FAJR, SUNRISE, SYURUK, ISHRAQ, DHUHA, DHUHR, ASR, MAGHRIB, ISHA` (schedule order) |
 | `Prayer\Enums\Madhab` | `SHAFI->shadowLength() = 1.0`, `HANAFI = 2.0` |
 | `Prayer\Enums\HighLatitudeRule` | `NONE, MIDDLE_OF_NIGHT, SEVENTH_OF_NIGHT, TWILIGHT_ANGLE, SEASONAL_TWILIGHT` |
@@ -53,7 +53,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `Prayer\Contracts\PolarCircleHandler` | `resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array{coordinates: Coordinates, date: CivilDate}` |
 | `Prayer\Services\PrayerTimesCalculator` | `default(): self`; `defaultFor(CalculationParameters): self`; `calculate(Coordinates\|array, CivilDate, CalculationParameters): PrayerSchedule`; `maghribAt(...): DateTimeImmutable` |
 | `Prayer\Services\TimetableService` | `default(): self`; `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` |
-| `Prayer\Services\NextPrayerResolver` | `default(): self`; `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be UTC) |
+| `Prayer\Services\NextPrayerResolver` | `default(): self`; `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be zero-offset UTC) |
 | `Prayer\Services\SunnahCalculator` | `fromCalculator(PrayerTimesCalculatorInterface, Coordinates, CivilDate, CalculationParameters): self`; `__construct(PrayerSchedule $today, PrayerSchedule $tomorrow)`; `calculate(): SunnahTimes` |
 | `Prayer\Services\NightResolver` | The step that owns the fajr/isha resolution (seasonal / NONE-raw / portions). Exposed for introspection; not a driving port |
 | `Prayer\Strategies\AngleIsha`, `Prayer\Strategies\IntervalIsha` | `IshaRule` implementations (angle vs minutes-after-Maghrib) |
@@ -72,7 +72,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `Qibla\Contracts\GeodesyCalculator` | `MAKKAH_LATITUDE = 21.4225241`, `MAKKAH_LONGITUDE = 39.8261818` (both referencing `SharedKernel\ValueObjects\Kaaba`), `SELF_DISTANCE_KM = 0.001`; `inverse(Coordinates): array{direction, distanceKm}` |
 | `Qibla\ValueObjects\QiblaResult` | `__construct(float $direction [0,360), float $distanceKm)`; `magneticHeading(mixed $declinationEast): float` |
 | `Qibla\Strategies\SphericalCalculator`, `Qibla\Strategies\Wgs84KarneyCalculator` | The two `GeodesyCalculator` implementations (spherical default; WGS84/Karney opt-in) |
-| `Qibla\Traits\ClampsMakkahSelf` | Helper that clamps the bearing to 0.0 below `GeodesyCalculator::SELF_DISTANCE_KM` |
+| `Qibla\Traits\ClampsMakkahSelf` | Helper that clamps bearing and distance to 0.0 below `GeodesyCalculator::SELF_DISTANCE_KM` |
 
 ## Moon — crescent geometry and criteria
 
@@ -91,16 +91,17 @@ Conventions: public services are `final` with explicit constructor injection and
 | Class | Key members |
 | --- | --- |
 | `Hijri\Services\GregorianToHijriConverter` | `default(): self`; `convert(DateTimeImmutable, HijriCalendar, ?Coordinates, ?CalculationParameters, bool $changeAtSunset = false, ?OffsetStore $offsets = null): HijriDate` |
-| `Hijri\Contracts\HijriCalendar` | `fromGregorian(CivilDate): HijriDate`; `toGregorian(HijriDate): CivilDate`; `monthLength(int, int): int`; `shift(HijriDate, int): HijriDate`; `name(): string` |
+| `Hijri\Contracts\HijriCalendar` | `fromGregorian(CivilDate): HijriDate`; `toGregorian(HijriDate): CivilDate`; `monthLength(int, int): int`; `shift(HijriDate, int): HijriDate` (validates the start date; ±3650-day cap); `name(): string` |
 | `Hijri\Contracts\OffsetStore` | `offsetDaysFor(HijriDate, HijriCalendar): int` (caller-implemented; 0 = no-op) |
 | `Hijri\Strategies\TabularCalendar` | `__construct(int $adjustmentDays = 0 [-2,2])`; `name() = 'tabular'` |
 | `Hijri\Strategies\UmmAlQuraCalendar` | `name() = 'uqu'`; coverage 1423-01…1500-12 AH |
-| `Hijri\Strategies\MabimsCalendar` | `__construct(MabimsCountry)`; `name() = 'mabims'`; coverage 1445-01…1500-12 AH |
+| `Hijri\Strategies\MabimsCalendar` | `__construct(MabimsCountry)`; `country(): MabimsCountry`; `name() = 'mabims'`; coverage 1445-01…1500-12 AH |
 | `Hijri\ValueObjects\HijriDate` | `__construct(int $year >= 1, int $month 1–12, int $day 1–30)`; `isoformat()`; `compareTo()`; `equals()` |
 | `Hijri\Enums\HijriMonth` | int enum 1–12; `label(string $locale): string` (`en`/`ar`) |
 | `Hijri\Enums\MabimsCountry` | `MY, ID, SG, BN`; `referenceCoordinates()`; `fromString(string)` (case-insensitive) |
 | `Hijri\Traits\LooksUpMonthStarts`, `Hijri\Traits\ShiftsHijriDays` | Helpers shared by the month-start calendars: `LooksUpMonthStarts` contributes `fromGregorian`/`toGregorian`/`monthLength`, `ShiftsHijriDays` contributes `shift` |
 | `Hijri\Exceptions\HijriOutOfRangeException` | `forDate(string $calendar, string $iso, string $range)`; extends `ValidationException` |
+| `Hijri\Exceptions\HijriDataException` | `forMonthStart(string $iso)`; malformed generated table data; extends `AlFalaqException` |
 
 ## The one stable internal export
 

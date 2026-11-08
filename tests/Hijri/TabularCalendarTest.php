@@ -191,14 +191,44 @@ final class TabularCalendarTest extends TestCase
     }
 
     /**
-     * 1 Muharram 1 AH is outside CivilDate's 1900–2100 span, so it raises.
+     * 1 Muharram 1 AH is outside CivilDate's 1900–2100 span, so it raises
+     * with the effective conversion range, not the misleading arithmetic span.
      *
      * @return void
      */
     public function testToGregorianOutsideCivilDateSpanThrows(): void
     {
+        try {
+            (new TabularCalendar())->toGregorian(new HijriDate(1, 1, 1));
+            self::fail('expected HijriOutOfRangeException');
+        } catch (HijriOutOfRangeException $exception) {
+            self::assertStringContainsString('Hijri dates mapping to Gregorian 1900–2100', $exception->getMessage());
+        }
+    }
+
+    /**
+     * A huge Hijri year is a range error, not a raw intdiv() TypeError.
+     *
+     * @return void
+     */
+    public function testToGregorianHugeYearThrowsHijriOutOfRange(): void
+    {
         $this->expectException(HijriOutOfRangeException::class);
-        (new TabularCalendar())->toGregorian(new HijriDate(1, 1, 1));
+
+        (new TabularCalendar())->toGregorian(new HijriDate(PHP_INT_MAX, 1, 1));
+    }
+
+    /**
+     * The CivilDate window edges convert exactly.
+     *
+     * @return void
+     */
+    public function testToGregorianCivilDateWindowEdges(): void
+    {
+        $calendar = new TabularCalendar();
+
+        self::assertSame('1900-01-01', $calendar->toGregorian(new HijriDate(1317, 8, 28))->isoformat());
+        self::assertSame('2100-12-31', $calendar->toGregorian(new HijriDate(1524, 10, 29))->isoformat());
     }
 
     /**

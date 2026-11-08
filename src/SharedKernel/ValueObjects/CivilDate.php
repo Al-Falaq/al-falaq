@@ -11,6 +11,12 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
  */
 final readonly class CivilDate
 {
+    /** First supported Gregorian year. */
+    public const MIN_YEAR = 1900;
+
+    /** Last supported Gregorian year. */
+    public const MAX_YEAR = 2100;
+
     private function __construct(
         public int $year,
         public int $month,
@@ -27,8 +33,13 @@ final readonly class CivilDate
      */
     public static function fromYmd(int $year, int $month, int $day): self
     {
-        if ($year < 1900 || $year > 2100) {
-            throw new ValidationException(sprintf('Invalid year %d: supported range is 1900–2100.', $year));
+        if ($year < self::MIN_YEAR || $year > self::MAX_YEAR) {
+            throw new ValidationException(sprintf(
+                'Invalid year %d: supported range is %d–%d.',
+                $year,
+                self::MIN_YEAR,
+                self::MAX_YEAR,
+            ));
         }
 
         if (! checkdate($month, $day, $year)) {
@@ -82,10 +93,6 @@ final readonly class CivilDate
     public function plusDays(int $days): self
     {
         $moved = $this->toUtcMidnight()->modify(sprintf('%+d days', $days));
-
-        if ($moved === false) {
-            throw new ValidationException('Unable to add days to civil date.');
-        }
 
         return self::fromDateTime($moved);
     }

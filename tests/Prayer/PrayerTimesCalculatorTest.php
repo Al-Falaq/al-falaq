@@ -521,6 +521,21 @@ final class PrayerTimesCalculatorTest extends TestCase
         );
     }
 
+    public function testMaghribAtThrowsAstronomicalWhenAngleIsUnreachable(): void
+    {
+        // 64°N on 2025-05-29: the sun sets, but it never reaches Tehran's
+        // 4.5° maghrib depression. The fallback must surface that angle
+        // failure instead of treating sunset as maghrib.
+        $this->expectException(AstronomicalException::class);
+        $this->expectExceptionMessage('sun never reaches the angle');
+
+        PrayerTimesCalculator::default()->maghribAt(
+            Coordinates::fromDegrees(64.0, 0.0),
+            CivilDate::fromYmd(2025, 5, 29),
+            CalculationMethod::TEHRAN->defaultParameters(),
+        );
+    }
+
     public function testAccessorsReturnInjectedStrategies(): void
     {
         $solar = new MeanSolarCalculator();
@@ -845,8 +860,8 @@ final class PrayerTimesCalculatorTest extends TestCase
             public function validate(): void {}
         };
 
-        $this->expectException(AstronomicalException::class);
-        $this->expectExceptionMessage('no angle or interval defined');
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Invalid MaghribRule: no angle or interval defined.');
 
         PrayerTimesCalculator::default()->calculate(
             Coordinates::fromDegrees(3.1390, 101.6869),
@@ -868,6 +883,62 @@ final class PrayerTimesCalculatorTest extends TestCase
                 PrayerAdjustments::empty(),
                 PrayerAdjustments::empty(),
             ),
+        );
+    }
+
+    public function testIshaRuleNoAngleOrIntervalThrows(): void
+    {
+        // An IshaRule with neither variant is a configuration error, not an
+        // astronomical one; the NONE high-latitude arm reaches the guard.
+        $rule = new class implements IshaRule {
+            public function minutesAfterMaghrib(): ?int
+            {
+                return null;
+            }
+            public function angle(): ?float
+            {
+                return null;
+            }
+            public function validate(): void {}
+        };
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Invalid IshaRule: no angle or interval defined.');
+
+        PrayerTimesCalculator::default()->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            self::noneParams(18.0, new MinutesAfterSunsetMaghrib(0), $rule),
+        );
+    }
+
+    public function testIshaRuleNoAngleOrIntervalThrowsEvenWithUmmAlQuraRamadanOverride(): void
+    {
+        // The Ramadan interval override must not mask a rule that defines
+        // neither variant.
+        $rule = new class implements IshaRule {
+            public function minutesAfterMaghrib(): ?int
+            {
+                return null;
+            }
+            public function angle(): ?float
+            {
+                return null;
+            }
+            public function validate(): void {}
+        };
+
+        $parameters = CalculationMethod::UMM_AL_QURA->defaultParameters()
+            ->withIshaRule($rule)
+            ->withRamadan(true);
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Invalid IshaRule: no angle or interval defined.');
+
+        PrayerTimesCalculator::defaultFor($parameters)->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            $parameters,
         );
     }
 

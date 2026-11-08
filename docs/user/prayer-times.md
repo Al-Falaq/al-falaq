@@ -107,7 +107,7 @@ If the sun never rises or never sets and your polar rule is `NONE`, `calculate()
 
 ## See also
 
-- [Calculation Methods](calculation-methods/) — the 19 presets and their provenance
+- [Calculation Methods](calculation-methods/) — the 18 presets and their provenance
 - [Madhab](madhab/) — how Asr shadows work
 - [Timetable & Next Prayer](timetable/) — month loops and "next prayer in…" badges
 - [API Reference](api-reference/) — `PrayerTimesCalculator`, `PrayerSchedule`, `CalculationParameters`

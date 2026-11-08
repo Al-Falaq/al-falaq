@@ -8,21 +8,23 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
 
 /**
- * Sunnah night markers in UTC (middle, thirds, tahajjud window, maghrib anchor).
+ * Sunnah night markers (middle, thirds, tahajjud window, maghrib anchor).
  *
+ * Calculator-produced markers are UTC; forZone() converts display zones and
+ * nightFraction() keeps the anchor's zone, both preserving the instants.
  * Anchored at tonight's maghrib and tomorrow's fajr; degenerate intervals
  * (fajr ≤ maghrib, fajr ≤ lastThird) are rejected, never clamped.
  */
 final readonly class SunnahTimes
 {
     /**
-     * Bind tonight's maghrib-to-fajr anchors (all UTC).
+     * Bind tonight's maghrib-to-fajr anchors (instants compare zone-agnostically).
      *
-     * @param \DateTimeImmutable $middleOfNight Mid-maghrib→fajr (UTC).
-     * @param \DateTimeImmutable $firstThird One-third point (UTC).
-     * @param \DateTimeImmutable $lastThird Two-thirds point (UTC).
-     * @param \DateTimeImmutable $fajr Anchoring fajr (UTC).
-     * @param \DateTimeImmutable $maghrib Anchoring maghrib (UTC).
+     * @param \DateTimeImmutable $middleOfNight Mid-maghrib→fajr instant.
+     * @param \DateTimeImmutable $firstThird One-third point.
+     * @param \DateTimeImmutable $lastThird Two-thirds point.
+     * @param \DateTimeImmutable $fajr Anchoring fajr.
+     * @param \DateTimeImmutable $maghrib Anchoring maghrib.
      */
     public function __construct(
         public \DateTimeImmutable $middleOfNight,
@@ -43,7 +45,7 @@ final readonly class SunnahTimes
     /**
      * Tahajjud window: last third up to (excluding) fajr.
      *
-     * @return array{from: \DateTimeImmutable, to: \DateTimeImmutable} Window bounds (UTC).
+     * @return array{from: \DateTimeImmutable, to: \DateTimeImmutable} Window bounds.
      */
     public function tahajjudWindow(): array
     {
@@ -70,10 +72,6 @@ final readonly class SunnahTimes
 
         $zone = $this->maghrib->getTimezone();
 
-        if ($zone === false) {
-            $zone = new \DateTimeZone('UTC');
-        }
-
         $utc = new \DateTimeZone('UTC');
         $maghribUtc = $this->maghrib->setTimezone($utc);
         $fajrUtc = $this->fajr->setTimezone($utc);
@@ -81,10 +79,6 @@ final readonly class SunnahTimes
         $nightSeconds = $fajrUtc->getTimestamp() - $maghribUtc->getTimestamp();
 
         $moved = $maghribUtc->modify(sprintf('+%d seconds', (int) round($nightSeconds * $fraction)));
-
-        if ($moved === false) {
-            throw new ValidationException('Unable to compute Sunnah fraction.');
-        }
 
         $rounded = Minutes::roundedHalfUp($moved);
 

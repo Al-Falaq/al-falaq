@@ -358,7 +358,7 @@ sequenceDiagram
     opt caller-supplied correction
         G->>O: shift(hijri, offset)
     end
-    G-->>H: HijriDate with calendar identity
+    G-->>H: HijriDate
 ```
 
 ## 5. Design patterns and principles
@@ -462,6 +462,8 @@ means versioned astronomical tables shipped as code:
   per-country (`MabimsCountry`) rules on top of shared month starts.
 - Official day corrections are not stored; callers supply them through the
   `OffsetStore` SPI, applied as `calendar->shift($hijri, $offset)`.
+  `MabimsCalendar::country()` exposes the bound member state so a correction
+  table can be keyed per country even though `name()` is always `'mabims'`.
 
 There are no migrations. Table changes are code changes: regenerate via the
 tool, update provenance, and pin new golden vectors.
@@ -536,7 +538,9 @@ no HTML.
 - `CrescentGeometry` / `CrescentVerdict`: altitudes, elongation, ages,
   lag, azimuth delta, illumination, width; verdicts keyed `yallop, odeh,
   mabims1992, neomabims2021`.
-- `HijriDate`: year/month/day plus calendar identity; month labels are
+- `HijriDate`: year/month/day; calendar identity stays with the
+  `HijriCalendar` instance the caller used for conversion
+  (`MabimsCalendar::country()` narrows MABIMS further). Month labels are
   `en`/`ar` only via `HijriMonth::label()` (no ICU).
 
 **What NOT to do:**

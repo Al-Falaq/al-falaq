@@ -28,14 +28,14 @@ final class NextPrayerResolver implements NextPrayerResolverInterface
     /**
      * Resolve the upcoming prayer across the today/tomorrow boundary.
      *
-     * @param PrayerSchedule $today Today's schedule (UTC).
-     * @param PrayerSchedule $tomorrow Tomorrow's schedule (UTC).
-     * @param \DateTimeImmutable $nowUtc Explicit now in UTC (validated).
+     * @param PrayerSchedule $today Today's schedule (zero-offset UTC).
+     * @param PrayerSchedule $tomorrow Tomorrow's schedule (zero-offset UTC).
+     * @param \DateTimeImmutable $nowUtc Explicit now in zero-offset UTC (validated).
      * @return NextPrayer Prayer, its instant, and seconds until it.
      */
     public function resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, \DateTimeImmutable $nowUtc): NextPrayer
     {
-        if ($nowUtc->getTimezone()->getName() !== 'UTC') {
+        if ($nowUtc->getOffset() !== 0) {
             throw new ValidationException('NextPrayerResolver::nowUtc must be UTC.');
         }
 

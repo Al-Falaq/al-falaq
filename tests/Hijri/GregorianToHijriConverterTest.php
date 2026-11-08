@@ -7,7 +7,9 @@ namespace AlFalaq\AlFalaq\Tests\Hijri;
 use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
 use AlFalaq\AlFalaq\Hijri\Contracts\OffsetStore;
 use AlFalaq\AlFalaq\Hijri\Data\UmmAlQuraMonthStarts;
+use AlFalaq\AlFalaq\Hijri\Enums\MabimsCountry;
 use AlFalaq\AlFalaq\Hijri\Services\GregorianToHijriConverter;
+use AlFalaq\AlFalaq\Hijri\Strategies\MabimsCalendar;
 use AlFalaq\AlFalaq\Hijri\Strategies\TabularCalendar;
 use AlFalaq\AlFalaq\Hijri\Strategies\UmmAlQuraCalendar;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
@@ -288,6 +290,46 @@ final class GregorianToHijriConverterTest extends TestCase
     }
 
     /**
+     * At the lower CivilDate edge the backward probe is skipped: there is no
+     * 1899-12-31 to ask about, and the current UTC day still converts.
+     *
+     * @return void
+     */
+    public function testLowerBoundarySkipsTheBackwardProbe(): void
+    {
+        $hijri = GregorianToHijriConverter::default()->convert(
+            new DateTimeImmutable('1900-01-01T06:00:00+00:00'),
+            new TabularCalendar(),
+            $this->kualaLumpur(),
+            $this->parameters(),
+            true,
+        );
+
+        self::assertSame('1317-08-28', $hijri->isoformat());
+    }
+
+    /**
+     * When the previous UTC day's schedule is undefined but the current day's
+     * maghrib is defined, the backward probe is skipped instead of failing.
+     *
+     * @return void
+     */
+    public function testPolarPreviousDaySkipsTheBackwardProbe(): void
+    {
+        $parameters = $this->parameters()->withPolarCircleRule(PolarCircleRule::NONE);
+
+        $hijri = GregorianToHijriConverter::default()->convert(
+            new DateTimeImmutable('2025-01-15T09:00:00+00:00'),
+            new TabularCalendar(),
+            Coordinates::fromDegrees(69.6496, 18.9553),
+            $parameters,
+            true,
+        );
+
+        self::assertSame('1446-07-15', $hijri->isoformat());
+    }
+
+    /**
      * A DST spring-forward does not disturb the local civil date.
      *
      * @return void
@@ -395,6 +437,44 @@ final class GregorianToHijriConverterTest extends TestCase
         );
 
         self::assertSame(['1446-09-01|tabular'], $store->calls);
+    }
+
+    /**
+     * The store can distinguish MABIMS member states even though
+     * name() is the generic 'mabims' key for every country.
+     *
+     * @return void
+     */
+    public function testOffsetStoreCanIdentifyTheMabimsCountry(): void
+    {
+        $store = new class implements OffsetStore {
+            /** @var list<string> Recorded calendar identities. */
+            public array $identities = [];
+
+            /**
+             * Record the country when the calendar is MABIMS.
+             *
+             * @param HijriDate $date Converted date.
+             * @param HijriCalendar $calendar Source calendar.
+             * @return int Always 0.
+             */
+            public function offsetDaysFor(HijriDate $date, HijriCalendar $calendar): int
+            {
+                $this->identities[] = $calendar instanceof MabimsCalendar
+                    ? $calendar->country()->value
+                    : $calendar->name();
+
+                return 0;
+            }
+        };
+
+        GregorianToHijriConverter::default()->convert(
+            new DateTimeImmutable('2025-03-01 12:00:00', new DateTimeZone('UTC')),
+            new MabimsCalendar(MabimsCountry::SG),
+            offsets: $store,
+        );
+
+        self::assertSame(['SG'], $store->identities);
     }
 
     /**

@@ -79,6 +79,16 @@ final class SharedKernelTest extends TestCase
         Minutes::roundedHalfUp(new \DateTimeImmutable('2015-07-12 12:34:30', new \DateTimeZone('America/New_York')));
     }
 
+    public function testAcceptsZeroOffsetMinutesInputAndNormalizesToNamedUtc(): void
+    {
+        $base = new \DateTimeImmutable('2015-07-12 12:34:30', new \DateTimeZone('+00:00'));
+
+        $rounded = Minutes::roundedHalfUp($base);
+
+        self::assertSame('12:35:00', $rounded->format('H:i:s'));
+        self::assertSame('UTC', $rounded->getTimezone()->getName());
+    }
+
     public function testComputesJulianDayForAKnownDate(): void
     {
         // 2000-01-01 00:00 UTC => JD 2451544.5
@@ -271,26 +281,6 @@ final class SharedKernelTest extends TestCase
         );
     }
 
-    public function testPrivateConstructorsAreInvocableViaReflection(): void
-    {
-        // pcov entry tracking: invoking the private ctor via reflection marks it entered.
-        $kaabaRef = new \ReflectionClass(Kaaba::class);
-        $kaabaCtor = $kaabaRef->getConstructor();
-        self::assertNotNull($kaabaCtor);
-        $kaabaInstance = $kaabaRef->newInstanceWithoutConstructor();
-        $kaabaCtor->invoke($kaabaInstance);
-        self::assertInstanceOf(Kaaba::class, $kaabaInstance);
-        self::assertSame(Kaaba::LATITUDE, 21.4225241);
-        self::assertSame(Kaaba::LONGITUDE, 39.8261818);
-
-        $minutesRef = new \ReflectionClass(Minutes::class);
-        $minutesCtor = $minutesRef->getConstructor();
-        self::assertNotNull($minutesCtor);
-        $minutesInstance = $minutesRef->newInstanceWithoutConstructor();
-        $minutesCtor->invoke($minutesInstance);
-        self::assertInstanceOf(Minutes::class, $minutesInstance);
-    }
-
     public function testCoordinatesEqualsAndToStringCovered(): void
     {
         $c = Coordinates::fromDegrees(-33.8688, 151.2093);
@@ -304,24 +294,6 @@ final class SharedKernelTest extends TestCase
     {
         $this->expectException(InvalidCoordinatesException::class);
         Coordinates::fromDegrees(0.0, 181.0);
-    }
-
-    public function testValueObjectPrivateConstructorsAreInvocableViaReflection(): void
-    {
-        // pcov entry tracking: invoking the private ctor via reflection marks it entered.
-        $coordRef = new \ReflectionClass(Coordinates::class);
-        $coordCtor = $coordRef->getConstructor();
-        self::assertNotNull($coordCtor);
-        $coordInstance = $coordRef->newInstanceWithoutConstructor();
-        $coordCtor->invoke($coordInstance, 3.0, 10.0);
-        self::assertSame(3.0, $coordInstance->latitude);
-
-        $civilRef = new \ReflectionClass(CivilDate::class);
-        $civilCtor = $civilRef->getConstructor();
-        self::assertNotNull($civilCtor);
-        $civilInstance = $civilRef->newInstanceWithoutConstructor();
-        $civilCtor->invoke($civilInstance, 2025, 1, 15);
-        self::assertSame('2025-01-15', $civilInstance->isoformat());
     }
 
     public function testCivilDateToUtcMidnightRejectsUnrepresentableYear(): void

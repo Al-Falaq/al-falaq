@@ -6,6 +6,7 @@ namespace AlFalaq\AlFalaq\Tests\Wiring;
 
 use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
+use AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
 use AlFalaq\AlFalaq\Prayer\Contracts\NextPrayerResolverInterface;
@@ -67,6 +68,59 @@ final class CalculatorWiringTest extends TestCase
 
         self::assertInstanceOf(SolarDayEngine::class, $solar);
         self::assertInstanceOf(MeanSolarCalculator::class, $solar);
+    }
+
+    public function testZeroOffsetEngineInstantsFlowThroughThePipeline(): void
+    {
+        $engine = new class implements SolarDayEngine {
+            public function solarTime(Coordinates $coordinates, CivilDate $date, mixed $elevationM): SolarTime
+            {
+                $midnight = $date->toUtcMidnight()->getTimestamp();
+
+                return new SolarTime(
+                    new \DateTimeImmutable('@' . ($midnight + 43200)),
+                    new \DateTimeImmutable('@' . ($midnight + 21600)),
+                    new \DateTimeImmutable('@' . ($midnight + 64800)),
+                );
+            }
+
+            public function hourAngleFloat(Coordinates $coordinates, CivilDate $date, mixed $elevationM, float $angleDeg, bool $afterTransit): float
+            {
+                return 3.0;
+            }
+
+            public function hourAngle(Coordinates $coordinates, CivilDate $date, mixed $elevationM, float $angleDeg, bool $afterTransit): \DateTimeImmutable
+            {
+                return new \DateTimeImmutable('@' . ($date->toUtcMidnight()->getTimestamp() + 10800));
+            }
+
+            public function afternoon(Coordinates $coordinates, CivilDate $date, mixed $elevationM, mixed $shadowLength): \DateTimeImmutable
+            {
+                return new \DateTimeImmutable('@' . ($date->toUtcMidnight()->getTimestamp() + 54000));
+            }
+
+            public function isSolarDefined(Coordinates $coordinates, CivilDate $date, mixed $elevationM): bool
+            {
+                return true;
+            }
+        };
+
+        $calculator = new PrayerTimesCalculator(
+            $engine,
+            new MiddleOfNightCorrection(),
+            new NearestLatitudeHandler(),
+            new SeasonAdjustedTwilight(),
+        );
+
+        $schedule = $calculator->calculate(
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 1, 15),
+            CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters(),
+        );
+
+        self::assertSame('UTC', $schedule->fajr->getTimezone()->getName());
+        self::assertSame('UTC', $schedule->asr->getTimezone()->getName());
+        self::assertSame('UTC', $schedule->maghrib->getTimezone()->getName());
     }
 
     public function testResolverAndTimetableSatisfyTheirContracts(): void

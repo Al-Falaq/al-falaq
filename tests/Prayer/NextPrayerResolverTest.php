@@ -104,6 +104,19 @@ final class NextPrayerResolverTest extends TestCase
         (new NextPrayerResolver())->resolve($today, $tomorrow, $nowNy);
     }
 
+    public function testZeroOffsetNowIsAccepted(): void
+    {
+        [$today, $tomorrow] = $this->klSchedules();
+
+        $nowUtc = $today->timeFor(Prayer::DHUHR)->modify('+1 hour');
+        self::assertInstanceOf(\DateTimeImmutable::class, $nowUtc);
+        $nowPlusZero = $nowUtc->setTimezone(new \DateTimeZone('+00:00'));
+
+        $result = (new NextPrayerResolver())->resolve($today, $tomorrow, $nowPlusZero);
+
+        self::assertSame(Prayer::ASR, $result->prayer);
+    }
+
     public function testDstSpringForwardDayUsesUtcMath(): void
     {
         $coords = Coordinates::fromDegrees(40.7128, -74.0060);
