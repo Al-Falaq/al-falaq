@@ -7,7 +7,7 @@ description: Upgrade between al-falaq versions — what changed, what breaks, an
 
 This page collects the changes that require your attention when upgrading.
 
-## Unreleased — 0.2.0
+## 0.2.0
 
 ### `ClockView` removed
 

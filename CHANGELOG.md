@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No changes yet.
+
+## [0.2.0] - 2026-11-15
+
 ### Added
 
 - `MabimsCalendar::country()` exposes the bound member state so a per-country
@@ -191,6 +195,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cases. The M1 freeze shipped 17 presets plus `NONE` (11 pin cells and six
   table-confirmed conventions); UOIF is the Wave-2 18th preset, never part
   of pin parity.
+- The generated changelog page no longer starts with an HTML comment:
+  `starlight-versions` re-parses every page as MDX when freezing a release,
+  and `remark-mdx` rejects `<!-- -->`, so `npm run build` failed before the
+  0.2.0 docs snapshot could be generated. The page stays generated and
+  CI-checked; only the invisible marker is gone.
 
 ## [0.1.1] - 2026-10-14
 
