@@ -12,8 +12,8 @@
     "audit": "npm audit --omit=dev --audit-level=moderate"
   },
   "dependencies": {
-    "@astrojs/starlight": "0.42.8",
-    "astro": "7.4.4",
+    "@astrojs/starlight": "0.42.10",
+    "astro": "7.4.7",
     "starlight-versions": "0.10.2"
   }
 }
