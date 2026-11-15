@@ -422,4 +422,57 @@ final readonly class CalculationParameters
     {
         return $this->copyWith(methodAdjustments: $methodAdjustments);
     }
+
+    /**
+     * Wire snapshot of the full effective policy (rules expanded, both layers).
+     *
+     * This is a record of what ran, not a re-input grammar: the rule blocks
+     * carry both keys and set the unused one to null.
+     *
+     * @return array{
+     *     method: string,
+     *     madhab: string,
+     *     high_latitude_rule: string,
+     *     polar_circle_rule: string,
+     *     fajr_angle_degrees: float,
+     *     isha_rule: array{type: string, angle_degrees: float|null, minutes: int|null},
+     *     maghrib_rule: array{type: string, angle_degrees: float|null, minutes: int|null},
+     *     dhuhr_offset_minutes: int,
+     *     imsak_offset_minutes: int,
+     *     ishraq_offset_minutes: int,
+     *     dhuha_offset_minutes: int,
+     *     elevation_m: float,
+     *     is_ramadan: bool,
+     *     method_adjustments: array<string, int>,
+     *     adjustments: array<string, int>,
+     * }
+     */
+    public function toArray(): array
+    {
+        return [
+            'method' => $this->method->value,
+            'madhab' => $this->madhab->value,
+            'high_latitude_rule' => $this->highLatitudeRule->value,
+            'polar_circle_rule' => $this->polarCircleRule->value,
+            'fajr_angle_degrees' => $this->fajrAngle,
+            'isha_rule' => [
+                'type' => $this->ishaRule->angle() !== null ? 'angle' : 'interval',
+                'angle_degrees' => $this->ishaRule->angle(),
+                'minutes' => $this->ishaRule->minutesAfterMaghrib(),
+            ],
+            'maghrib_rule' => [
+                'type' => $this->maghribRule->angle() !== null ? 'angle' : 'interval',
+                'angle_degrees' => $this->maghribRule->angle(),
+                'minutes' => $this->maghribRule->minutesAfterSunset(),
+            ],
+            'dhuhr_offset_minutes' => $this->dhuhrOffsetMinutes,
+            'imsak_offset_minutes' => $this->imsakOffsetMinutes,
+            'ishraq_offset_minutes' => $this->ishraqOffsetMinutes,
+            'dhuha_offset_minutes' => $this->dhuhaOffsetMinutes,
+            'elevation_m' => $this->elevationM,
+            'is_ramadan' => $this->isRamadan,
+            'method_adjustments' => $this->methodAdjustments->toArray(),
+            'adjustments' => $this->adjustments->toArray(),
+        ];
+    }
 }

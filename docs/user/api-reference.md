@@ -45,8 +45,8 @@ Conventions: public services are `final` with explicit constructor injection and
 | `Prayer\Enums\Madhab` | `SHAFI->shadowLength() = 1.0`, `HANAFI = 2.0` |
 | `Prayer\Enums\HighLatitudeRule` | `NONE, MIDDLE_OF_NIGHT, SEVENTH_OF_NIGHT, TWILIGHT_ANGLE, SEASONAL_TWILIGHT` |
 | `Prayer\Enums\PolarCircleRule` | `NONE, NEAREST_LATITUDE, NEAREST_DAY, MAKKAH` |
-| `Prayer\ValueObjects\CalculationParameters` | `create(...)` full factory; `withMadhab/withElevationM/withAdjustments/withMethodAdjustments/withRamadan/withFajrAngle/withIshaRule/withMaghribRule/withHighLatitudeRule/withPolarCircleRule/withImsakOffset/withIshraqOffset/withDhuhaOffset/withDhuhrOffset()` |
-| `Prayer\ValueObjects\PrayerAdjustments` | `empty(): self`; `with(Prayer, int [-60,60]): self`; `for(Prayer): int`; `combinedWith(self): self` |
+| `Prayer\ValueObjects\CalculationParameters` | `create(...)` full factory; `withMadhab/withElevationM/withAdjustments/withMethodAdjustments/withRamadan/withFajrAngle/withIshaRule/withMaghribRule/withHighLatitudeRule/withPolarCircleRule/withImsakOffset/withIshraqOffset/withDhuhaOffset/withDhuhrOffset()`; `toArray()` policy snapshot (rules expanded, both adjustment layers) |
+| `Prayer\ValueObjects\PrayerAdjustments` | `empty(): self`; `with(Prayer, int [-60,60]): self`; `for(Prayer): int`; `combinedWith(self): self`; `toArray()` (all ten keys in enum order, unset reads 0) |
 | `Prayer\ValueObjects\PrayerSchedule` | `timeFor(Prayer)`, `all()` (ordered UTC), `toArray()` (UTC ISO-8601), `forZone(DateTimeZone): DisplaySchedule`, `nightLength()` |
 | `Prayer\ValueObjects\DisplaySchedule` | `timeFor(Prayer)`, `all()`, `toArray()` (display-zone ISO-8601) |
 | `Prayer\ValueObjects\NextPrayer` | `__construct(Prayer $prayer, DateTimeImmutable $at, int $inSeconds)` |

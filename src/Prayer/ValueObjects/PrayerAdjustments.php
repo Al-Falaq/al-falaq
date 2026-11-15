@@ -81,4 +81,20 @@ final readonly class PrayerAdjustments
 
         return new self($merged);
     }
+
+    /**
+     * Wire snapshot: all ten prayer keys in enum order; unset reads 0.
+     *
+     * @return array<string, int> Prayer value → effective layer minutes.
+     */
+    public function toArray(): array
+    {
+        $out = [];
+
+        foreach (Prayer::cases() as $prayer) {
+            $out[$prayer->value] = $this->for($prayer);
+        }
+
+        return $out;
+    }
 }
