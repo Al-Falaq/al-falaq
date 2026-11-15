@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
@@ -19,8 +21,13 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  * ValidationException and is treated as unsolvable. Exhaustion means the
  * exact geographic poles, where no rise/set date exists numerically.
  */
-final class NearestDayHandler implements PolarCircleHandler
+final class NearestDayHandler implements PolarCircleHandler, IdentifiesCalculationSource
 {
+    /**
+     * Registry id for this fallback.
+     */
+    public const SOURCE_ID = 'prayer.polar.nearest_day';
+
     /**
      * Resolve to the nearest date with sunrise/sunset, keeping the location.
      *
@@ -51,5 +58,15 @@ final class NearestDayHandler implements PolarCircleHandler
             . 'hour-angle is singular and no such date exists numerically; '
             . 'use PolarCircleRule.NEAREST_LATITUDE or MAKKAH instead.',
         );
+    }
+
+    /**
+     * Stable provenance identity for this fallback.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }

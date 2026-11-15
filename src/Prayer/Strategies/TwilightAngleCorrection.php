@@ -6,15 +6,22 @@ namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\HighLatitudeCorrection;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\NightPortions;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 
 /**
  * Fixed-twilight-angle high-latitude correction (M1).
  *
  * Pin pointer: CalculationParameters::night_portions.
  */
-final class TwilightAngleCorrection implements HighLatitudeCorrection
+final class TwilightAngleCorrection implements HighLatitudeCorrection, IdentifiesCalculationSource
 {
+    /**
+     * Registry id for this correction.
+     */
+    public const SOURCE_ID = 'prayer.high-latitude.twilight_angle';
+
     /**
      * Split the night at the configured twilight angle (M1).
      *
@@ -29,5 +36,15 @@ final class TwilightAngleCorrection implements HighLatitudeCorrection
         }
 
         return new NightPortions($fajrAngle / 60.0, $ishaAngle / 60.0);
+    }
+
+    /**
+     * Stable provenance identity for this correction.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }

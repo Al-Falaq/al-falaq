@@ -44,6 +44,14 @@ enum CalculationMethod: string
     case UOIF = 'uoif';
 
     /**
+     * Version of the frozen preset-defaults contract.
+     *
+     * Independent of the package version: bump this whenever any preset
+     * default changes, so metadata pins the exact defaults that ran.
+     */
+    public const SOURCE_VERSION = 'method-defaults-v1';
+
+    /**
      * Shipped defaults for this method (frozen M1 from pin a7baa8b).
      *
      * Pin-known cells trace to MethodsParameters.py @ a7baa8b plus the

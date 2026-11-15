@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Kaaba;
@@ -16,8 +18,13 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Kaaba;
  *
  * Keeps the input date; only the location is remapped.
  */
-final class MakkahHandler implements PolarCircleHandler
+final class MakkahHandler implements PolarCircleHandler, IdentifiesCalculationSource
 {
+    /**
+     * Registry id for this fallback.
+     */
+    public const SOURCE_ID = 'prayer.polar.makkah';
+
     /**
      * Replace any location with Makkah.
      *
@@ -33,5 +40,15 @@ final class MakkahHandler implements PolarCircleHandler
             'coordinates' => Kaaba::coordinates(),
             'date' => $date,
         ];
+    }
+
+    /**
+     * Stable provenance identity for this fallback.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }

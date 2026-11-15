@@ -27,6 +27,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `SharedKernel\ValueObjects\CalculationWarning` | `__construct(WarningCode, string $message, array $details = [])`; scalar-only details with sorted keys; `toArray()` |
 | `SharedKernel\ValueObjects\CalculationSource` | `algorithm(id, ?version, ?range)`, `generatedData(id, digest, range, ?version)`, `officialData(...)`, `callerInput(id)`; five-key `toArray()` |
 | `SharedKernel\ValueObjects\CalculationMetadata` | `SCHEMA_VERSION = '1.0'`; `create(CalculationContext, warnings = [], sources = [], ?LibraryVersion): self` (sorts, de-duplicates, derives status); six-key `toArray()` |
+| `SharedKernel\Contracts\IdentifiesCalculationSource` | Driven capability: `calculationSource(): CalculationSource`. Built-in engines/strategies declare a `SOURCE_ID`; a component without it is reported as `custom.<component>` plus an `unidentified_calculation_source` warning |
 | `SharedKernel\Contracts\DomainException` | Marker interface every domain exception implements — catch this for everything |
 | `SharedKernel\Exceptions\AlFalaqException` | Abstract base for every exception in the library (`extends \RuntimeException implements DomainException`) |
 | `SharedKernel\Exceptions\ValidationException` | Invalid input that is not coordinates-specific; `extends AlFalaqException` |
@@ -39,7 +40,7 @@ Conventions: public services are `final` with explicit constructor injection and
 
 | Class | Key members |
 | --- | --- |
-| `Prayer\Enums\CalculationMethod` (19 cases: 18 presets + NONE) | `MUSLIM_WORLD_LEAGUE, EGYPTIAN, KARACHI, UMM_AL_QURA, DUBAI, MOON_SIGHTING_COMMITTEE, NORTH_AMERICA, KUWAIT, QATAR, SINGAPORE, TURKEY, TEHRAN, MOROCCO, JAKIM, KEMENAG, MUIS, BRUNEI, UOIF, NONE`; `defaultParameters(): CalculationParameters` (throws on `NONE`) |
+| `Prayer\Enums\CalculationMethod` (19 cases: 18 presets + NONE) | `MUSLIM_WORLD_LEAGUE, EGYPTIAN, KARACHI, UMM_AL_QURA, DUBAI, MOON_SIGHTING_COMMITTEE, NORTH_AMERICA, KUWAIT, QATAR, SINGAPORE, TURKEY, TEHRAN, MOROCCO, JAKIM, KEMENAG, MUIS, BRUNEI, UOIF, NONE`; `SOURCE_VERSION = 'method-defaults-v1'`; `defaultParameters(): CalculationParameters` (throws on `NONE`) |
 | `Prayer\Enums\Prayer` (10 cases) | `IMSAK, FAJR, SUNRISE, SYURUK, ISHRAQ, DHUHA, DHUHR, ASR, MAGHRIB, ISHA` (schedule order) |
 | `Prayer\Enums\Madhab` | `SHAFI->shadowLength() = 1.0`, `HANAFI = 2.0` |
 | `Prayer\Enums\HighLatitudeRule` | `NONE, MIDDLE_OF_NIGHT, SEVENTH_OF_NIGHT, TWILIGHT_ANGLE, SEASONAL_TWILIGHT` |
@@ -64,11 +65,11 @@ Conventions: public services are `final` with explicit constructor injection and
 | `Prayer\Services\NextPrayerResolver` | `default(): self`; `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be zero-offset UTC) |
 | `Prayer\Services\SunnahCalculator` | `fromCalculator(PrayerTimesCalculatorInterface, Coordinates, CivilDate, CalculationParameters): self`; `__construct(PrayerSchedule $today, PrayerSchedule $tomorrow)`; `calculate(): SunnahTimes` |
 | `Prayer\Services\NightResolver` | The step that owns the fajr/isha resolution (seasonal / NONE-raw / portions). Exposed for introspection; not a driving port |
-| `Prayer\Strategies\AngleIsha`, `Prayer\Strategies\IntervalIsha` | `IshaRule` implementations (angle vs minutes-after-Maghrib) |
-| `Prayer\Strategies\AngleMaghrib`, `Prayer\Strategies\MinutesAfterSunsetMaghrib` | `MaghribRule` implementations (angle vs minutes-after-sunset) |
-| `Prayer\Strategies\MiddleOfNightCorrection`, `Prayer\Strategies\SeventhOfNightCorrection`, `Prayer\Strategies\TwilightAngleCorrection` | `HighLatitudeCorrection` implementations |
-| `Prayer\Strategies\NearestLatitudeHandler`, `Prayer\Strategies\NearestDayHandler`, `Prayer\Strategies\MakkahHandler`, `Prayer\Strategies\ThrowHandler` | `PolarCircleHandler` implementations |
-| `Prayer\Strategies\SeasonAdjustedTwilight` | `TwilightModel` implementation (MSC seasonal caps) |
+| `Prayer\Strategies\AngleIsha`, `Prayer\Strategies\IntervalIsha` | `IshaRule` implementations (angle vs minutes-after-Maghrib); `IdentifiesCalculationSource` with `SOURCE_ID` |
+| `Prayer\Strategies\AngleMaghrib`, `Prayer\Strategies\MinutesAfterSunsetMaghrib` | `MaghribRule` implementations (angle vs minutes-after-sunset); `IdentifiesCalculationSource` with `SOURCE_ID` |
+| `Prayer\Strategies\MiddleOfNightCorrection`, `Prayer\Strategies\SeventhOfNightCorrection`, `Prayer\Strategies\TwilightAngleCorrection` | `HighLatitudeCorrection` implementations; `IdentifiesCalculationSource` with `SOURCE_ID` |
+| `Prayer\Strategies\NearestLatitudeHandler`, `Prayer\Strategies\NearestDayHandler`, `Prayer\Strategies\MakkahHandler`, `Prayer\Strategies\ThrowHandler` | `PolarCircleHandler` implementations; `IdentifiesCalculationSource` with `SOURCE_ID` (`ThrowHandler`'s `prayer.polar.none` is policy-only and never emitted) |
+| `Prayer\Strategies\SeasonAdjustedTwilight` | `TwilightModel` implementation (MSC seasonal caps); one `SOURCE_ID` for both the seasonal mode and the twilight model |
 | `Prayer\Traits\NormalizesCoordinatesInput` | Helper that accepts a `Coordinates` value object or a `[lat, lon]` pair |
 | `Prayer\Exceptions\UndefinedScheduleException` | `polar(Coordinates, CivilDate, ?string $rule)`; extends `AstronomicalException` |
 
