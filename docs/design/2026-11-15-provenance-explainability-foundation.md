@@ -1116,7 +1116,7 @@ built by the service from the documented id and are not component objects.
 | `prayer.isha.interval` | `ALGORITHM` | — | `IntervalIsha` |
 | `prayer.maghrib.angle` | `ALGORITHM` | — | `AngleMaghrib` |
 | `prayer.maghrib.interval` | `ALGORITHM` | — | `MinutesAfterSunsetMaghrib` |
-| `caller.adjustments` | `CALLER_INPUT` | — | non-zero caller adjustment layer |
+| `caller.adjustments` | `CALLER_INPUT` | — | non-empty caller adjustment layer |
 | `qibla.spherical` | `ALGORITHM` | version `todhunter-haversine` | `SphericalCalculator` |
 | `qibla.wgs84-karney` | `ALGORITHM` | version `geographiclib-2.1` | `Wgs84KarneyCalculator` |
 | `moon.ephemeris.meeus-2ed` | `ALGORITHM` | version `meeus-2ed` | `CrescentEphemeris` |
