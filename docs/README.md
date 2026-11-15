@@ -10,6 +10,7 @@ that owns it, and link to the other tree instead of repeating it.
 | `docs/` | contributors and maintainers | algorithm appendices, provenance, internal invariants, error-message targets | no |
 | `docs/user/` | library users | installation, usage, API reference, migration, changelog, citations | yes (Astro Starlight) |
 | `docs/plans/` | maintainers | historical implementation plans | no |
+| `docs/design/` | maintainers and implementers | design specs frozen before multi-phase implementation | no |
 | `docs/artifacts/` | maintainers and reviewers | dated point-in-time audits and strategic reports | no |
 | `ARCHITECTURE.md`, `UQ_PROVENANCE.md` | contributors | architecture and table provenance | repo only |
 
@@ -25,6 +26,16 @@ that owns it, and link to the other tree instead of repeating it.
 | [polar.md](polar.md) | polar fallback internals | [user/polar-regions.md](user/polar-regions.md) |
 | [migration.md](migration.md) | M1-M5 architecture migration | [user/migration.md](user/migration.md) |
 | [integrations.md](integrations.md) | executable plain-`new` wiring | [user/integration.md](user/integration.md) |
+
+## Design specs
+
+Pre-implementation design decisions for work that spans phases or changes the
+public vocabulary. A spec records the chosen shape and trade-offs; it is not a
+task list. Implementation plans live in `docs/plans/` once the spec is accepted.
+
+| Spec | Scope |
+|---|---|
+| [2026-11-15-provenance-explainability-foundation.md](design/2026-11-15-provenance-explainability-foundation.md) | P0.1 provenance/explainability vocabulary, per-context metadata, serialization, and A1–A3 sequencing |
 
 ## Artifacts
 
@@ -43,6 +54,8 @@ still cite the original root filenames; the links above are canonical.
 - New user-facing page: add it under `docs/user/`, wire it into
   `docs_site/astro.config.mjs`, and follow the release snapshot process.
 - New contributor note: add it under `docs/` and add a row to this map.
+- New design spec: add it under `docs/design/` and add a row to this map. Link
+  the implementation plan to it once written.
 - Never state the same fact in both trees. `docs/` links to `docs/user/` for
   usage; `docs/user/` does not link to internals.
 - Error messages cite `docs/*.md`; `tests/ArchDocsTest` fails if a cited page
