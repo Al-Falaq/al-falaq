@@ -19,6 +19,11 @@ Conventions: public services are `final` with explicit constructor injection and
 | `SharedKernel\ValueObjects\Minutes` | `add(DateTimeImmutable, int): DateTimeImmutable`; `roundedHalfUp(DateTimeImmutable $utc): DateTimeImmutable` (zero-offset UTC; normalized to named UTC, half-up) |
 | `SharedKernel\ValueObjects\JulianDay` | `fromCivilDate(CivilDate): self` (Fliegel–Van Flandern, day number at 00:00 UTC); `day` (raw float); `toFloat(): float` (astronomy internals) |
 | `SharedKernel\ValueObjects\Kaaba` | `LATITUDE = 21.4225241`, `LONGITUDE = 39.8261818`; `coordinates(): Coordinates` — the single owner of the Kaaba position (the Qibla contract constants reference it) |
+| `SharedKernel\Enums\CalculationContext` | `prayer`, `qibla`, `moon`, `hijri` — the context a metadata envelope describes |
+| `SharedKernel\Enums\CalculationStatus` | `complete`, `extrapolated`, `fallback_applied`, `indeterminate`, `decision_required` (ranked in that order; derived, never supplied) |
+| `SharedKernel\Enums\WarningCode` | Stable warning identifiers (`polar_fallback_applied`, `delta_t_extrapolated`, …); human messages are not part of the contract |
+| `SharedKernel\Enums\SourceKind` | `algorithm`, `generated_data`, `official_data`, `caller_input` |
+| `SharedKernel\ValueObjects\LibraryVersion` | `CURRENT = '0.3.0-dev'`; `current(): self`; `fromString(string): self` (semver with optional prerelease); `__toString()` |
 | `SharedKernel\Contracts\DomainException` | Marker interface every domain exception implements — catch this for everything |
 | `SharedKernel\Exceptions\AlFalaqException` | Abstract base for every exception in the library (`extends \RuntimeException implements DomainException`) |
 | `SharedKernel\Exceptions\ValidationException` | Invalid input that is not coordinates-specific; `extends AlFalaqException` |
