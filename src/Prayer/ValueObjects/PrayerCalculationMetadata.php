@@ -46,7 +46,19 @@ final readonly class PrayerCalculationMetadata
     /**
      * Wire shape: the common six keys first, then the prayer blocks.
      *
-     * @return array<string, mixed> JSON-safe prayer metadata.
+     * @return array{
+     *     schema_version: string,
+     *     context: string,
+     *     status: string,
+     *     library_version: string,
+     *     warnings: list<array{code: string, message: string, details: array<string, int|float|string|bool|null>}>,
+     *     sources: list<array{id: string, kind: string, version: string|null, digest: string|null, range: string|null}>,
+     *     input: array{coordinates: array{latitude: float, longitude: float}, date: string},
+     *     effective_input: array{coordinates: array{latitude: float, longitude: float}, date: string},
+     *     policy: array<string, mixed>,
+     *     fallback: array{applied: bool, kind: string|null, rule: string|null},
+     *     rounding: string,
+     * } JSON-safe prayer metadata.
      */
     public function toArray(): array
     {

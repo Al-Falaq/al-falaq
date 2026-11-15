@@ -63,7 +63,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `Prayer\Contracts\HighLatitudeCorrection` | `portions(float $fajrAngle, ?float $ishaAngle): NightPortions` |
 | `Prayer\Contracts\TwilightModel` | `seasonalSeconds(int $dayOfYear, int $year, float $latitude): array{morning: int, evening: int}` — the MSC seasonal caps |
 | `Prayer\Contracts\PolarCircleHandler` | `resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array{coordinates: Coordinates, date: CivilDate}` |
-| `Prayer\Services\PrayerTimesCalculator` | `default(): self`; `defaultFor(CalculationParameters): self`; `calculate(Coordinates\|array, CivilDate, CalculationParameters): PrayerSchedule`; `maghribAt(...): DateTimeImmutable` |
+| `Prayer\Services\PrayerTimesCalculator` | `default(): self`; `defaultFor(CalculationParameters): self`; `calculate(Coordinates\|array, CivilDate, CalculationParameters): PrayerSchedule`; `calculateWithMetadata(...): PrayerCalculationOutcome` (implements `PrayerMetadataCalculatorInterface`); `maghribAt(...): DateTimeImmutable` |
 | `Prayer\Services\TimetableService` | `default(): self`; `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` |
 | `Prayer\Services\NextPrayerResolver` | `default(): self`; `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be zero-offset UTC) |
 | `Prayer\Services\SunnahCalculator` | `fromCalculator(PrayerTimesCalculatorInterface, Coordinates, CivilDate, CalculationParameters): self`; `__construct(PrayerSchedule $today, PrayerSchedule $tomorrow)`; `calculate(): SunnahTimes` |

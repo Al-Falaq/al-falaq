@@ -70,7 +70,14 @@ final readonly class CalculationMetadata
     /**
      * Wire shape with the fixed six-key order.
      *
-     * @return array<string, mixed> Schema version, context, status, version, warnings, sources.
+     * @return array{
+     *     schema_version: string,
+     *     context: string,
+     *     status: string,
+     *     library_version: string,
+     *     warnings: list<array{code: string, message: string, details: array<string, int|float|string|bool|null>}>,
+     *     sources: list<array{id: string, kind: string, version: string|null, digest: string|null, range: string|null}>,
+     * } Schema version, context, status, version, warnings, sources.
      */
     public function toArray(): array
     {
