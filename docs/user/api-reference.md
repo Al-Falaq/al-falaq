@@ -52,7 +52,10 @@ Conventions: public services are `final` with explicit constructor injection and
 | `Prayer\ValueObjects\NextPrayer` | `__construct(Prayer $prayer, DateTimeImmutable $at, int $inSeconds)` |
 | `Prayer\ValueObjects\NightPortions` | `fajrPortion`, `ishaPortion` — the night split the high-latitude rules use |
 | `Prayer\ValueObjects\SunnahTimes` | `__construct(middleOfNight, firstThird, lastThird, fajr, maghrib)`; `tahajjudWindow()`; `nightFraction(float $f in (0,1))`; `forZone(DateTimeZone): self` |
+| `Prayer\ValueObjects\PrayerCalculationMetadata` | `ROUNDING = 'half_up_to_minute_utc'`; `__construct(CalculationMetadata $common, requested/effective coordinates+date, CalculationParameters, ?PolarCircleRule $fallbackRule)`; `toArray()` |
+| `Prayer\ValueObjects\PrayerCalculationOutcome` | `__construct(PrayerSchedule $result, PrayerCalculationMetadata $metadata)`; `toArray()` (`result` + `metadata`) |
 | `Prayer\Contracts\PrayerTimesCalculatorInterface` | `calculate(Coordinates, CivilDate, CalculationParameters): PrayerSchedule`; `maghribAt(Coordinates, CivilDate, CalculationParameters): DateTimeImmutable` |
+| `Prayer\Contracts\PrayerMetadataCalculatorInterface` | Extends `PrayerTimesCalculatorInterface`: `calculateWithMetadata(Coordinates, CivilDate, CalculationParameters): PrayerCalculationOutcome` |
 | `Prayer\Contracts\TimetableServiceInterface` | `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` |
 | `Prayer\Contracts\NextPrayerResolverInterface` | `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` |
 | `Prayer\Contracts\IshaRule` | Driven port for the Isha rule: `angle(): ?float`, `minutesAfterMaghrib(): ?int`, `validate(): void` |
