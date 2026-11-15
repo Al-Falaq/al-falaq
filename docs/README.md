@@ -10,6 +10,7 @@ that owns it, and link to the other tree instead of repeating it.
 | `docs/` | contributors and maintainers | algorithm appendices, provenance, internal invariants, error-message targets | no |
 | `docs/user/` | library users | installation, usage, API reference, migration, changelog, citations | yes (Astro Starlight) |
 | `docs/plans/` | maintainers | historical implementation plans | no |
+| `docs/artifacts/` | maintainers and reviewers | dated point-in-time audits and strategic reports | no |
 | `ARCHITECTURE.md`, `UQ_PROVENANCE.md` | contributors | architecture and table provenance | repo only |
 
 ## Page map
@@ -24,6 +25,18 @@ that owns it, and link to the other tree instead of repeating it.
 | [polar.md](polar.md) | polar fallback internals | [user/polar-regions.md](user/polar-regions.md) |
 | [migration.md](migration.md) | M1-M5 architecture migration | [user/migration.md](user/migration.md) |
 | [integrations.md](integrations.md) | executable plain-`new` wiring | [user/integration.md](user/integration.md) |
+
+## Artifacts
+
+Dated point-in-time audits and strategy reports. They record what was true at
+their own commit/date; do not rewrite their findings in place. Later
+verification belongs in a new artifact or the CHANGELOG. Historical plans may
+still cite the original root filenames; the links above are canonical.
+
+| Artifact | Scope |
+|---|---|
+| [2026-10-22-repo-hygiene-report.md](artifacts/2026-10-22-repo-hygiene-report.md) | Repository hygiene snapshot at `ebcc3aa`, including the 2026-11-02 tier-delivery verification |
+| [2026-11-11-project-improvement-report.md](artifacts/2026-11-11-project-improvement-report.md) | Strategic improvement plan, package boundaries, and release roadmap |
 
 ## Editing rules
 
