@@ -26,6 +26,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `SharedKernel\ValueObjects\LibraryVersion` | `CURRENT = '0.3.0-dev'`; `current(): self`; `fromString(string): self` (semver with optional prerelease); `__toString()` |
 | `SharedKernel\ValueObjects\CalculationWarning` | `__construct(WarningCode, string $message, array $details = [])`; scalar-only details with sorted keys; `toArray()` |
 | `SharedKernel\ValueObjects\CalculationSource` | `algorithm(id, ?version, ?range)`, `generatedData(id, digest, range, ?version)`, `officialData(...)`, `callerInput(id)`; five-key `toArray()` |
+| `SharedKernel\ValueObjects\CalculationMetadata` | `SCHEMA_VERSION = '1.0'`; `create(CalculationContext, warnings = [], sources = [], ?LibraryVersion): self` (sorts, de-duplicates, derives status); six-key `toArray()` |
 | `SharedKernel\Contracts\DomainException` | Marker interface every domain exception implements — catch this for everything |
 | `SharedKernel\Exceptions\AlFalaqException` | Abstract base for every exception in the library (`extends \RuntimeException implements DomainException`) |
 | `SharedKernel\Exceptions\ValidationException` | Invalid input that is not coordinates-specific; `extends AlFalaqException` |
