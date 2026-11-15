@@ -35,7 +35,7 @@ task list. Implementation plans live in `docs/plans/` once the spec is accepted.
 
 | Spec | Scope |
 |---|---|
-| [2026-11-15-provenance-explainability-foundation.md](design/2026-11-15-provenance-explainability-foundation.md) | P0.1 provenance/explainability vocabulary, per-context metadata, serialization, and A1–A3 sequencing |
+| [2026-11-15-provenance-explainability-foundation.md](design/2026-11-15-provenance-explainability-foundation.md) | P0.1 provenance/explainability vocabulary, per-context metadata, serialization, and A1–A3 sequencing. Implementation: [A1 plan](plans/2026-11-16-provenance-a1-prayer.md) |
 
 ## Artifacts
 
