@@ -36,6 +36,7 @@ final class PolarCircleHandlerTest extends TestCase
         self::assertEqualsWithDelta(65.22818986592176, $resolved['coordinates']->latitude, 1e-9);
         self::assertSame(18.9553, $resolved['coordinates']->longitude);
         self::assertTrue($resolved['date']->equals(CivilDate::fromYmd(2025, 6, 21)));
+        self::assertSame(PolarCircleRule::NEAREST_LATITUDE, $resolved['rule']);
     }
 
     public function testNearestDayMatchesPin(): void
@@ -49,6 +50,7 @@ final class PolarCircleHandlerTest extends TestCase
         );
 
         self::assertTrue($resolved['date']->equals(CivilDate::fromYmd(2025, 11, 26)));
+        self::assertSame(PolarCircleRule::NEAREST_DAY, $resolved['rule']);
     }
 
     public function testMakkahSubstitutesPinConstant(): void
@@ -63,6 +65,7 @@ final class PolarCircleHandlerTest extends TestCase
 
         self::assertSame(21.4225241, $resolved['coordinates']->latitude);
         self::assertSame(39.8261818, $resolved['coordinates']->longitude);
+        self::assertSame(PolarCircleRule::MAKKAH, $resolved['rule']);
     }
 
     public function testThrowEchoesInput(): void
@@ -75,6 +78,7 @@ final class PolarCircleHandlerTest extends TestCase
 
         self::assertTrue($resolved['coordinates']->equals($coords));
         self::assertTrue($resolved['date']->equals($date));
+        self::assertSame(PolarCircleRule::NONE, $resolved['rule']);
     }
 
     public function testPoleExhaustionThrows(): void
@@ -155,7 +159,7 @@ final class PolarCircleHandlerTest extends TestCase
             $probe,
         );
 
-        self::assertSame(['coordinates', 'date'], array_keys($resolved));
+        self::assertSame(['coordinates', 'date', 'rule'], array_keys($resolved));
         self::assertTrue($resolved['date']->equals(CivilDate::fromYmd(2025, 5, 31)));
         self::assertTrue($resolved['coordinates']->equals(Coordinates::fromDegrees(3.1390, 101.6869)));
     }

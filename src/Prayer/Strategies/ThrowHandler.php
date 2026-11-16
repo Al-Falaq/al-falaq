@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
@@ -29,11 +30,15 @@ final class ThrowHandler implements PolarCircleHandler, IdentifiesCalculationSou
      * @param Coordinates $coordinates Original observer location.
      * @param CivilDate $date Original civil date.
      * @param callable(Coordinates, CivilDate): bool $isSolvable Astro-backed probe (unused).
-     * @return array{coordinates: Coordinates, date: CivilDate} Effective inputs to compute with.
+     * @return array{coordinates: Coordinates, date: CivilDate, rule: PolarCircleRule} Effective inputs plus the applied rule.
      */
     public function resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array
     {
-        return ['coordinates' => $coordinates, 'date' => $date];
+        return [
+            'coordinates' => $coordinates,
+            'date' => $date,
+            'rule' => PolarCircleRule::NONE,
+        ];
     }
 
     /**

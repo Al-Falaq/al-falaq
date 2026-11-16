@@ -120,7 +120,7 @@ What each metadata block is for:
 | `input` | show what the user asked for |
 | `effective_input` | show what was actually computed with |
 | `policy` | store the full method + overrides, not just the enum |
-| `fallback` | detect that a requested place was replaced |
+| `fallback` | detect that a requested place, date, or both were replaced |
 | `rounding` | document that reported instants are minute-rounded UTC |
 
 ### Monthly timetables
@@ -160,9 +160,23 @@ Store the request and the outcome together:
 
 To replay, reconstruct `CalculationParameters` from `policy` through
 `create()` and its withers. The rule blocks (`isha_rule`, `maghrib_rule`) carry
-both keys and set the unused one to null; pick the non-null one. Then call
-`calculateWithMetadata()` again with the stored `input` and compare. Feeding
-back `effective_input` would hide the fallback instead of reproducing it.
+both keys and set the unused one to null; pick the non-null one. Keep
+`PrayerAdjustments::toArray()` in mind: it lists all ten prayers with zeros for
+unset entries. Applying every entry with `with()` makes an originally empty
+caller layer non-empty, which adds `caller.adjustments` to `sources`. Leave the
+layer empty when the stored `sources` does not list `caller.adjustments`; when
+it does, apply the recorded values. Then call `calculateWithMetadata()` again
+with the stored `input` and compare. Feeding back `effective_input` would hide
+the fallback instead of reproducing it.
+
+The payload also does not record injected components. Replay with the same
+calculator factory or inject the same engines and strategies with the same
+configuration; a different custom implementation can change the times or the
+reported source identities even when `input`, `policy`, and `library_version`
+match. `fallback.rule` names the fallback that actually ran, while
+`policy.polar_circle_rule` is the configuration you passed; `default()` always
+wires nearest-latitude, so use `defaultFor($parameters)` when the two should
+agree.
 
 ## Handling warnings at your boundary
 
@@ -174,10 +188,11 @@ $outcome = $calculator->calculateWithMetadata($coordinates, $date, $parameters);
 $status = $outcome->metadata->common->status->value;
 
 if ($status === 'fallback_applied') {
-    // Your place was replaced: tell the user which inputs were used.
+    // A requested input was replaced: show the effective date and place.
     foreach ($outcome->metadata->common->warnings as $warning) {
         if ($warning->code->value === 'polar_fallback_applied') {
-            $effective = $outcome->metadata->effectiveCoordinates;
+            $effectiveCoordinates = $outcome->metadata->effectiveCoordinates;
+            $effectiveDate = $outcome->metadata->effectiveDate;
         }
     }
 }
@@ -245,4 +260,5 @@ treat a converted Hijri date as a computed estimate, not an official decree.
 
 No wall-clock timestamp, host name, random id, or timezone conversion. The
 library never reads a clock. Metadata depends only on the inputs, the policy,
-and the library version, so storing it twice produces the same bytes.
+the library version, and the calculator wiring, so storing it twice with the
+same inputs, policy, release, and injected components produces the same bytes.

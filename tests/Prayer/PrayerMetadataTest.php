@@ -363,6 +363,55 @@ final class PrayerMetadataTest extends TestCase
         self::assertContains('prayer.polar.nearest_latitude', self::sourceIds($outcome));
     }
 
+    public function testAppliedPolarRuleComesFromTheWiredHandlerNotThePolicy(): void
+    {
+        $parameters = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
+            ->withPolarCircleRule(PolarCircleRule::NEAREST_DAY);
+        $outcome = PrayerTimesCalculator::default()->calculateWithMetadata(
+            Coordinates::fromDegrees(69.6496, 18.9553),
+            CivilDate::fromYmd(2025, 12, 21),
+            $parameters,
+        );
+        $array = $outcome->metadata->toArray();
+
+        self::assertSame('nearest_day', $array['policy']['polar_circle_rule']);
+        self::assertSame('nearest_latitude', $array['fallback']['rule']);
+        self::assertSame('nearest_latitude', $array['warnings'][0]['details']['rule']);
+    }
+
+    public function testPolicySnapshotIsCapturedBeforeACustomRuleCanMutate(): void
+    {
+        $rule = new class implements IshaRule {
+            public int $minutes = 90;
+
+            public function minutesAfterMaghrib(): int
+            {
+                return $this->minutes;
+            }
+
+            public function angle(): ?float
+            {
+                return null;
+            }
+
+            public function validate(): void {}
+        };
+        $parameters = self::parameters()->withIshaRule($rule);
+        $outcome = PrayerTimesCalculator::default()->calculateWithMetadata(
+            self::coordinates(),
+            self::date(),
+            $parameters,
+        );
+        $before = $outcome->metadata->toArray();
+
+        $rule->minutes = 120;
+
+        $after = $outcome->metadata->toArray();
+
+        self::assertSame($before['policy'], $after['policy']);
+        self::assertSame($before, $after);
+    }
+
     public function testPolarFallbackKeepsLegacyEquality(): void
     {
         $parameters = CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()

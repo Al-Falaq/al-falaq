@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
@@ -34,7 +35,7 @@ final class NearestDayHandler implements PolarCircleHandler, IdentifiesCalculati
      * @param Coordinates $coordinates Original observer location.
      * @param CivilDate $date Original civil date.
      * @param callable(Coordinates, CivilDate): bool $isSolvable Astro-backed probe (calculator-supplied).
-     * @return array{coordinates: Coordinates, date: CivilDate} Effective inputs to compute with.
+     * @return array{coordinates: Coordinates, date: CivilDate, rule: PolarCircleRule} Effective inputs plus the applied rule.
      */
     public function resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array
     {
@@ -47,7 +48,11 @@ final class NearestDayHandler implements PolarCircleHandler, IdentifiesCalculati
                 }
 
                 if ($isSolvable($coordinates, $candidate)) {
-                    return ['coordinates' => $coordinates, 'date' => $candidate];
+                    return [
+                        'coordinates' => $coordinates,
+                        'date' => $candidate,
+                        'rule' => PolarCircleRule::NEAREST_DAY,
+                    ];
                 }
             }
         }

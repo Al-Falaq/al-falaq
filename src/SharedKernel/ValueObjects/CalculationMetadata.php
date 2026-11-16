@@ -154,25 +154,37 @@ final readonly class CalculationMetadata
     {
         usort(
             $warnings,
-            static fn(CalculationWarning $a, CalculationWarning $b): int => self::warningKey($a) <=> self::warningKey($b),
+            static fn(CalculationWarning $a, CalculationWarning $b): int => self::compareWarnings($a, $b),
         );
 
         return $warnings;
     }
 
     /**
-     * Total ordering key for warnings.
+     * Total ordering for warnings using textual, not numeric-string, comparison.
      *
-     * @param CalculationWarning $warning Warning to key.
-     * @return array{string, string, string} Code, message, sorted serialized details.
+     * @param CalculationWarning $a Left warning.
+     * @param CalculationWarning $b Right warning.
+     * @return int Negative, zero, or positive comparison result.
      */
-    private static function warningKey(CalculationWarning $warning): array
+    private static function compareWarnings(CalculationWarning $a, CalculationWarning $b): int
     {
-        return [
-            $warning->code->value,
-            $warning->message,
-            serialize($warning->toArray()['details']),
-        ];
+        $byCode = strcmp($a->code->value, $b->code->value);
+
+        if ($byCode !== 0) {
+            return $byCode;
+        }
+
+        $byMessage = strcmp($a->message, $b->message);
+
+        if ($byMessage !== 0) {
+            return $byMessage;
+        }
+
+        return strcmp(
+            serialize($a->toArray()['details']),
+            serialize($b->toArray()['details']),
+        );
     }
 
     /**
@@ -185,30 +197,62 @@ final readonly class CalculationMetadata
     {
         usort(
             $sources,
-            static fn(CalculationSource $a, CalculationSource $b): int => self::sourceKey($a) <=> self::sourceKey($b),
+            static fn(CalculationSource $a, CalculationSource $b): int => self::compareSources($a, $b),
         );
 
         return $sources;
     }
 
     /**
-     * Total ordering key for sources.
+     * Total ordering for sources with null last and textual field comparison.
      *
-     * @param CalculationSource $source Source to key.
-     * @return array{string, string, int, string, int, string, int, string} Id, kind, null-last version, version, null-last digest, digest, null-last range, range.
+     * @param CalculationSource $a Left source.
+     * @param CalculationSource $b Right source.
+     * @return int Negative, zero, or positive comparison result.
      */
-    private static function sourceKey(CalculationSource $source): array
+    private static function compareSources(CalculationSource $a, CalculationSource $b): int
     {
-        return [
-            $source->id,
-            $source->kind->value,
-            $source->version === null ? 1 : 0,
-            $source->version ?? '',
-            $source->digest === null ? 1 : 0,
-            $source->digest ?? '',
-            $source->range === null ? 1 : 0,
-            $source->range ?? '',
-        ];
+        $byId = strcmp($a->id, $b->id);
+
+        if ($byId !== 0) {
+            return $byId;
+        }
+
+        $byKind = strcmp($a->kind->value, $b->kind->value);
+
+        if ($byKind !== 0) {
+            return $byKind;
+        }
+
+        $byVersion = self::compareNullableText($a->version, $b->version);
+
+        if ($byVersion !== 0) {
+            return $byVersion;
+        }
+
+        $byDigest = self::compareNullableText($a->digest, $b->digest);
+
+        if ($byDigest !== 0) {
+            return $byDigest;
+        }
+
+        return self::compareNullableText($a->range, $b->range);
+    }
+
+    /**
+     * Compare two optional textual fields, keeping null after every value.
+     *
+     * @param string|null $a Left value.
+     * @param string|null $b Right value.
+     * @return int Negative, zero, or positive comparison result.
+     */
+    private static function compareNullableText(?string $a, ?string $b): int
+    {
+        if ($a === null || $b === null) {
+            return ($a === null ? 1 : 0) <=> ($b === null ? 1 : 0);
+        }
+
+        return strcmp($a, $b);
     }
 
     /**

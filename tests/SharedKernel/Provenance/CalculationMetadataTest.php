@@ -144,6 +144,38 @@ final class CalculationMetadataTest extends TestCase
         ));
     }
 
+    public function testSourceOrderIsStableForNumericLookingVersionStrings(): void
+    {
+        $sources = [
+            CalculationSource::algorithm('custom.engine', '1'),
+            CalculationSource::algorithm('custom.engine', '01'),
+        ];
+
+        $forward = CalculationMetadata::create(CalculationContext::PRAYER, [], $sources)->toArray();
+        $reverse = CalculationMetadata::create(CalculationContext::PRAYER, [], array_reverse($sources))->toArray();
+
+        self::assertSame($forward, $reverse);
+        self::assertCount(2, $forward['sources']);
+        self::assertSame('01', $forward['sources'][0]['version']);
+        self::assertSame('1', $forward['sources'][1]['version']);
+    }
+
+    public function testWarningOrderIsStableForNumericLookingMessages(): void
+    {
+        $warnings = [
+            self::warning(WarningCode::UNIDENTIFIED_CALCULATION_SOURCE, '1'),
+            self::warning(WarningCode::UNIDENTIFIED_CALCULATION_SOURCE, '01'),
+        ];
+
+        $forward = CalculationMetadata::create(CalculationContext::PRAYER, $warnings)->toArray();
+        $reverse = CalculationMetadata::create(CalculationContext::PRAYER, array_reverse($warnings))->toArray();
+
+        self::assertSame($forward, $reverse);
+        self::assertCount(2, $forward['warnings']);
+        self::assertSame('01', $forward['warnings'][0]['message']);
+        self::assertSame('1', $forward['warnings'][1]['message']);
+    }
+
     public function testIdenticalWarningsCollapseToOneEntry(): void
     {
         $warning = self::warning(WarningCode::POLAR_FALLBACK_APPLIED, 'message', ['rule' => 'nearest_latitude']);

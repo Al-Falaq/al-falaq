@@ -23,6 +23,16 @@ final readonly class PrayerCalculationMetadata
     public const ROUNDING = 'half_up_to_minute_utc';
 
     /**
+     * Scalar policy snapshot taken when the record is built.
+     *
+     * Captured eagerly so a mutable custom rule exposed through
+     * CalculationParameters cannot rewrite the policy after the result exists.
+     *
+     * @var array<string, mixed>
+     */
+    private array $policy;
+
+    /**
      * Bind one prayer metadata record.
      *
      * @param CalculationMetadata $common Shared envelope (version, status, warnings, sources).
@@ -41,7 +51,9 @@ final readonly class PrayerCalculationMetadata
         public CivilDate $effectiveDate,
         public CalculationParameters $parameters,
         public ?PolarCircleRule $fallbackRule,
-    ) {}
+    ) {
+        $this->policy = $parameters->toArray();
+    }
 
     /**
      * Wire shape: the common six keys first, then the prayer blocks.
@@ -66,7 +78,7 @@ final readonly class PrayerCalculationMetadata
             ...$this->common->toArray(),
             'input' => self::inputBlock($this->requestedCoordinates, $this->requestedDate),
             'effective_input' => self::inputBlock($this->effectiveCoordinates, $this->effectiveDate),
-            'policy' => $this->parameters->toArray(),
+            'policy' => $this->policy,
             'fallback' => [
                 'applied' => $this->fallbackRule !== null,
                 'kind' => $this->fallbackRule !== null ? 'polar' : null,

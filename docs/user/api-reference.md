@@ -62,7 +62,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `Prayer\Contracts\MaghribRule` | Driven port for the Maghrib rule: `angle(): ?float`, `minutesAfterSunset(): ?int`, `validate(): void` |
 | `Prayer\Contracts\HighLatitudeCorrection` | `portions(float $fajrAngle, ?float $ishaAngle): NightPortions` |
 | `Prayer\Contracts\TwilightModel` | `seasonalSeconds(int $dayOfYear, int $year, float $latitude): array{morning: int, evening: int}` — the MSC seasonal caps |
-| `Prayer\Contracts\PolarCircleHandler` | `resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array{coordinates: Coordinates, date: CivilDate}` |
+| `Prayer\Contracts\PolarCircleHandler` | `resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array{coordinates: Coordinates, date: CivilDate, rule?: PolarCircleRule}` — `rule` identifies the fallback that actually ran |
 | `Prayer\Services\PrayerTimesCalculator` | `default(): self`; `defaultFor(CalculationParameters): self`; `calculate(Coordinates\|array, CivilDate, CalculationParameters): PrayerSchedule`; `calculateWithMetadata(...): PrayerCalculationOutcome` (implements `PrayerMetadataCalculatorInterface`); `maghribAt(...): DateTimeImmutable` |
 | `Prayer\Services\TimetableService` | `default(): self`; `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>`; `monthlyWithMetadata(...): list<PrayerCalculationOutcome>` (injected calculator must implement `PrayerMetadataCalculatorInterface`) |
 | `Prayer\Services\NextPrayerResolver` | `default(): self`; `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be zero-offset UTC) |

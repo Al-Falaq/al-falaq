@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
@@ -34,7 +35,7 @@ final class NearestLatitudeHandler implements PolarCircleHandler, IdentifiesCalc
      * @param Coordinates $coordinates Original observer location.
      * @param CivilDate $date Original civil date.
      * @param callable(Coordinates, CivilDate): bool $isSolvable Astro-backed probe (calculator-supplied).
-     * @return array{coordinates: Coordinates, date: CivilDate} Effective inputs to compute with.
+     * @return array{coordinates: Coordinates, date: CivilDate, rule: PolarCircleRule} Effective inputs plus the applied rule.
      */
     public function resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array
     {
@@ -58,6 +59,7 @@ final class NearestLatitudeHandler implements PolarCircleHandler, IdentifiesCalc
         return [
             'coordinates' => Coordinates::fromDegrees($sign * max($valid - 0.5, 0.0), $lon),
             'date' => $date,
+            'rule' => PolarCircleRule::NEAREST_LATITUDE,
         ];
     }
 

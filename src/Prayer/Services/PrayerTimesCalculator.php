@@ -323,7 +323,11 @@ final class PrayerTimesCalculator implements PrayerMetadataCalculatorInterface
                 throw UndefinedScheduleException::polar($effCoords, $effDate, $parameters->polarCircleRule->value);
             }
 
-            $polarFallbackRule = $parameters->polarCircleRule;
+            // The wired handler is authoritative: default() can be paired with
+            // parameters that select a different rule, and custom handlers may
+            // implement something else entirely. Only fall back to the policy
+            // when a legacy handler does not report the rule it applied.
+            $polarFallbackRule = $resolved['rule'] ?? $parameters->polarCircleRule;
         }
 
         $day = $this->solar->solarTime($effCoords, $effDate, $elev);
@@ -478,7 +482,7 @@ final class PrayerTimesCalculator implements PrayerMetadataCalculatorInterface
     ): CalculationWarning {
         return new CalculationWarning(
             WarningCode::POLAR_FALLBACK_APPLIED,
-            'Polar fallback replaced the requested coordinates because the solar day is undefined.',
+            'Polar fallback replaced the requested inputs because the solar day is undefined.',
             [
                 'rule' => $rule->value,
                 'requested_latitude' => $requested->latitude,

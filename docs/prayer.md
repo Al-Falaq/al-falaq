@@ -110,14 +110,20 @@ day. The legacy methods are untouched.
 
 A1 source ids for this context:
 
-- `solar.mean-meeus` (`meeus-2ed`) and `prayer.method.<enum value>`
-  (`method-defaults-v1`) always;
+- `solar.mean-meeus` (`meeus-2ed`) when the built-in solar engine is wired.
+  A custom engine emits its own id, or `custom.solar` plus an
+  `unidentified_calculation_source` warning;
+- `prayer.method.<enum value>` (`method-defaults-v1`) always;
 - `prayer.isha.angle` / `prayer.isha.interval` and `prayer.maghrib.angle` /
-  `prayer.maghrib.interval` always;
+  `prayer.maghrib.interval` when the corresponding built-in rule is wired.
+  Custom rules emit their own id, or `custom.isha` / `custom.maghrib` plus an
+  `unidentified_calculation_source` warning;
 - one of `prayer.high-latitude.middle_of_night`,
   `prayer.high-latitude.seventh_of_night`,
-  `prayer.high-latitude.twilight_angle`,
-  `prayer.high-latitude.seasonal_twilight`, or none (`HighLatitudeRule::NONE`);
+  `prayer.high-latitude.twilight_angle`, or
+  `prayer.high-latitude.seasonal_twilight`. `HighLatitudeRule::NONE` omits the
+  night source, except that `MOON_SIGHTING_COMMITTEE` always takes the
+  seasonal branch and lists `prayer.high-latitude.seasonal_twilight`;
 - `prayer.polar.nearest_latitude` / `.nearest_day` / `.makkah` only when a
   fallback actually ran (`prayer.polar.none` throws and is never emitted);
 - `caller.adjustments` only when the caller adjustment layer is non-empty.
