@@ -1129,4 +1129,50 @@ final class CalculationParametersTest extends TestCase
         self::assertFalse($base->withRamadan(true)->withRamadan(false)->isRamadan);
         self::assertSame(0.0, $base->withFajrAngle(0.0)->fajrAngle);
     }
+
+    public function testToArraySnapshotsAngleRulesInDocumentedOrder(): void
+    {
+        $array = CalculationMethod::SINGAPORE->defaultParameters()->toArray();
+
+        self::assertSame([
+            'method' => 'singapore',
+            'madhab' => 'shafi',
+            'high_latitude_rule' => 'middle_of_night',
+            'polar_circle_rule' => 'nearest_latitude',
+            'fajr_angle_degrees' => 20.0,
+            'isha_rule' => ['type' => 'angle', 'angle_degrees' => 18.0, 'minutes' => null],
+            'maghrib_rule' => ['type' => 'interval', 'angle_degrees' => null, 'minutes' => 0],
+            'dhuhr_offset_minutes' => 0,
+            'imsak_offset_minutes' => 10,
+            'ishraq_offset_minutes' => 15,
+            'dhuha_offset_minutes' => 28,
+            'elevation_m' => 0.0,
+            'is_ramadan' => false,
+            'method_adjustments' => PrayerAdjustments::empty()
+                ->with(Prayer::DHUHR, 1)
+                ->toArray(),
+            'adjustments' => PrayerAdjustments::empty()->toArray(),
+        ], $array);
+    }
+
+    public function testToArraySnapshotsIntervalIshaAndAngleMaghrib(): void
+    {
+        $array = CalculationMethod::UMM_AL_QURA->defaultParameters()
+            ->withIshaRule(new IntervalIsha(90))
+            ->withMaghribRule(new AngleMaghrib(4.0))
+            ->toArray();
+
+        self::assertSame(['type' => 'interval', 'angle_degrees' => null, 'minutes' => 90], $array['isha_rule']);
+        self::assertSame(['type' => 'angle', 'angle_degrees' => 4.0, 'minutes' => null], $array['maghrib_rule']);
+    }
+
+    public function testToArrayReportsRamadanMode(): void
+    {
+        $array = CalculationMethod::UMM_AL_QURA->defaultParameters()
+            ->withRamadan(true)
+            ->toArray();
+
+        self::assertTrue($array['is_ramadan']);
+        self::assertSame('umm_al_qura', $array['method']);
+    }
 }

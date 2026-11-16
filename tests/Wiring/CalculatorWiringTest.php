@@ -29,6 +29,7 @@ use AlFalaq\AlFalaq\Prayer\Strategies\SeventhOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\NextPrayer;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerCalculationOutcome;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\SunnahTimes;
 use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
@@ -191,7 +192,10 @@ final class CalculatorWiringTest extends TestCase
     /**
      * Section heading → variables the snippet must define and their types.
      *
-     * @var array<string, array<string, class-string|'array'>>
+     * `array` and `string` are asserted as scalars; any other value is a
+     * class-string asserted with assertInstanceOf().
+     *
+     * @var array<string, array<string, class-string|'array'|'string'>>
      */
     private const SECTION_EXPECTATIONS = [
         'Prayer times' => [
@@ -209,6 +213,12 @@ final class CalculatorWiringTest extends TestCase
         ],
         'Timetable' => [
             'month' => 'array',
+        ],
+        'Calculation metadata' => [
+            'outcome' => PrayerCalculationOutcome::class,
+            'metadata' => 'array',
+            'json' => 'string',
+            'monthOutcomes' => 'array',
         ],
         'Sunnah' => [
             'sunnah' => SunnahTimes::class,
@@ -263,6 +273,8 @@ final class CalculatorWiringTest extends TestCase
 
                 if ($type === 'array') {
                     self::assertIsArray($bySection[$section][$variable]);
+                } elseif ($type === 'string') {
+                    self::assertIsString($bySection[$section][$variable]);
                 } else {
                     self::assertInstanceOf($type, $bySection[$section][$variable]);
                 }

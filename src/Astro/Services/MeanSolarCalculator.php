@@ -7,8 +7,10 @@ namespace AlFalaq\AlFalaq\Astro\Services;
 use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
 use AlFalaq\AlFalaq\Astro\Traits\SharesSolarTheory;
 use AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
@@ -25,9 +27,19 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
  * (userland otherwise goes through Moon/ or the relevant Prayer service,
  * never Astro internals).
  */
-final class MeanSolarCalculator implements SolarDayEngine
+final class MeanSolarCalculator implements SolarDayEngine, IdentifiesCalculationSource
 {
     use SharesSolarTheory;
+
+    /**
+     * Registry id: shared solar engine, used by Prayer and Moon.
+     */
+    public const SOURCE_ID = 'solar.mean-meeus';
+
+    /**
+     * Model version of the Meeus transcription.
+     */
+    public const SOURCE_VERSION = 'meeus-2ed';
 
     /**
      * Solar declination in degrees (M1).
@@ -669,5 +681,15 @@ final class MeanSolarCalculator implements SolarDayEngine
         }
 
         return $shadow;
+    }
+
+    /**
+     * Stable provenance identity for this engine.
+     *
+     * @return CalculationSource Engine id plus the Meeus model version.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID, self::SOURCE_VERSION);
     }
 }

@@ -6,12 +6,19 @@ namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\HighLatitudeCorrection;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\NightPortions;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 
 /**
  * Middle-of-night high-latitude correction (default rule, M1).
  */
-final class MiddleOfNightCorrection implements HighLatitudeCorrection
+final class MiddleOfNightCorrection implements HighLatitudeCorrection, IdentifiesCalculationSource
 {
+    /**
+     * Registry id for this correction.
+     */
+    public const SOURCE_ID = 'prayer.high-latitude.middle_of_night';
+
     /**
      * Split the night at its midpoint (M1).
      *
@@ -22,5 +29,15 @@ final class MiddleOfNightCorrection implements HighLatitudeCorrection
     public function portions(float $fajrAngle, ?float $ishaAngle): NightPortions
     {
         return new NightPortions(0.5, 0.5);
+    }
+
+    /**
+     * Stable provenance identity for this correction.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }

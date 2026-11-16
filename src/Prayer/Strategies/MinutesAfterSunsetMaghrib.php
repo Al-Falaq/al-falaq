@@ -5,13 +5,20 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\MaghribRule;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 
 /**
  * Maghrib as fixed minutes after sunset (0 = at sunset, most methods).
  */
-final class MinutesAfterSunsetMaghrib implements MaghribRule
+final class MinutesAfterSunsetMaghrib implements MaghribRule, IdentifiesCalculationSource
 {
+    /**
+     * Registry id for this rule.
+     */
+    public const SOURCE_ID = 'prayer.maghrib.interval';
+
     /**
      * Interval rule with optional default (0 = at sunset).
      *
@@ -49,5 +56,15 @@ final class MinutesAfterSunsetMaghrib implements MaghribRule
         if ($this->minutes < 0) {
             throw new ValidationException('Invalid maghribRule: minutes after sunset must be >= 0.');
         }
+    }
+
+    /**
+     * Stable provenance identity for this rule.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }

@@ -19,6 +19,15 @@ Conventions: public services are `final` with explicit constructor injection and
 | `SharedKernel\ValueObjects\Minutes` | `add(DateTimeImmutable, int): DateTimeImmutable`; `roundedHalfUp(DateTimeImmutable $utc): DateTimeImmutable` (zero-offset UTC; normalized to named UTC, half-up) |
 | `SharedKernel\ValueObjects\JulianDay` | `fromCivilDate(CivilDate): self` (Fliegel–Van Flandern, day number at 00:00 UTC); `day` (raw float); `toFloat(): float` (astronomy internals) |
 | `SharedKernel\ValueObjects\Kaaba` | `LATITUDE = 21.4225241`, `LONGITUDE = 39.8261818`; `coordinates(): Coordinates` — the single owner of the Kaaba position (the Qibla contract constants reference it) |
+| `SharedKernel\Enums\CalculationContext` | `prayer`, `qibla`, `moon`, `hijri` — the context a metadata envelope describes |
+| `SharedKernel\Enums\CalculationStatus` | `complete`, `extrapolated`, `fallback_applied`, `indeterminate`, `decision_required` (ranked in that order; derived, never supplied) |
+| `SharedKernel\Enums\WarningCode` | Stable warning identifiers (`polar_fallback_applied`, `delta_t_extrapolated`, …); human messages are not part of the contract |
+| `SharedKernel\Enums\SourceKind` | `algorithm`, `generated_data`, `official_data`, `caller_input` |
+| `SharedKernel\ValueObjects\LibraryVersion` | `CURRENT = '0.3.0-dev'`; `current(): self`; `fromString(string): self` (semver with optional prerelease); `__toString()` |
+| `SharedKernel\ValueObjects\CalculationWarning` | `__construct(WarningCode, string $message, array $details = [])`; scalar-only details with sorted keys; `toArray()` |
+| `SharedKernel\ValueObjects\CalculationSource` | `algorithm(id, ?version, ?range)`, `generatedData(id, digest, range, ?version)`, `officialData(...)`, `callerInput(id)`; five-key `toArray()` |
+| `SharedKernel\ValueObjects\CalculationMetadata` | `SCHEMA_VERSION = '1.0'`; `create(CalculationContext, warnings = [], sources = [], ?LibraryVersion): self` (sorts, de-duplicates, derives status); six-key `toArray()` |
+| `SharedKernel\Contracts\IdentifiesCalculationSource` | Driven capability: `calculationSource(): CalculationSource`. Built-in engines/strategies declare a `SOURCE_ID`; a component without it is reported as `custom.<component>` plus an `unidentified_calculation_source` warning |
 | `SharedKernel\Contracts\DomainException` | Marker interface every domain exception implements — catch this for everything |
 | `SharedKernel\Exceptions\AlFalaqException` | Abstract base for every exception in the library (`extends \RuntimeException implements DomainException`) |
 | `SharedKernel\Exceptions\ValidationException` | Invalid input that is not coordinates-specific; `extends AlFalaqException` |
@@ -31,36 +40,39 @@ Conventions: public services are `final` with explicit constructor injection and
 
 | Class | Key members |
 | --- | --- |
-| `Prayer\Enums\CalculationMethod` (19 cases: 18 presets + NONE) | `MUSLIM_WORLD_LEAGUE, EGYPTIAN, KARACHI, UMM_AL_QURA, DUBAI, MOON_SIGHTING_COMMITTEE, NORTH_AMERICA, KUWAIT, QATAR, SINGAPORE, TURKEY, TEHRAN, MOROCCO, JAKIM, KEMENAG, MUIS, BRUNEI, UOIF, NONE`; `defaultParameters(): CalculationParameters` (throws on `NONE`) |
+| `Prayer\Enums\CalculationMethod` (19 cases: 18 presets + NONE) | `MUSLIM_WORLD_LEAGUE, EGYPTIAN, KARACHI, UMM_AL_QURA, DUBAI, MOON_SIGHTING_COMMITTEE, NORTH_AMERICA, KUWAIT, QATAR, SINGAPORE, TURKEY, TEHRAN, MOROCCO, JAKIM, KEMENAG, MUIS, BRUNEI, UOIF, NONE`; `SOURCE_VERSION = 'method-defaults-v1'`; `defaultParameters(): CalculationParameters` (throws on `NONE`) |
 | `Prayer\Enums\Prayer` (10 cases) | `IMSAK, FAJR, SUNRISE, SYURUK, ISHRAQ, DHUHA, DHUHR, ASR, MAGHRIB, ISHA` (schedule order) |
 | `Prayer\Enums\Madhab` | `SHAFI->shadowLength() = 1.0`, `HANAFI = 2.0` |
 | `Prayer\Enums\HighLatitudeRule` | `NONE, MIDDLE_OF_NIGHT, SEVENTH_OF_NIGHT, TWILIGHT_ANGLE, SEASONAL_TWILIGHT` |
 | `Prayer\Enums\PolarCircleRule` | `NONE, NEAREST_LATITUDE, NEAREST_DAY, MAKKAH` |
-| `Prayer\ValueObjects\CalculationParameters` | `create(...)` full factory; `withMadhab/withElevationM/withAdjustments/withMethodAdjustments/withRamadan/withFajrAngle/withIshaRule/withMaghribRule/withHighLatitudeRule/withPolarCircleRule/withImsakOffset/withIshraqOffset/withDhuhaOffset/withDhuhrOffset()` |
-| `Prayer\ValueObjects\PrayerAdjustments` | `empty(): self`; `with(Prayer, int [-60,60]): self`; `for(Prayer): int`; `combinedWith(self): self` |
+| `Prayer\ValueObjects\CalculationParameters` | `create(...)` full factory; `withMadhab/withElevationM/withAdjustments/withMethodAdjustments/withRamadan/withFajrAngle/withIshaRule/withMaghribRule/withHighLatitudeRule/withPolarCircleRule/withImsakOffset/withIshraqOffset/withDhuhaOffset/withDhuhrOffset()`; `toArray()` policy snapshot (rules expanded, both adjustment layers) |
+| `Prayer\ValueObjects\PrayerAdjustments` | `empty(): self`; `with(Prayer, int [-60,60]): self`; `for(Prayer): int`; `combinedWith(self): self`; `toArray()` (all ten keys in enum order, unset reads 0) |
 | `Prayer\ValueObjects\PrayerSchedule` | `timeFor(Prayer)`, `all()` (ordered UTC), `toArray()` (UTC ISO-8601), `forZone(DateTimeZone): DisplaySchedule`, `nightLength()` |
 | `Prayer\ValueObjects\DisplaySchedule` | `timeFor(Prayer)`, `all()`, `toArray()` (display-zone ISO-8601) |
 | `Prayer\ValueObjects\NextPrayer` | `__construct(Prayer $prayer, DateTimeImmutable $at, int $inSeconds)` |
 | `Prayer\ValueObjects\NightPortions` | `fajrPortion`, `ishaPortion` — the night split the high-latitude rules use |
 | `Prayer\ValueObjects\SunnahTimes` | `__construct(middleOfNight, firstThird, lastThird, fajr, maghrib)`; `tahajjudWindow()`; `nightFraction(float $f in (0,1))`; `forZone(DateTimeZone): self` |
+| `Prayer\ValueObjects\PrayerCalculationMetadata` | `ROUNDING = 'half_up_to_minute_utc'`; `__construct(CalculationMetadata $common, requested/effective coordinates+date, CalculationParameters, ?PolarCircleRule $fallbackRule)`; `toArray()` |
+| `Prayer\ValueObjects\PrayerCalculationOutcome` | `__construct(PrayerSchedule $result, PrayerCalculationMetadata $metadata)`; `toArray()` (`result` + `metadata`) |
 | `Prayer\Contracts\PrayerTimesCalculatorInterface` | `calculate(Coordinates, CivilDate, CalculationParameters): PrayerSchedule`; `maghribAt(Coordinates, CivilDate, CalculationParameters): DateTimeImmutable` |
+| `Prayer\Contracts\PrayerMetadataCalculatorInterface` | Extends `PrayerTimesCalculatorInterface`: `calculateWithMetadata(Coordinates, CivilDate, CalculationParameters): PrayerCalculationOutcome` |
 | `Prayer\Contracts\TimetableServiceInterface` | `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` |
 | `Prayer\Contracts\NextPrayerResolverInterface` | `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` |
 | `Prayer\Contracts\IshaRule` | Driven port for the Isha rule: `angle(): ?float`, `minutesAfterMaghrib(): ?int`, `validate(): void` |
 | `Prayer\Contracts\MaghribRule` | Driven port for the Maghrib rule: `angle(): ?float`, `minutesAfterSunset(): ?int`, `validate(): void` |
 | `Prayer\Contracts\HighLatitudeCorrection` | `portions(float $fajrAngle, ?float $ishaAngle): NightPortions` |
 | `Prayer\Contracts\TwilightModel` | `seasonalSeconds(int $dayOfYear, int $year, float $latitude): array{morning: int, evening: int}` — the MSC seasonal caps |
-| `Prayer\Contracts\PolarCircleHandler` | `resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array{coordinates: Coordinates, date: CivilDate}` |
-| `Prayer\Services\PrayerTimesCalculator` | `default(): self`; `defaultFor(CalculationParameters): self`; `calculate(Coordinates\|array, CivilDate, CalculationParameters): PrayerSchedule`; `maghribAt(...): DateTimeImmutable` |
-| `Prayer\Services\TimetableService` | `default(): self`; `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>` |
+| `Prayer\Contracts\PolarCircleHandler` | `resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array{coordinates: Coordinates, date: CivilDate, rule?: PolarCircleRule}` — `rule` identifies the fallback that actually ran |
+| `Prayer\Services\PrayerTimesCalculator` | `default(): self`; `defaultFor(CalculationParameters): self`; `calculate(Coordinates\|array, CivilDate, CalculationParameters): PrayerSchedule`; `calculateWithMetadata(...): PrayerCalculationOutcome` (implements `PrayerMetadataCalculatorInterface`); `maghribAt(...): DateTimeImmutable` |
+| `Prayer\Services\TimetableService` | `default(): self`; `monthly(Coordinates, int $year, int $month, CalculationParameters): list<PrayerSchedule>`; `monthlyWithMetadata(...): list<PrayerCalculationOutcome>` (injected calculator must implement `PrayerMetadataCalculatorInterface`) |
 | `Prayer\Services\NextPrayerResolver` | `default(): self`; `resolve(PrayerSchedule $today, PrayerSchedule $tomorrow, DateTimeImmutable $nowUtc): NextPrayer` (`$nowUtc` must be zero-offset UTC) |
 | `Prayer\Services\SunnahCalculator` | `fromCalculator(PrayerTimesCalculatorInterface, Coordinates, CivilDate, CalculationParameters): self`; `__construct(PrayerSchedule $today, PrayerSchedule $tomorrow)`; `calculate(): SunnahTimes` |
 | `Prayer\Services\NightResolver` | The step that owns the fajr/isha resolution (seasonal / NONE-raw / portions). Exposed for introspection; not a driving port |
-| `Prayer\Strategies\AngleIsha`, `Prayer\Strategies\IntervalIsha` | `IshaRule` implementations (angle vs minutes-after-Maghrib) |
-| `Prayer\Strategies\AngleMaghrib`, `Prayer\Strategies\MinutesAfterSunsetMaghrib` | `MaghribRule` implementations (angle vs minutes-after-sunset) |
-| `Prayer\Strategies\MiddleOfNightCorrection`, `Prayer\Strategies\SeventhOfNightCorrection`, `Prayer\Strategies\TwilightAngleCorrection` | `HighLatitudeCorrection` implementations |
-| `Prayer\Strategies\NearestLatitudeHandler`, `Prayer\Strategies\NearestDayHandler`, `Prayer\Strategies\MakkahHandler`, `Prayer\Strategies\ThrowHandler` | `PolarCircleHandler` implementations |
-| `Prayer\Strategies\SeasonAdjustedTwilight` | `TwilightModel` implementation (MSC seasonal caps) |
+| `Prayer\Strategies\AngleIsha`, `Prayer\Strategies\IntervalIsha` | `IshaRule` implementations (angle vs minutes-after-Maghrib); `IdentifiesCalculationSource` with `SOURCE_ID` |
+| `Prayer\Strategies\AngleMaghrib`, `Prayer\Strategies\MinutesAfterSunsetMaghrib` | `MaghribRule` implementations (angle vs minutes-after-sunset); `IdentifiesCalculationSource` with `SOURCE_ID` |
+| `Prayer\Strategies\MiddleOfNightCorrection`, `Prayer\Strategies\SeventhOfNightCorrection`, `Prayer\Strategies\TwilightAngleCorrection` | `HighLatitudeCorrection` implementations; `IdentifiesCalculationSource` with `SOURCE_ID` |
+| `Prayer\Strategies\NearestLatitudeHandler`, `Prayer\Strategies\NearestDayHandler`, `Prayer\Strategies\MakkahHandler`, `Prayer\Strategies\ThrowHandler` | `PolarCircleHandler` implementations; `IdentifiesCalculationSource` with `SOURCE_ID` (`ThrowHandler`'s `prayer.polar.none` is policy-only and never emitted) |
+| `Prayer\Strategies\SeasonAdjustedTwilight` | `TwilightModel` implementation (MSC seasonal caps); one `SOURCE_ID` for both the seasonal mode and the twilight model |
 | `Prayer\Traits\NormalizesCoordinatesInput` | Helper that accepts a `Coordinates` value object or a `[lat, lon]` pair |
 | `Prayer\Exceptions\UndefinedScheduleException` | `polar(Coordinates, CivilDate, ?string $rule)`; extends `AstronomicalException` |
 

@@ -80,6 +80,40 @@ $month = TimetableService::default()->monthly(
 `monthly()` returns one UTC `PrayerSchedule` per calendar day, in order.
 There is no yearly helper by design: loop `monthly()`.
 
+## Calculation metadata
+
+```php
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
+use AlFalaq\AlFalaq\Prayer\Services\TimetableService;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+
+$calculator = PrayerTimesCalculator::default();
+$params = CalculationMethod::SINGAPORE->defaultParameters();
+$coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+
+$outcome = $calculator->calculateWithMetadata(
+    $coordinates,
+    CivilDate::fromYmd(2025, 3, 1),
+    $params,
+);
+$metadata = $outcome->metadata->toArray();
+$json = json_encode($outcome->toArray(), JSON_THROW_ON_ERROR);
+
+$monthOutcomes = TimetableService::default()->monthlyWithMetadata(
+    $coordinates,
+    2025,
+    3,
+    $params,
+);
+```
+
+`calculateWithMetadata()` and `monthlyWithMetadata()` add provenance without
+changing the legacy methods: the same inputs produce the same `PrayerSchedule`
+through `calculate()` / `monthly()`. The JSON shape is documented at
+[Calculation Metadata](user/calculation-metadata.md).
+
 ## Sunnah
 
 ```php

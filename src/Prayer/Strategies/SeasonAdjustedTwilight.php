@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\TwilightModel;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 
 /**
  * Moon-Sighting-Committee seasonal twilight offsets (pin Twilight.py, M1).
@@ -14,8 +16,13 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
  * them as safe caps on every MSC row (seventh-of-night temps at signed
  * lat >= 55, pin `_set_fajr`/`_set_isha` gate).
  */
-final class SeasonAdjustedTwilight implements TwilightModel
+final class SeasonAdjustedTwilight implements TwilightModel, IdentifiesCalculationSource
 {
+    /**
+     * Registry id shared by the high-latitude seasonal mode and the twilight model.
+     */
+    public const SOURCE_ID = 'prayer.high-latitude.seasonal_twilight';
+
     /**
      * Seasonal second offsets for a day-of-year, year and latitude.
      *
@@ -129,5 +136,18 @@ final class SeasonAdjustedTwilight implements TwilightModel
         }
 
         return $b + ($a - $b) / 91.0 * ($dss - 275);
+    }
+
+    /**
+     * Stable provenance identity for the seasonal model.
+     *
+     * One id covers both roles: the high-latitude seasonal mode and the MSC
+     * twilight model are the same calculation.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }

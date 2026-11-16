@@ -1164,7 +1164,7 @@ Create `docs/user/calculation-metadata.md` with Starlight frontmatter (`title`, 
 - a complete prayer example with JSON;
 - storing inputs + metadata + result for reproduction;
 - handling warning codes at an application boundary;
-- true-north Qibla vs caller-supplied magnetic declination (A2 will ship the method; state the policy now);
+- true-north Qibla vs caller-supplied magnetic declination (A2's metadata stays true-north with a null declination field; state the policy now);
 - Moon criterion vs observation/authority (A2);
 - generated vs official Hijri tables (A3);
 - schema-version compatibility.

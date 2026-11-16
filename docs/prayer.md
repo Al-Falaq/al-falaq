@@ -102,8 +102,41 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   endpoint fails on an expired certificate) — drift gates, never claimed as
   parity.
 
+## Provenance
+
+`calculateWithMetadata()` returns the unchanged schedule plus a
+`PrayerCalculationMetadata` envelope; `monthlyWithMetadata()` does the same per
+day. The legacy methods are untouched.
+
+A1 source ids for this context:
+
+- `solar.mean-meeus` (`meeus-2ed`) when the built-in solar engine is wired.
+  A custom engine emits its own id, or `custom.solar` plus an
+  `unidentified_calculation_source` warning;
+- `prayer.method.<enum value>` (`method-defaults-v1`) always;
+- `prayer.isha.angle` / `prayer.isha.interval` and `prayer.maghrib.angle` /
+  `prayer.maghrib.interval` when the corresponding built-in rule is wired.
+  Custom rules emit their own id, or `custom.isha` / `custom.maghrib` plus an
+  `unidentified_calculation_source` warning;
+- one of `prayer.high-latitude.middle_of_night`,
+  `prayer.high-latitude.seventh_of_night`,
+  `prayer.high-latitude.twilight_angle`, or
+  `prayer.high-latitude.seasonal_twilight`. `HighLatitudeRule::NONE` omits the
+  night source, except that `MOON_SIGHTING_COMMITTEE` always takes the
+  seasonal branch and lists `prayer.high-latitude.seasonal_twilight`;
+- `prayer.polar.nearest_latitude` / `.nearest_day` / `.makkah` only when a
+  fallback actually ran (`prayer.polar.none` throws and is never emitted);
+- `caller.adjustments` only when the caller adjustment layer is non-empty.
+
+Two warning codes are emitted here: `polar_fallback_applied` (status
+`fallback_applied`) and `unidentified_calculation_source` (no status effect).
+Status precedence and the full vocabulary live in
+[provenance.md](provenance.md); the published guide is
+[user/calculation-metadata.md](user/calculation-metadata.md).
+
 ## See also
 
 - [Prayer Times](user/prayer-times.md) — the published user guide
 - [Calculation Methods](user/calculation-methods.md)
 - [High Latitude Rules](user/high-latitude.md)
+- [Provenance](provenance.md) — metadata vocabulary and source registry

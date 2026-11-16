@@ -153,6 +153,7 @@ final class ArchShapeTest extends ArchSupport
      */
     private const SERVICE_CONTRACTS = [
         'AlFalaq\\AlFalaq\\Prayer\\Contracts\\NextPrayerResolverInterface',
+        'AlFalaq\\AlFalaq\\Prayer\\Contracts\\PrayerMetadataCalculatorInterface',
         'AlFalaq\\AlFalaq\\Prayer\\Contracts\\PrayerTimesCalculatorInterface',
         'AlFalaq\\AlFalaq\\Prayer\\Contracts\\TimetableServiceInterface',
     ];

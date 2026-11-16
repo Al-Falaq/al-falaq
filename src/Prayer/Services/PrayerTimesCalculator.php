@@ -9,10 +9,10 @@ use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
 use AlFalaq\AlFalaq\Prayer\Contracts\HighLatitudeCorrection;
 use AlFalaq\AlFalaq\Prayer\Contracts\MaghribRule;
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
-use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
+use AlFalaq\AlFalaq\Prayer\Contracts\PrayerMetadataCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\TwilightModel;
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Enums\HighLatitudeRule;
-use AlFalaq\AlFalaq\Prayer\Enums\Madhab;
 use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
 use AlFalaq\AlFalaq\Prayer\Enums\Prayer;
 use AlFalaq\AlFalaq\Prayer\Exceptions\UndefinedScheduleException;
@@ -27,9 +27,17 @@ use AlFalaq\AlFalaq\Prayer\Strategies\TwilightAngleCorrection;
 use AlFalaq\AlFalaq\Prayer\Traits\NormalizesCoordinatesInput;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\CalculationParameters;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerCalculationMetadata;
+use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerCalculationOutcome;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\Enums\CalculationContext;
+use AlFalaq\AlFalaq\SharedKernel\Enums\WarningCode;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationMetadata;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationWarning;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
@@ -41,7 +49,7 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
  * _set_isha verbatim): seasonal safe caps on every MSC row, seventh-of-night
  * temps at high latitude.
  */
-final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
+final class PrayerTimesCalculator implements PrayerMetadataCalculatorInterface
 {
     use NormalizesCoordinatesInput;
 
@@ -225,11 +233,79 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
      */
     public function calculate(Coordinates|array $coordinates, CivilDate $date, CalculationParameters $parameters): PrayerSchedule
     {
-        $coords = self::normalizeCoordinates($coordinates);
+        return $this->run(self::normalizeCoordinates($coordinates), $date, $parameters)['schedule'];
+    }
 
+    /**
+     * Compute the schedule plus the metadata that explains how it was produced.
+     *
+     * Shares the exact numeric pipeline with calculate(): the trace is built
+     * once per call and never recomputes astronomy or parses exception
+     * strings.
+     *
+     * @param Coordinates|array{0: mixed, 1: mixed} $coordinates VO or [lat, lon] pair.
+     * @param CivilDate $date Civil date to compute.
+     * @param CalculationParameters $parameters Method defaults + overrides.
+     * @return PrayerCalculationOutcome Schedule plus provenance.
+     */
+    public function calculateWithMetadata(
+        Coordinates|array $coordinates,
+        CivilDate $date,
+        CalculationParameters $parameters,
+    ): PrayerCalculationOutcome {
+        $requested = self::normalizeCoordinates($coordinates);
+        $trace = $this->run($requested, $date, $parameters);
+        $warnings = [];
+        $sources = $this->sourcesFor($parameters, $trace['nightMode'], $trace['polarFallbackRule'], $warnings);
+
+        if ($trace['polarFallbackRule'] !== null) {
+            $warnings[] = self::polarWarning(
+                $requested,
+                $date,
+                $trace['effectiveCoordinates'],
+                $trace['effectiveDate'],
+                $trace['polarFallbackRule'],
+            );
+        }
+
+        return new PrayerCalculationOutcome(
+            $trace['schedule'],
+            new PrayerCalculationMetadata(
+                CalculationMetadata::create(CalculationContext::PRAYER, $warnings, $sources),
+                $requested,
+                $date,
+                $trace['effectiveCoordinates'],
+                $trace['effectiveDate'],
+                $parameters,
+                $trace['polarFallbackRule'],
+            ),
+        );
+    }
+
+    /**
+     * One numeric run, shared by calculate() and calculateWithMetadata().
+     *
+     * Mirrors pin PrayerTimes.__init__ + _set_* UTC pipeline; round = Minutes::roundedHalfUp
+     * AFTER adding effective offsets. Syuruk is a sunrise alias and never reads
+     * Prayer::SYURUK adjustments (mirrors pin PrayerAdjustments having no syuruk slot).
+     *
+     * @param Coordinates $coords Normalized observer location.
+     * @param CivilDate $date Civil date to compute.
+     * @param CalculationParameters $parameters Method defaults + overrides.
+     * @return array{
+     *     schedule: PrayerSchedule,
+     *     effectiveCoordinates: Coordinates,
+     *     effectiveDate: CivilDate,
+     *     polarFallbackRule: ?PolarCircleRule,
+     *     nightMode: 'seasonal'|'none'|'portions',
+     * } Numeric result plus the trace flags metadata needs.
+     */
+    private function run(Coordinates $coords, CivilDate $date, CalculationParameters $parameters): array
+    {
         $elev = $parameters->elevationM;
         $effDate = $date;
         $effCoords = $coords;
+        $polarFallbackRule = null;
 
         if (! $this->solar->isSolarDefined($effCoords, $effDate, $elev)) {
             // NONE short-circuit duplicates ThrowHandler on purpose: the handler serves
@@ -246,6 +322,12 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
             if (! $this->solar->isSolarDefined($effCoords, $effDate, $elev)) {
                 throw UndefinedScheduleException::polar($effCoords, $effDate, $parameters->polarCircleRule->value);
             }
+
+            // The wired handler is authoritative: default() can be paired with
+            // parameters that select a different rule, and custom handlers may
+            // implement something else entirely. Only fall back to the policy
+            // when a legacy handler does not report the rule it applied.
+            $polarFallbackRule = $resolved['rule'] ?? $parameters->polarCircleRule;
         }
 
         $day = $this->solar->solarTime($effCoords, $effDate, $elev);
@@ -305,7 +387,112 @@ final class PrayerTimesCalculator implements PrayerTimesCalculatorInterface
             $asr = $maghrib;
         }
 
-        return new PrayerSchedule($imsak, $fajr, $sunrise, $syuruk, $ishraq, $dhuha, $dhuhr, $asr, $maghrib, $isha);
+        return [
+            'schedule' => new PrayerSchedule($imsak, $fajr, $sunrise, $syuruk, $ishraq, $dhuha, $dhuhr, $asr, $maghrib, $isha),
+            'effectiveCoordinates' => $effCoords,
+            'effectiveDate' => $effDate,
+            'polarFallbackRule' => $polarFallbackRule,
+            'nightMode' => $temps['mode'],
+        ];
+    }
+
+    /**
+     * Collect the sources that actually ran, warning on unidentified components.
+     *
+     * @param CalculationParameters $parameters Policy used for this calculation.
+     * @param string $nightMode Selected night mode ('seasonal'|'none'|'portions').
+     * @param PolarCircleRule|null $fallbackRule Applied polar fallback, if any.
+     * @param list<CalculationWarning> $warnings Warning sink, appended in place.
+     * @return list<CalculationSource> Unsorted sources (the envelope sorts).
+     */
+    private function sourcesFor(
+        CalculationParameters $parameters,
+        string $nightMode,
+        ?PolarCircleRule $fallbackRule,
+        array &$warnings,
+    ): array {
+        $sources = [
+            self::componentSource($this->solar, 'solar', $warnings),
+            CalculationSource::algorithm(
+                'prayer.method.' . $parameters->method->value,
+                CalculationMethod::SOURCE_VERSION,
+            ),
+            self::componentSource($parameters->ishaRule, 'isha', $warnings),
+            self::componentSource($parameters->maghribRule, 'maghrib', $warnings),
+        ];
+
+        if ($nightMode === 'portions') {
+            $sources[] = self::componentSource($this->highLatitudeCorrection, 'high_latitude', $warnings);
+        } elseif ($nightMode === 'seasonal') {
+            $sources[] = self::componentSource($this->twilightModel, 'twilight', $warnings);
+        }
+
+        if ($fallbackRule !== null) {
+            $sources[] = self::componentSource($this->polarCircleHandler, 'polar', $warnings);
+        }
+
+        if ($parameters->adjustments->offsets !== []) {
+            $sources[] = CalculationSource::callerInput('caller.adjustments');
+        }
+
+        return $sources;
+    }
+
+    /**
+     * Identity for a wired component, or `custom.<name>` plus a warning.
+     *
+     * @param object $component Wired strategy or engine.
+     * @param string $name Registry slot name (solar, isha, …).
+     * @param list<CalculationWarning> $warnings Warning sink, appended in place.
+     * @return CalculationSource Identified source or the custom fallback.
+     */
+    private static function componentSource(object $component, string $name, array &$warnings): CalculationSource
+    {
+        if ($component instanceof IdentifiesCalculationSource) {
+            return $component->calculationSource();
+        }
+
+        $id = 'custom.' . $name;
+
+        $warnings[] = new CalculationWarning(
+            WarningCode::UNIDENTIFIED_CALCULATION_SOURCE,
+            sprintf('The %s component does not implement IdentifiesCalculationSource.', $name),
+            ['component' => $name, 'source_id' => $id],
+        );
+
+        return CalculationSource::algorithm($id);
+    }
+
+    /**
+     * Build the polar-fallback warning from the requested/effective pair.
+     *
+     * @param Coordinates $requested Requested coordinates.
+     * @param CivilDate $requestedDate Requested date.
+     * @param Coordinates $effective Effective coordinates.
+     * @param CivilDate $effectiveDate Effective date.
+     * @param PolarCircleRule $rule Applied fallback rule.
+     * @return CalculationWarning Machine-readable fallback explanation.
+     */
+    private static function polarWarning(
+        Coordinates $requested,
+        CivilDate $requestedDate,
+        Coordinates $effective,
+        CivilDate $effectiveDate,
+        PolarCircleRule $rule,
+    ): CalculationWarning {
+        return new CalculationWarning(
+            WarningCode::POLAR_FALLBACK_APPLIED,
+            'Polar fallback replaced the requested inputs because the solar day is undefined.',
+            [
+                'rule' => $rule->value,
+                'requested_latitude' => $requested->latitude,
+                'requested_longitude' => $requested->longitude,
+                'effective_latitude' => $effective->latitude,
+                'effective_longitude' => $effective->longitude,
+                'requested_date' => $requestedDate->isoformat(),
+                'effective_date' => $effectiveDate->isoformat(),
+            ],
+        );
     }
 
     private function adjusted(\DateTimeImmutable $base, PrayerAdjustments $eff, Prayer $prayer): \DateTimeImmutable

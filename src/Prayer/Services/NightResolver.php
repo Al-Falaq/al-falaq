@@ -51,7 +51,7 @@ final class NightResolver
      * @param CalculationParameters $parameters Method defaults + overrides.
      * @param SolarTime $day Solar day from the engine.
      * @param int $nightSec Sunset-to-next-sunrise seconds.
-     * @return array{fajr: \DateTimeImmutable, isha: \DateTimeImmutable} Unadjusted temps in UTC.
+     * @return array{fajr: \DateTimeImmutable, isha: \DateTimeImmutable, mode: 'seasonal'|'none'|'portions'} Unadjusted temps in UTC plus the selected mode.
      */
     public function resolve(
         Coordinates $coords,
@@ -111,7 +111,11 @@ final class NightResolver
         $fajrTemp = $this->fajrTemp($coords, $date, $elevationM, $parameters, $day, $nightSec, $portions, $useSeasonalSafe, $useSeventh, $seasonalSeconds, $seventh);
         $ishaTemp = $this->ishaTemp($coords, $date, $elevationM, $parameters, $day, $nightSec, $portions, $useSeasonalSafe, $useSeventh, $seasonalSeconds, $seventh);
 
-        return ['fajr' => $fajrTemp, 'isha' => $ishaTemp];
+        $mode = $useSeasonalSafe
+            ? 'seasonal'
+            : ($parameters->highLatitudeRule === HighLatitudeRule::NONE ? 'none' : 'portions');
+
+        return ['fajr' => $fajrTemp, 'isha' => $ishaTemp, 'mode' => $mode];
     }
 
     /**

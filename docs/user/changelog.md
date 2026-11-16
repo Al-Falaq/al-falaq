@@ -11,7 +11,28 @@ Versioned snapshots of the whole documentation site are kept per release — use
 
 ## [Unreleased]
 
-No changes yet.
+### Added
+
+- Opt-in calculation metadata: `PrayerTimesCalculator::calculateWithMetadata()`
+  and `TimetableService::monthlyWithMetadata()` return the unchanged result
+  plus a provenance envelope (schema `1.0`) with requested/effective inputs,
+  the full policy snapshot, stable warning codes, and a stable source
+  registry. Legacy methods, return types, numeric outputs, and exception
+  behavior are unchanged.
+- Shared provenance vocabulary in `SharedKernel`: `CalculationMetadata`,
+  `CalculationSource`, `CalculationWarning`, `LibraryVersion`, the
+  `CalculationContext`/`CalculationStatus`/`WarningCode`/`SourceKind` enums,
+  and the `IdentifiesCalculationSource` driven capability.
+- Built-in source identity (`SOURCE_ID`, plus `meeus-2ed` on the solar engine)
+  on `MeanSolarCalculator` and the twelve prayer strategies;
+  `CalculationMethod::SOURCE_VERSION = 'method-defaults-v1'` pins the preset
+  defaults independently of the package version.
+- `CalculationParameters::toArray()` and `PrayerAdjustments::toArray()` for
+  reproducible policy snapshots; `NightResolver` reports its selected mode
+  beside Fajr and Isha.
+- `docs/provenance.md` (contributor registry and semantics) and
+  `docs/user/calculation-metadata.md` (published guide), plus an executable
+  `calculateWithMetadata()` recipe in `docs/integrations.md`.
 
 ## [0.2.0] - 2026-11-15
 

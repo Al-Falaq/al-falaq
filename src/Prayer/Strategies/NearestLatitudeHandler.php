@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
@@ -17,8 +20,13 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  * between the (invalid) requested latitude and the equator (always defined),
  * then back off 0.5° toward the equator for a usable day/night split.
  */
-final class NearestLatitudeHandler implements PolarCircleHandler
+final class NearestLatitudeHandler implements PolarCircleHandler, IdentifiesCalculationSource
 {
+    /**
+     * Registry id for this fallback.
+     */
+    public const SOURCE_ID = 'prayer.polar.nearest_latitude';
+
     /**
      * Resolve to the nearest solvable latitude, keeping the date.
      *
@@ -27,7 +35,7 @@ final class NearestLatitudeHandler implements PolarCircleHandler
      * @param Coordinates $coordinates Original observer location.
      * @param CivilDate $date Original civil date.
      * @param callable(Coordinates, CivilDate): bool $isSolvable Astro-backed probe (calculator-supplied).
-     * @return array{coordinates: Coordinates, date: CivilDate} Effective inputs to compute with.
+     * @return array{coordinates: Coordinates, date: CivilDate, rule: PolarCircleRule} Effective inputs plus the applied rule.
      */
     public function resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array
     {
@@ -51,6 +59,17 @@ final class NearestLatitudeHandler implements PolarCircleHandler
         return [
             'coordinates' => Coordinates::fromDegrees($sign * max($valid - 0.5, 0.0), $lon),
             'date' => $date,
+            'rule' => PolarCircleRule::NEAREST_LATITUDE,
         ];
+    }
+
+    /**
+     * Stable provenance identity for this fallback.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }

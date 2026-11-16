@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Prayer\Strategies;
 
 use AlFalaq\AlFalaq\Prayer\Contracts\PolarCircleHandler;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Kaaba;
@@ -16,15 +19,20 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Kaaba;
  *
  * Keeps the input date; only the location is remapped.
  */
-final class MakkahHandler implements PolarCircleHandler
+final class MakkahHandler implements PolarCircleHandler, IdentifiesCalculationSource
 {
+    /**
+     * Registry id for this fallback.
+     */
+    public const SOURCE_ID = 'prayer.polar.makkah';
+
     /**
      * Replace any location with Makkah.
      *
      * @param Coordinates $coordinates Original observer location (ignored).
      * @param CivilDate $date Original civil date (kept).
      * @param callable(Coordinates, CivilDate): bool $isSolvable Astro-backed probe (unused).
-     * @return array{coordinates: Coordinates, date: CivilDate} Effective inputs to compute with.
+     * @return array{coordinates: Coordinates, date: CivilDate, rule: PolarCircleRule} Effective inputs plus the applied rule.
      */
     public function resolve(Coordinates $coordinates, CivilDate $date, callable $isSolvable): array
     {
@@ -32,6 +40,17 @@ final class MakkahHandler implements PolarCircleHandler
         return [
             'coordinates' => Kaaba::coordinates(),
             'date' => $date,
+            'rule' => PolarCircleRule::MAKKAH,
         ];
+    }
+
+    /**
+     * Stable provenance identity for this fallback.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }
