@@ -89,6 +89,14 @@ final class CalculationVocabularyTest extends TestCase
         yield 'spaces' => ['   '];
     }
 
+    public function testWarningRejectsIntegerDetailKey(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        /** @phpstan-ignore-next-line deliberate contract violation */
+        new CalculationWarning(WarningCode::MOONSET_INDETERMINATE, 'message', [0 => 'value']);
+    }
+
     public function testWarningRejectsNestedArrayDetail(): void
     {
         $this->expectException(ValidationException::class);

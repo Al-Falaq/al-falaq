@@ -32,7 +32,7 @@ final readonly class CalculationWarning
         }
 
         foreach ($details as $key => $value) {
-            if (trim($key) === '') {
+            if (! is_string($key) || trim($key) === '') {
                 throw new ValidationException('Warning detail keys must be non-empty strings.');
             }
 
