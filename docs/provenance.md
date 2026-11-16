@@ -236,14 +236,13 @@ To reproduce a result from stored metadata, feed back exactly:
 1. `input` — the requested coordinates and date (not `effective_input`; a
    fallback must be able to run again);
 2. `policy` — the full scalar snapshot captured when the outcome was built.
-   Reconstruct `CalculationParameters` through `create()`/withers; the rule
-   blocks record both keys and set the unused one to null. The snapshot cannot
-   distinguish an unset prayer from an explicit zero, so do not rebuild the
-   caller layer by applying all ten zero-filled `PrayerAdjustments::toArray()`
-   values with `with()`: that turns an originally empty layer into a non-empty
-   one. Leave it as `PrayerAdjustments::empty()` when `sources` does not list
-   `caller.adjustments`; when it does, apply the recorded values (a zero-only
-   layer can use one zero entry and serializes identically);
+   Reconstruction and comparison are documented in
+   [Storing a result for reproduction](user/calculation-metadata.md#storing-a-result-for-reproduction).
+   Contributor-level caveat: the snapshot cannot distinguish an unset prayer
+   from an explicit zero, so do not rebuild the caller layer by applying all
+   ten zero-filled `PrayerAdjustments::toArray()` values with `with()`. Use the
+   recorded `sources` to decide whether `caller.adjustments` existed; a
+   zero-only caller layer serializes identically with one zero entry;
 3. the same `library_version` — engine, preset defaults, and ids can change
    across releases even when the schema does not;
 4. the same calculator wiring — the payload does not record injected engines
