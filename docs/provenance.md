@@ -42,7 +42,7 @@ All contexts share the `SharedKernel` namespace:
 |---|---|
 | `Enums\CalculationContext` | `prayer`, `qibla`, `moon`, `hijri` |
 | `Enums\CalculationStatus` | Derived outcome rank |
-| `Enums\CalculationSourceKind` | `algorithm`, `data_table`, `caller_input` |
+| `Enums\SourceKind` | `algorithm`, `generated_data`, `official_data`, `caller_input` |
 | `Enums\WarningCode` | Stable warning identifiers |
 | `ValueObjects\CalculationMetadata` | Common envelope: schema/context/status/version/warnings/sources |
 | `ValueObjects\CalculationSource` | One algorithm/data dependency |

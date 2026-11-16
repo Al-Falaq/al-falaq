@@ -205,8 +205,10 @@ reads magnetic north, which differs by the local magnetic declination. A1 does
 not ship a magnetic model. If your application shows a compass bearing, apply
 a declination from a source appropriate to the user's location and date, and
 state that you did so; do not silently relabel the true-north bearing as a
-compass bearing. A2 adds an explicit, caller-supplied declination path with its
-own metadata field.
+compass bearing. A2 keeps this policy: its Qibla metadata reports
+`heading_reference: true_north` and always serializes
+`magnetic_declination_degrees: null`, making the absence of a model explicit.
+A sourced magnetic model remains a later phase (P2.3).
 
 ## Moon criteria are not observations
 
