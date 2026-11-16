@@ -13,7 +13,10 @@ monthly timetable (`TimetableService`), next-prayer resolver
 (tabular, Umm al-Qura, per-country MABIMS + Gregorian bridge) shipped
 (calculation-method defaults frozen + milestone amendments; no deferred-context
 `LogicException` markers remain in `src/` — the final no-throw sweep was an
-M5 gate). Public surface is `src/{SharedKernel,Prayer,Qibla,
+M5 gate). **Provenance A1 landed** — shared calculation-metadata vocabulary
+plus opt-in prayer/timetable provenance via `calculateWithMetadata()` /
+`monthlyWithMetadata()`; Qibla, Moon, and Hijri metadata remain the later
+A2/A3 phases. Public surface is `src/{SharedKernel,Prayer,Qibla,
 Moon,Hijri}/`; `src/Astro/` is `@internal`.
 
 ## Setup Commands
@@ -137,6 +140,12 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - Gotcha: same short names in `Contracts/` + `Services/` namespaces cannot
   share one file's imports (PHP fatal) — that is why service contracts keep
   the `Interface` suffix. Do not "simplify" it away.
+- Provenance rule: `SOURCE_ID` constants are the built-in registry; a wired
+  component without `IdentifiesCalculationSource` is reported as
+  `custom.<component>` plus an `unidentified_calculation_source` warning —
+  never guess an id from a class name. Metadata is built at orchestration
+  boundaries, never inside `Astro/`; `calculate()` and
+  `calculateWithMetadata()` must keep sharing one `run()`.
 - Gotcha: `composer update` without `config.platform.php=8.2.0` resolves
   8.4-only deps and breaks the 8.2/8.3 CI legs.
 - `docs/` is contributor-facing (algorithm appendices, internals,

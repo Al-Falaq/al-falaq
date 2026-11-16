@@ -23,6 +23,7 @@ that owns it, and link to the other tree instead of repeating it.
 | [moon.md](moon.md) | crescent geometry and criteria internals | [user/moon-sighting.md](user/moon-sighting.md) |
 | [hijri.md](hijri.md) | calendar algorithms and table provenance | [user/hijri-converter.md](user/hijri-converter.md) |
 | [sunnah.md](sunnah.md) | night-fraction internals | [user/sunnah-times.md](user/sunnah-times.md) |
+| [provenance.md](provenance.md) | provenance vocabulary, warning/status semantics, source registry | [user/calculation-metadata.md](user/calculation-metadata.md) |
 | [polar.md](polar.md) | polar fallback internals | [user/polar-regions.md](user/polar-regions.md) |
 | [migration.md](migration.md) | M1-M5 architecture migration | [user/migration.md](user/migration.md) |
 | [integrations.md](integrations.md) | executable plain-`new` wiring | [user/integration.md](user/integration.md) |

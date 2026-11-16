@@ -15,7 +15,7 @@ One offline library any PHP app can drop in — no extensions beyond `date`,
 no network, no framework — with behavioral parity to the pinned Python
 implementation, proven by golden vectors.
 
-## Current status (M5 landed)
+## Current status (M5 landed; provenance A1 landed)
 
 Landed: composer scaffold, `SharedKernel` value objects (`Coordinates`,
 `CivilDate`, `Angle`, `Minutes`, `JulianDay`), exception hierarchy, prayer pipeline
@@ -26,6 +26,14 @@ freeze + milestone amendments, Qibla (spherical + WGS84/Karney), Sunnah markers
 (`tests/Goldens/`, 25 CSVs), arch groups (shape/docs/layering rules), coverage-ratchet gate
 (floor 85 → 95 at M5), CI matrix. No throwing stubs remain in `src/`. Outcome:
 M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed); release-ready PR, no tag. Post-M5 architecture rounds deepened the seams (day-engine port, rule validation, single-owners) — see CHANGELOG Unreleased.
+
+Provenance A1 (P0.1 first slice) landed: the shared
+`SharedKernel` metadata vocabulary (`CalculationMetadata`,
+`CalculationSource`, `CalculationWarning`, `IdentifiesCalculationSource`,
+status/warning/source enums, `LibraryVersion`) and the opt-in prayer/timetable
+path (`calculateWithMetadata()`, `monthlyWithMetadata()`, schema `1.0`).
+Legacy methods and numeric outputs are unchanged. Qibla, Moon, and Hijri
+metadata are A2/A3, not shipped.
 
 ## Stack & tooling
 
@@ -47,7 +55,8 @@ M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed);
   `bench.php`. `tools/` — full inventory in `ARCHITECTURE.md`
   (`composer goldens` lists the generator contracts).
 - Docs: `ARCHITECTURE.md` (layering), `docs/README.md` (contributor/user
-  scope map), `docs/` contributor guides + `integrations.md` (plain-`new`
+  scope map), `docs/provenance.md` (metadata vocabulary and source registry),
+  `docs/` contributor guides + `integrations.md` (plain-`new`
   wiring), `docs/user/` published user guide, `AGENTS.md`,
   `UQ_PROVENANCE.md` (M4).
 

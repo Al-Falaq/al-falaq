@@ -7,6 +7,16 @@ description: Upgrade between al-falaq versions — what changed, what breaks, an
 
 This page collects the changes that require your attention when upgrading.
 
+## Unreleased
+
+### Additive provenance API — no migration required
+
+The calculation-metadata surface is purely additive. Existing methods, return
+types, exception behavior, and numeric results are unchanged. Adopt
+`PrayerTimesCalculator::calculateWithMetadata()` and
+`TimetableService::monthlyWithMetadata()` only where you need the provenance
+envelope; see [Calculation Metadata](calculation-metadata/).
+
 ## 0.2.0
 
 ### `ClockView` removed

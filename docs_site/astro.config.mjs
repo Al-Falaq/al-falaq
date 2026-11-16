@@ -77,6 +77,10 @@ export default defineConfig({
           link: '/timetable/',
         },
         {
+          label: 'Calculation Metadata',
+          link: '/calculation-metadata/',
+        },
+        {
           label: 'Qibla Direction',
           link: '/qibla/',
         },

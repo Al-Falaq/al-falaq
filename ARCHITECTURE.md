@@ -543,6 +543,37 @@ no HTML.
   (`MabimsCalendar::country()` narrows MABIMS further). Month labels are
   `en`/`ar` only via `HijriMonth::label()` (no ICU).
 
+### Calculation provenance (A1)
+
+`PrayerTimesCalculator::calculateWithMetadata()` and
+`TimetableService::monthlyWithMetadata()` return the unchanged result plus a
+metadata envelope. The vocabulary is shared (`SharedKernel\Enums` +
+`ValueObjects\CalculationMetadata`), so Qibla/Moon/Hijri can reuse it in later
+phases without touching the common key set.
+
+- `IdentifiesCalculationSource` is the capability built-in engines and
+  strategies implement; each declares a `SOURCE_ID` constant as the single
+  source of truth. A wired component without the interface is reported as
+  `custom.<component>` with an `unidentified_calculation_source` warning,
+  never guessed.
+- Metadata is built at orchestration boundaries (`PrayerTimesCalculator`,
+  `TimetableService`), never inside `Astro/`; `Astro` only exposes engine
+  identity through the shared contract.
+- One private `run()` serves both `calculate()` and
+  `calculateWithMetadata()`, so the numeric pipeline cannot drift. The legacy
+  method returns `run()['schedule']`; the metadata method wraps the same value.
+- The surface is additive-only: existing methods, return types, numeric
+  outputs, and exception behavior are unchanged. `CalculationMetadata` schema
+  `1.0` is independent of the package version, and warning codes are stable
+  within schema major version 1.
+- `NightResolver` reports its selected mode (`seasonal`, `none`, `portions`)
+  beside the two instants; the calculator uses that internal trace to list
+  only the night strategy that actually ran.
+
+The full decision record is
+[`docs/design/2026-11-15-provenance-explainability-foundation.md`](docs/design/2026-11-15-provenance-explainability-foundation.md);
+the contributor summary is [`docs/provenance.md`](docs/provenance.md).
+
 **What NOT to do:**
 
 - Do not import `Astro/` from userland — go through `Moon/` or the

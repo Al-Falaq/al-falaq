@@ -102,8 +102,35 @@ hour-angle interpolation), Ch.25 pp.163–165 (solar coordinates), Ch.28 p.183
   endpoint fails on an expired certificate) — drift gates, never claimed as
   parity.
 
+## Provenance
+
+`calculateWithMetadata()` returns the unchanged schedule plus a
+`PrayerCalculationMetadata` envelope; `monthlyWithMetadata()` does the same per
+day. The legacy methods are untouched.
+
+A1 source ids for this context:
+
+- `solar.mean-meeus` (`meeus-2ed`) and `prayer.method.<enum value>`
+  (`method-defaults-v1`) always;
+- `prayer.isha.angle` / `prayer.isha.interval` and `prayer.maghrib.angle` /
+  `prayer.maghrib.interval` always;
+- one of `prayer.high-latitude.middle_of_night`,
+  `prayer.high-latitude.seventh_of_night`,
+  `prayer.high-latitude.twilight_angle`,
+  `prayer.high-latitude.seasonal_twilight`, or none (`HighLatitudeRule::NONE`);
+- `prayer.polar.nearest_latitude` / `.nearest_day` / `.makkah` only when a
+  fallback actually ran (`prayer.polar.none` throws and is never emitted);
+- `caller.adjustments` only when the caller adjustment layer is non-empty.
+
+Two warning codes are emitted here: `polar_fallback_applied` (status
+`fallback_applied`) and `unidentified_calculation_source` (no status effect).
+Status precedence and the full vocabulary live in
+[provenance.md](provenance.md); the published guide is
+[user/calculation-metadata.md](user/calculation-metadata.md).
+
 ## See also
 
 - [Prayer Times](user/prayer-times.md) — the published user guide
 - [Calculation Methods](user/calculation-methods.md)
 - [High Latitude Rules](user/high-latitude.md)
+- [Provenance](provenance.md) — metadata vocabulary and source registry

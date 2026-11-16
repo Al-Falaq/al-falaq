@@ -63,6 +63,33 @@ printf(
     $yearTripwireMs,
     $peakMb,
 );
+
+// Metadata path: same workload through the opt-in provenance envelope.
+// Object construction makes it slower by design; this line is not gated.
+$metadataSingles = [];
+
+for ($i = 0; $i < 21; $i++) {
+    $start = hrtime(true);
+    $calc->calculateWithMetadata($coords, CivilDate::fromYmd(2025, 1, 15), $params);
+    $metadataSingles[] = (hrtime(true) - $start) / 1e6;
+}
+
+sort($metadataSingles);
+$metadataSingleMs = $metadataSingles[10];
+
+$start = hrtime(true);
+
+for ($m = 1; $m <= 12; $m++) {
+    $timetable->monthlyWithMetadata($coords, 2025, $m, $params);
+}
+
+$metadataYearMs = (hrtime(true) - $start) / 1e6;
+
+printf(
+    "bench: metadata (NOT gated): single-day median %.3f ms; year %.0f ms\n",
+    $metadataSingleMs,
+    $metadataYearMs,
+);
 printf(
     "bench: PRD reference (NOT gated, hardware- and load-dependent): single-day p50 < 2ms; year < 1000ms; peak < 16MB\n",
 );
