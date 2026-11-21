@@ -80,9 +80,11 @@ Conventions: public services are `final` with explicit constructor injection and
 
 | Class | Key members |
 | --- | --- |
-| `Qibla\Services\QiblaCalculator` | `default(): self` (spherical); `wgs84(): self` (Karney); `calculate(Coordinates\|array): QiblaResult` |
+| `Qibla\Services\QiblaCalculator` | `default(): self` (spherical); `wgs84(): self` (Karney); `calculate(Coordinates\|array): QiblaResult`; `calculateWithMetadata(Coordinates\|array): QiblaCalculationOutcome` (shares the numeric solve) |
 | `Qibla\Contracts\GeodesyCalculator` | `MAKKAH_LATITUDE = 21.4225241`, `MAKKAH_LONGITUDE = 39.8261818` (both referencing `SharedKernel\ValueObjects\Kaaba`), `SELF_DISTANCE_KM = 0.001`; `inverse(Coordinates): array{direction, distanceKm}` |
 | `Qibla\ValueObjects\QiblaResult` | `__construct(float $direction [0,360), float $distanceKm)`; `magneticHeading(mixed $declinationEast): float`; `toArray()` (`direction_degrees` then `distance_km`) |
+| `Qibla\ValueObjects\QiblaCalculationMetadata` | `HEADING_REFERENCE = 'true_north'`; `__construct(CalculationMetadata $common, Coordinates $coordinates)`; `toArray()` (common keys, `input`, `heading_reference`, always-null `magnetic_declination_degrees`) |
+| `Qibla\ValueObjects\QiblaCalculationOutcome` | `__construct(QiblaResult $result, QiblaCalculationMetadata $metadata)`; `toArray()` (`result` + `metadata`) |
 | `Qibla\Strategies\SphericalCalculator`, `Qibla\Strategies\Wgs84KarneyCalculator` | The two `GeodesyCalculator` implementations (spherical default; WGS84/Karney opt-in); `IdentifiesCalculationSource` with `SOURCE_ID`/`SOURCE_VERSION` (`qibla.spherical`/`todhunter-haversine`, `qibla.wgs84-karney`/`geographiclib-2.1`) |
 | `Qibla\Traits\ClampsMakkahSelf` | Helper that clamps bearing and distance to 0.0 below `GeodesyCalculator::SELF_DISTANCE_KM` |
 
