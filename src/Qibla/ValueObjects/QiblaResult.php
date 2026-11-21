@@ -57,4 +57,17 @@ final readonly class QiblaResult
 
         return Angle::fromDegrees($this->direction - fmod($decl, 360.0))->normalized()->degrees;
     }
+
+    /**
+     * Wire shape: direction then distance.
+     *
+     * @return array{direction_degrees: float, distance_km: float}
+     */
+    public function toArray(): array
+    {
+        return [
+            'direction_degrees' => $this->direction,
+            'distance_km' => $this->distanceKm,
+        ];
+    }
 }

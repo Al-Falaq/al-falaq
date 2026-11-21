@@ -7,6 +7,8 @@ namespace AlFalaq\AlFalaq\Moon\Strategies;
 use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 
 /**
  * MABIMS-1992 criterion: (alt ≥ 2° and elongation ≥ 3°) or age at moonset ≥ 8 h.
@@ -15,8 +17,13 @@ use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
  * fallback here — the age branch is undefined without a moonset, so only
  * the alt/elongation half applies.
  */
-final class Mabims1992Evaluator implements CrescentEvaluator
+final class Mabims1992Evaluator implements CrescentEvaluator, IdentifiesCalculationSource
 {
+    /**
+     * Registry id for the MABIMS-1992 criterion.
+     */
+    public const SOURCE_ID = 'moon.criterion.mabims-1992';
+
     /**
      * Apply the 1992 OR-gate on age at moonset (M3).
      *
@@ -45,5 +52,15 @@ final class Mabims1992Evaluator implements CrescentEvaluator
         $visible = ($geometry->moonAltitude >= 2.0 && $geometry->elongationDeg >= 3.0) || $age >= 8.0;
 
         return new CrescentVerdict('mabims1992', $visible, $geometry->elongationDeg, $visible ? 'visible' : 'not-visible');
+    }
+
+    /**
+     * Stable provenance identity for this criterion.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }

@@ -70,5 +70,6 @@ Qibla never raises polar or high-latitude errors (those are a prayer-times conce
 ## See also
 
 - [Timezones & Display](timezone/) — Qibla has no timezone; bearings are pure geometry
+- [Calculation Metadata](calculation-metadata/#qibla) — opt-in provenance for a stored Qibla result
 - [API Reference](api-reference/) — `QiblaCalculator`, `QiblaResult::magneticHeading()`
 - [Citations](citations/) — Karney (2013), Todhunter, IUGG radius

@@ -13,10 +13,12 @@ monthly timetable (`TimetableService`), next-prayer resolver
 (tabular, Umm al-Qura, per-country MABIMS + Gregorian bridge) shipped
 (calculation-method defaults frozen + milestone amendments; no deferred-context
 `LogicException` markers remain in `src/` — the final no-throw sweep was an
-M5 gate). **Provenance A1 landed** — shared calculation-metadata vocabulary
-plus opt-in prayer/timetable provenance via `calculateWithMetadata()` /
-`monthlyWithMetadata()`; Qibla, Moon, and Hijri metadata remain the later
-A2/A3 phases. Public surface is `src/{SharedKernel,Prayer,Qibla,
+M5 gate). **Provenance A1 and A2 landed** — shared calculation-metadata
+vocabulary plus opt-in provenance for prayer/timetable
+(`calculateWithMetadata()` / `monthlyWithMetadata()`), Qibla
+(`calculateWithMetadata()`), and Moon (`atSunsetWithMetadata()`,
+`evaluateWithMetadata()`, `evaluateGeometryWithMetadata()`); Hijri metadata
+remains A3. Public surface is `src/{SharedKernel,Prayer,Qibla,
 Moon,Hijri}/`; `src/Astro/` is `@internal`.
 
 ## Setup Commands
@@ -145,7 +147,13 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   `custom.<component>` plus an `unidentified_calculation_source` warning —
   never guess an id from a class name. Metadata is built at orchestration
   boundaries, never inside `Astro/`; `calculate()` and
-  `calculateWithMetadata()` must keep sharing one `run()`.
+  `calculateWithMetadata()` must keep sharing one `run()` (Qibla: `solve()`;
+  Moon: `sunset()`).
+- Gotcha: `Moon\ValueObjects` and `Moon\Contracts` must not import `Astro`.
+  The ΔT provider's identity and calibrated range cross the boundary through
+  `CalculationSource` (`moon.delta-t.espenak-2005-2050`, range `2005..2050`);
+  `MoonCalculationMetadata` parses that range instead of importing the
+  provider.
 - Gotcha: `composer update` without `config.platform.php=8.2.0` resolves
   8.4-only deps and breaks the 8.2/8.3 CI legs.
 - `docs/` is contributor-facing (algorithm appendices, internals,

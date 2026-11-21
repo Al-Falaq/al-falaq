@@ -14,12 +14,34 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 final class DeltaTProvider
 {
     /**
+     * Registry id for the Espenak 2005–2050 polynomial.
+     */
+    public const MODEL_ID = 'moon.delta-t.espenak-2005-2050';
+
+    /**
+     * Calibrated model range carried by the metadata source.
+     */
+    public const MODEL_RANGE = '2005..2050';
+
+    /**
+     * Inclusive lower bound of the calibrated interval (decimal year).
+     */
+    public const VALID_FROM_YEAR = 2005.0;
+
+    /**
+     * Inclusive upper bound of the calibrated interval (decimal year).
+     */
+    public const VALID_TO_YEAR = 2050.0;
+
+    /**
      * ΔT in seconds for a fractional year (Espenak 2005–2050 polynomial).
      *
      * Pin a7baa8b DeltaT.delta_t: 62.92 + 0.32217·t + 0.005589·t² with
      * t = year − 2000.0. Calibrated for 2005–2050; out-of-range years still
-     * return an extrapolated value (no warning convention in PHP). The prayer
-     * path never calls this — reserved for the M3 lunar path, same as the pin.
+     * return an extrapolated value. The metadata path reports an out-of-range
+     * year with `delta_t_extrapolated`; this provider never throws for it.
+     * The prayer path never calls this — reserved for the M3 lunar path, same
+     * as the pin.
      *
      * @param mixed $year Fractional year (e.g. 2025.5); finite int|float, bools rejected.
      * @return float Seconds to add to UT1.

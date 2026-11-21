@@ -23,4 +23,19 @@ final readonly class CrescentVerdict
         public float $score,
         public string $zone,
     ) {}
+
+    /**
+     * Wire shape: criterion, visibility, score, zone.
+     *
+     * @return array{criterion: string, visible: bool, score: float, zone: string}
+     */
+    public function toArray(): array
+    {
+        return [
+            'criterion' => $this->criterion,
+            'visible' => $this->visible,
+            'score' => $this->score,
+            'zone' => $this->zone,
+        ];
+    }
 }

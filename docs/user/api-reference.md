@@ -34,7 +34,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `SharedKernel\Exceptions\InvalidCoordinatesException` | `outOfRange(string $which, mixed $received)`, `malformedArray()`; `extends ValidationException` |
 | `SharedKernel\Exceptions\ConfigurationException` | Invalid wiring or configuration; `extends AlFalaqException` |
 | `SharedKernel\Exceptions\AstronomicalException` | Inputs the astronomy cannot solve; `extends AlFalaqException` |
-| `SharedKernel\Traits\HasWithersGuard`, `SharedKernel\Traits\ValidatesFinite` | Stateless helpers used by the value objects; their members are `private` by design |
+| `SharedKernel\Traits\HasWithersGuard`, `SharedKernel\Traits\ValidatesFinite`, `SharedKernel\Traits\ResolvesCalculationSources` | Stateless helpers used by the value objects and services; `ResolvesCalculationSources` owns the `custom.<component>` + `unidentified_calculation_source` fallback; their members are `private` by design |
 
 ## Prayer — times, timetables, nights
 
@@ -80,23 +80,28 @@ Conventions: public services are `final` with explicit constructor injection and
 
 | Class | Key members |
 | --- | --- |
-| `Qibla\Services\QiblaCalculator` | `default(): self` (spherical); `wgs84(): self` (Karney); `calculate(Coordinates\|array): QiblaResult` |
+| `Qibla\Services\QiblaCalculator` | `default(): self` (spherical); `wgs84(): self` (Karney); `calculate(Coordinates\|array): QiblaResult`; `calculateWithMetadata(Coordinates\|array): QiblaCalculationOutcome` (shares the numeric solve) |
 | `Qibla\Contracts\GeodesyCalculator` | `MAKKAH_LATITUDE = 21.4225241`, `MAKKAH_LONGITUDE = 39.8261818` (both referencing `SharedKernel\ValueObjects\Kaaba`), `SELF_DISTANCE_KM = 0.001`; `inverse(Coordinates): array{direction, distanceKm}` |
-| `Qibla\ValueObjects\QiblaResult` | `__construct(float $direction [0,360), float $distanceKm)`; `magneticHeading(mixed $declinationEast): float` |
-| `Qibla\Strategies\SphericalCalculator`, `Qibla\Strategies\Wgs84KarneyCalculator` | The two `GeodesyCalculator` implementations (spherical default; WGS84/Karney opt-in) |
+| `Qibla\ValueObjects\QiblaResult` | `__construct(float $direction [0,360), float $distanceKm)`; `magneticHeading(mixed $declinationEast): float`; `toArray()` (`direction_degrees` then `distance_km`) |
+| `Qibla\ValueObjects\QiblaCalculationMetadata` | `HEADING_REFERENCE = 'true_north'`; `__construct(CalculationMetadata $common, Coordinates $coordinates)`; `toArray()` (common keys, `input`, `heading_reference`, always-null `magnetic_declination_degrees`) |
+| `Qibla\ValueObjects\QiblaCalculationOutcome` | `__construct(QiblaResult $result, QiblaCalculationMetadata $metadata)`; `toArray()` (`result` + `metadata`) |
+| `Qibla\Strategies\SphericalCalculator`, `Qibla\Strategies\Wgs84KarneyCalculator` | The two `GeodesyCalculator` implementations (spherical default; WGS84/Karney opt-in); `IdentifiesCalculationSource` with `SOURCE_ID`/`SOURCE_VERSION` (`qibla.spherical`/`todhunter-haversine`, `qibla.wgs84-karney`/`geographiclib-2.1`) |
 | `Qibla\Traits\ClampsMakkahSelf` | Helper that clamps bearing and distance to 0.0 below `GeodesyCalculator::SELF_DISTANCE_KM` |
 
 ## Moon — crescent geometry and criteria
 
 | Class | Key members |
 | --- | --- |
-| `Moon\Services\CrescentCalculator` | `default(): self`; `atSunset(Coordinates, CivilDate, ?float $deltaTOverride): CrescentGeometry`; `evaluate(...): array{yallop, odeh, mabims1992, neomabims2021}`; `evaluateGeometry(CrescentGeometry): same` |
-| `Moon\Services\EphemerisConjunctionSearch` | The `ConjunctionSearch` implementation (30-day hourly ARCL-minimum moon-age search); `default(): self` |
-| `Moon\ValueObjects\CrescentGeometry` | `sunAltitude, moonAltitude, elongationDeg, moonAgeHours, ?lagMinutes, deltaAzimuthDeg, illuminatedFraction, arcvGeoDeg, widthArcmin, ?ageAtMoonsetHours` |
-| `Moon\ValueObjects\CrescentVerdict` | `__construct(string $criterion, bool $visible, float $score, string $zone)` |
+| `Moon\Services\CrescentCalculator` | `default(): self`; `atSunset(Coordinates, CivilDate, ?float $deltaTOverride): CrescentGeometry`; `atSunsetWithMetadata(...): CrescentGeometryOutcome`; `evaluate(...): array{yallop, odeh, mabims1992, neomabims2021}`; `evaluateGeometry(CrescentGeometry): same`; `evaluateWithMetadata(...): CrescentEvaluationOutcome`; `evaluateGeometryWithMetadata(CrescentGeometry): CrescentEvaluationOutcome` |
+| `Moon\Services\EphemerisConjunctionSearch` | The `ConjunctionSearch` implementation (30-day hourly ARCL-minimum moon-age search); `default(): self`; `IdentifiesCalculationSource` with `SOURCE_ID = 'moon.conjunction-search.meeus-hourly'` |
+| `Moon\ValueObjects\CrescentGeometry` | `sunAltitude, moonAltitude, elongationDeg, moonAgeHours, ?lagMinutes, deltaAzimuthDeg, illuminatedFraction, arcvGeoDeg, widthArcmin, ?ageAtMoonsetHours`; `toArray()` (ten-key wire shape) |
+| `Moon\ValueObjects\CrescentVerdict` | `__construct(string $criterion, bool $visible, float $score, string $zone)`; `toArray()` |
+| `Moon\ValueObjects\MoonCalculationMetadata` | `GEOMETRY_CALCULATED`, `GEOMETRY_CALLER_SUPPLIED`, `DELTA_T_PROVIDER`, `DELTA_T_OVERRIDE`; `CRITERIA = ['yallop', 'odeh', 'mabims1992', 'neomabims2021']`; `__construct(CalculationMetadata $common, ?Coordinates, ?CivilDate, ?float $deltaTSeconds, ?CalculationSource, string $geometrySource, list<string> $criteria)`; `toArray()` (common keys, `input`, `delta_t`, `geometry_source`, `criteria`) |
+| `Moon\ValueObjects\CrescentGeometryOutcome` | `__construct(CrescentGeometry $result, MoonCalculationMetadata $metadata)`; `toArray()` (`result` + `metadata`) |
+| `Moon\ValueObjects\CrescentEvaluationOutcome` | `__construct(CrescentGeometry $result, array $verdicts, MoonCalculationMetadata $metadata)` (exactly the four `CRITERIA` keys); `toArray()` (geometry + fixed-order verdicts, then metadata) |
 | `Moon\Contracts\CrescentEvaluator` | `evaluate(CrescentGeometry): CrescentVerdict` |
 | `Moon\Contracts\ConjunctionSearch` | Port for moon-age search (tests substitute doubles): `ageDays(float $julianDayTt): float`, `separation(float, float, float, float): float` |
-| `Moon\Strategies\YallopEvaluator`, `Moon\Strategies\OdehEvaluator`, `Moon\Strategies\Mabims1992Evaluator`, `Moon\Strategies\NeoMabims2021Evaluator` | The four visibility criteria |
+| `Moon\Strategies\YallopEvaluator`, `Moon\Strategies\OdehEvaluator`, `Moon\Strategies\Mabims1992Evaluator`, `Moon\Strategies\NeoMabims2021Evaluator` | The four visibility criteria; `IdentifiesCalculationSource` with `SOURCE_ID` (`moon.criterion.yallop`, `moon.criterion.odeh`, `moon.criterion.mabims-1992`, `moon.criterion.neo-mabims-2021`) |
 
 ## Hijri — calendars and the bridge
 

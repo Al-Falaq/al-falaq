@@ -4,7 +4,14 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Tests\SharedKernel\Provenance;
 
+use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
+use AlFalaq\AlFalaq\Astro\Services\DeltaTProvider;
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
+use AlFalaq\AlFalaq\Moon\Services\EphemerisConjunctionSearch;
+use AlFalaq\AlFalaq\Moon\Strategies\Mabims1992Evaluator;
+use AlFalaq\AlFalaq\Moon\Strategies\NeoMabims2021Evaluator;
+use AlFalaq\AlFalaq\Moon\Strategies\OdehEvaluator;
+use AlFalaq\AlFalaq\Moon\Strategies\YallopEvaluator;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Strategies\AngleIsha;
 use AlFalaq\AlFalaq\Prayer\Strategies\AngleMaghrib;
@@ -18,6 +25,8 @@ use AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeventhOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\ThrowHandler;
 use AlFalaq\AlFalaq\Prayer\Strategies\TwilightAngleCorrection;
+use AlFalaq\AlFalaq\Qibla\Strategies\SphericalCalculator;
+use AlFalaq\AlFalaq\Qibla\Strategies\Wgs84KarneyCalculator;
 use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -65,12 +74,24 @@ final class BuiltInSourceIdentityTest extends TestCase
 
     public function testProviderCoversEveryBuiltInComponent(): void
     {
-        self::assertCount(13, iterator_to_array(self::componentProvider()));
+        self::assertCount(21, iterator_to_array(self::componentProvider()));
     }
 
     public function testMethodDefaultsSourceVersionIsFrozen(): void
     {
         self::assertSame('method-defaults-v1', CalculationMethod::SOURCE_VERSION);
+    }
+
+    public function testDeltaTProviderPublishesItsModelIdentity(): void
+    {
+        self::assertSame('moon.delta-t.espenak-2005-2050', DeltaTProvider::MODEL_ID);
+        self::assertSame('2005..2050', DeltaTProvider::MODEL_RANGE);
+        self::assertSame(2005.0, DeltaTProvider::VALID_FROM_YEAR);
+        self::assertSame(2050.0, DeltaTProvider::VALID_TO_YEAR);
+        self::assertSame(
+            sprintf('%.0f..%.0f', DeltaTProvider::VALID_FROM_YEAR, DeltaTProvider::VALID_TO_YEAR),
+            DeltaTProvider::MODEL_RANGE,
+        );
     }
 
     public function testPresetSourceIdUsesTheCanonicalLowercaseValue(): void
@@ -100,5 +121,13 @@ final class BuiltInSourceIdentityTest extends TestCase
         yield 'interval isha' => [new IntervalIsha(90), 'prayer.isha.interval'];
         yield 'angle maghrib' => [new AngleMaghrib(4.0), 'prayer.maghrib.angle'];
         yield 'interval maghrib' => [new MinutesAfterSunsetMaghrib(0), 'prayer.maghrib.interval'];
+        yield 'qibla spherical' => [new SphericalCalculator(), 'qibla.spherical', 'todhunter-haversine'];
+        yield 'qibla wgs84' => [new Wgs84KarneyCalculator(), 'qibla.wgs84-karney', 'geographiclib-2.1'];
+        yield 'moon ephemeris' => [new CrescentEphemeris(), 'moon.ephemeris.meeus-2ed', 'meeus-2ed'];
+        yield 'moon conjunction search' => [new EphemerisConjunctionSearch(new CrescentEphemeris()), 'moon.conjunction-search.meeus-hourly', 'meeus-hourly'];
+        yield 'yallop' => [new YallopEvaluator(), 'moon.criterion.yallop'];
+        yield 'odeh' => [new OdehEvaluator(), 'moon.criterion.odeh'];
+        yield 'mabims 1992' => [new Mabims1992Evaluator(), 'moon.criterion.mabims-1992'];
+        yield 'neo mabims 2021' => [new NeoMabims2021Evaluator(), 'moon.criterion.neo-mabims-2021'];
     }
 }

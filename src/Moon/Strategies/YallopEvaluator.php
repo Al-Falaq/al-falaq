@@ -7,12 +7,19 @@ namespace AlFalaq\AlFalaq\Moon\Strategies;
 use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 
 /**
  * Yallop (1997) q-criterion with zones A–F (M3).
  */
-final class YallopEvaluator implements CrescentEvaluator
+final class YallopEvaluator implements CrescentEvaluator, IdentifiesCalculationSource
 {
+    /**
+     * Registry id for the Yallop criterion.
+     */
+    public const SOURCE_ID = 'moon.criterion.yallop';
+
     /**
      * Compute q = f(ARCV_geo, W) and map to Yallop zones A–F (M3).
      *
@@ -43,5 +50,15 @@ final class YallopEvaluator implements CrescentEvaluator
         $visible = $zone === 'A' || $zone === 'B' || $zone === 'C' || $zone === 'D';
 
         return new CrescentVerdict('yallop', $visible, $q, $zone);
+    }
+
+    /**
+     * Stable provenance identity for this criterion.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }
