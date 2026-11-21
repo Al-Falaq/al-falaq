@@ -92,7 +92,7 @@ Conventions: public services are `final` with explicit constructor injection and
 
 | Class | Key members |
 | --- | --- |
-| `Moon\Services\CrescentCalculator` | `default(): self`; `atSunset(Coordinates, CivilDate, ?float $deltaTOverride): CrescentGeometry`; `evaluate(...): array{yallop, odeh, mabims1992, neomabims2021}`; `evaluateGeometry(CrescentGeometry): same` |
+| `Moon\Services\CrescentCalculator` | `default(): self`; `atSunset(Coordinates, CivilDate, ?float $deltaTOverride): CrescentGeometry`; `atSunsetWithMetadata(...): CrescentGeometryOutcome`; `evaluate(...): array{yallop, odeh, mabims1992, neomabims2021}`; `evaluateGeometry(CrescentGeometry): same` |
 | `Moon\Services\EphemerisConjunctionSearch` | The `ConjunctionSearch` implementation (30-day hourly ARCL-minimum moon-age search); `default(): self`; `IdentifiesCalculationSource` with `SOURCE_ID = 'moon.conjunction-search.meeus-hourly'` |
 | `Moon\ValueObjects\CrescentGeometry` | `sunAltitude, moonAltitude, elongationDeg, moonAgeHours, ?lagMinutes, deltaAzimuthDeg, illuminatedFraction, arcvGeoDeg, widthArcmin, ?ageAtMoonsetHours`; `toArray()` (ten-key wire shape) |
 | `Moon\ValueObjects\CrescentVerdict` | `__construct(string $criterion, bool $visible, float $score, string $zone)`; `toArray()` |
