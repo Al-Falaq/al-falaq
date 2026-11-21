@@ -138,4 +138,20 @@ final class CrescentGeometryTest extends TestCase
 
         unserialize($tampered);
     }
+
+    public function testToArrayHasTheWireShape(): void
+    {
+        self::assertSame([
+            'sun_altitude_degrees' => -0.8325,
+            'moon_altitude_degrees' => 4.2545,
+            'elongation_degrees' => 6.1740,
+            'moon_age_hours' => 10.0,
+            'lag_minutes' => 24.7257,
+            'delta_azimuth_degrees' => 1.0279,
+            'illuminated_fraction' => 0.0029,
+            'arcv_geocentric_degrees' => 6.0880,
+            'width_arcminutes' => 0.0953,
+            'age_at_moonset_hours' => 10.4121,
+        ], $this->geometry()->toArray());
+    }
 }

@@ -7,6 +7,8 @@ namespace AlFalaq\AlFalaq\Moon\Services;
 use AlFalaq\AlFalaq\Astro\Services\CrescentEphemeris;
 use AlFalaq\AlFalaq\Astro\Traits\SharesSolarTheory;
 use AlFalaq\AlFalaq\Moon\Contracts\ConjunctionSearch;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 
 /**
  * Ephemeris-backed conjunction math: age search + great-circle separation.
@@ -15,9 +17,19 @@ use AlFalaq\AlFalaq\Moon\Contracts\ConjunctionSearch;
  * sunset assembly shares with it. Lives in Services (not Strategies) so it
  * may import the Astro engine; Moon Strategies stay engine-free.
  */
-final class EphemerisConjunctionSearch implements ConjunctionSearch
+final class EphemerisConjunctionSearch implements ConjunctionSearch, IdentifiesCalculationSource
 {
     use SharesSolarTheory;
+
+    /**
+     * Registry id for the hourly Meeus conjunction search.
+     */
+    public const SOURCE_ID = 'moon.conjunction-search.meeus-hourly';
+
+    /**
+     * Model version of the search cadence.
+     */
+    public const SOURCE_VERSION = 'meeus-hourly';
 
     /**
      * Moon-age backward search window in days (pin CrescentGeometry.py:38).
@@ -123,5 +135,15 @@ final class EphemerisConjunctionSearch implements ConjunctionSearch
         $moon = $this->ephemeris->lunarGeocentric($julianDayTt);
 
         return $this->separation($sun['ra'], $sun['dec'], $moon['ra'], $moon['dec']);
+    }
+
+    /**
+     * Stable provenance identity for this search.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID/SOURCE_VERSION.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID, self::SOURCE_VERSION);
     }
 }

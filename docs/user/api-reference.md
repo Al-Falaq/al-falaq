@@ -93,12 +93,12 @@ Conventions: public services are `final` with explicit constructor injection and
 | Class | Key members |
 | --- | --- |
 | `Moon\Services\CrescentCalculator` | `default(): self`; `atSunset(Coordinates, CivilDate, ?float $deltaTOverride): CrescentGeometry`; `evaluate(...): array{yallop, odeh, mabims1992, neomabims2021}`; `evaluateGeometry(CrescentGeometry): same` |
-| `Moon\Services\EphemerisConjunctionSearch` | The `ConjunctionSearch` implementation (30-day hourly ARCL-minimum moon-age search); `default(): self` |
-| `Moon\ValueObjects\CrescentGeometry` | `sunAltitude, moonAltitude, elongationDeg, moonAgeHours, ?lagMinutes, deltaAzimuthDeg, illuminatedFraction, arcvGeoDeg, widthArcmin, ?ageAtMoonsetHours` |
-| `Moon\ValueObjects\CrescentVerdict` | `__construct(string $criterion, bool $visible, float $score, string $zone)` |
+| `Moon\Services\EphemerisConjunctionSearch` | The `ConjunctionSearch` implementation (30-day hourly ARCL-minimum moon-age search); `default(): self`; `IdentifiesCalculationSource` with `SOURCE_ID = 'moon.conjunction-search.meeus-hourly'` |
+| `Moon\ValueObjects\CrescentGeometry` | `sunAltitude, moonAltitude, elongationDeg, moonAgeHours, ?lagMinutes, deltaAzimuthDeg, illuminatedFraction, arcvGeoDeg, widthArcmin, ?ageAtMoonsetHours`; `toArray()` (ten-key wire shape) |
+| `Moon\ValueObjects\CrescentVerdict` | `__construct(string $criterion, bool $visible, float $score, string $zone)`; `toArray()` |
 | `Moon\Contracts\CrescentEvaluator` | `evaluate(CrescentGeometry): CrescentVerdict` |
 | `Moon\Contracts\ConjunctionSearch` | Port for moon-age search (tests substitute doubles): `ageDays(float $julianDayTt): float`, `separation(float, float, float, float): float` |
-| `Moon\Strategies\YallopEvaluator`, `Moon\Strategies\OdehEvaluator`, `Moon\Strategies\Mabims1992Evaluator`, `Moon\Strategies\NeoMabims2021Evaluator` | The four visibility criteria |
+| `Moon\Strategies\YallopEvaluator`, `Moon\Strategies\OdehEvaluator`, `Moon\Strategies\Mabims1992Evaluator`, `Moon\Strategies\NeoMabims2021Evaluator` | The four visibility criteria; `IdentifiesCalculationSource` with `SOURCE_ID` (`moon.criterion.yallop`, `moon.criterion.odeh`, `moon.criterion.mabims-1992`, `moon.criterion.neo-mabims-2021`) |
 
 ## Hijri — calendars and the bridge
 
