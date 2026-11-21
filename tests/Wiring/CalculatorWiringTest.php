@@ -8,7 +8,9 @@ use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
 use AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentEvaluationOutcome;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometryOutcome;
 use AlFalaq\AlFalaq\Prayer\Contracts\NextPrayerResolverInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\PrayerTimesCalculatorInterface;
 use AlFalaq\AlFalaq\Prayer\Contracts\TimetableServiceInterface;
@@ -35,6 +37,7 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\SunnahTimes;
 use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
 use AlFalaq\AlFalaq\Qibla\Strategies\SphericalCalculator;
 use AlFalaq\AlFalaq\Qibla\Strategies\Wgs84KarneyCalculator;
+use AlFalaq\AlFalaq\Qibla\ValueObjects\QiblaCalculationOutcome;
 use AlFalaq\AlFalaq\Qibla\ValueObjects\QiblaResult;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
@@ -220,6 +223,16 @@ final class CalculatorWiringTest extends TestCase
             'json' => 'string',
             'monthOutcomes' => 'array',
         ],
+        'Qibla metadata' => [
+            'qiblaOutcome' => QiblaCalculationOutcome::class,
+            'qiblaMetadata' => 'array',
+        ],
+        'Moon metadata' => [
+            'moonOutcome' => CrescentGeometryOutcome::class,
+            'moonMetadata' => 'array',
+            'moonEvaluation' => CrescentEvaluationOutcome::class,
+            'moonEvaluationMetadata' => 'array',
+        ],
         'Sunnah' => [
             'sunnah' => SunnahTimes::class,
         ],
@@ -304,6 +317,18 @@ final class CalculatorWiringTest extends TestCase
             ['yallop', 'odeh', 'mabims1992', 'neomabims2021'],
             array_keys($verdicts),
         );
+
+        $qiblaMetadataOutcome = $bySection['Qibla metadata']['qiblaOutcome'] ?? null;
+        self::assertInstanceOf(QiblaCalculationOutcome::class, $qiblaMetadataOutcome);
+        self::assertSame('qibla', $qiblaMetadataOutcome->metadata->common->context->value);
+
+        $moonMetadataOutcome = $bySection['Moon metadata']['moonOutcome'] ?? null;
+        self::assertInstanceOf(CrescentGeometryOutcome::class, $moonMetadataOutcome);
+        self::assertSame('moon', $moonMetadataOutcome->metadata->common->context->value);
+
+        $moonEvaluationOutcome = $bySection['Moon metadata']['moonEvaluation'] ?? null;
+        self::assertInstanceOf(CrescentEvaluationOutcome::class, $moonEvaluationOutcome);
+        self::assertSame('moon', $moonEvaluationOutcome->metadata->common->context->value);
 
         $schedule = $prayer['schedule'] ?? null;
         self::assertInstanceOf(PrayerSchedule::class, $schedule);

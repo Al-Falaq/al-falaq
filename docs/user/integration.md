@@ -159,7 +159,11 @@ add_shortcode('prayer_times', function ($atts) {
 
 `PrayerSchedule::all()` keys are exactly `imsak, fajr, sunrise, syuruk, ishraq, dhuha, dhuhr, asr, maghrib, isha` in order (UTC); `toArray()` maps them to ISO-8601 strings; `DisplaySchedule::toArray()` renders the same keys in the display zone. No other keys arrive without a minor version bump — safe to serialise directly.
 
-If you also need to record how a prayer result was produced, see [Calculation Metadata](calculation-metadata/) for the opt-in `calculateWithMetadata()` path. The compact methods documented on this page are unchanged and remain the default.
+If you also need to record how a result was produced, see
+[Calculation Metadata](calculation-metadata/) for the opt-in
+`calculateWithMetadata()` paths on prayer and Qibla results and the three Moon
+metadata methods. The compact methods documented on this page are unchanged
+and remain the default.
 
 ## See also
 

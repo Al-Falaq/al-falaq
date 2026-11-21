@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use AlFalaq\AlFalaq\Moon\Services\CrescentCalculator;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
 use AlFalaq\AlFalaq\Prayer\Services\TimetableService;
+use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
@@ -89,6 +91,46 @@ printf(
     "bench: metadata (NOT gated): single-day median %.3f ms; year %.0f ms\n",
     $metadataSingleMs,
     $metadataYearMs,
+);
+
+// A2 provenance: Qibla geodesy and the Moon geometry/evaluation envelopes.
+// Separate line, not folded into the legacy tripwires (NOT gated).
+$qibla = QiblaCalculator::default();
+$moon = CrescentCalculator::default();
+$moonDate = CivilDate::fromYmd(2025, 2, 28);
+
+$qiblaSamples = [];
+
+for ($i = 0; $i < 101; $i++) {
+    $start = hrtime(true);
+    $qibla->calculateWithMetadata($coords);
+    $qiblaSamples[] = (hrtime(true) - $start) / 1e6;
+}
+
+sort($qiblaSamples);
+$qiblaMs = $qiblaSamples[50];
+
+$moonGeometrySamples = [];
+$moonEvaluationSamples = [];
+
+for ($i = 0; $i < 5; $i++) {
+    $start = hrtime(true);
+    $moon->atSunsetWithMetadata($coords, $moonDate);
+    $moonGeometrySamples[] = (hrtime(true) - $start) / 1e6;
+
+    $start = hrtime(true);
+    $moon->evaluateWithMetadata($coords, $moonDate);
+    $moonEvaluationSamples[] = (hrtime(true) - $start) / 1e6;
+}
+
+sort($moonGeometrySamples);
+sort($moonEvaluationSamples);
+
+printf(
+    "bench: A2 metadata (NOT gated): qibla median %.3f ms (101 runs); moon geometry median %.1f ms; moon evaluation median %.1f ms (5 runs)\n",
+    $qiblaMs,
+    $moonGeometrySamples[2],
+    $moonEvaluationSamples[2],
 );
 printf(
     "bench: PRD reference (NOT gated, hardware- and load-dependent): single-day p50 < 2ms; year < 1000ms; peak < 16MB\n",

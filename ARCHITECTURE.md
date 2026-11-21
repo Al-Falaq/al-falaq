@@ -543,13 +543,16 @@ no HTML.
   (`MabimsCalendar::country()` narrows MABIMS further). Month labels are
   `en`/`ar` only via `HijriMonth::label()` (no ICU).
 
-### Calculation provenance (A1)
+### Calculation provenance (A1–A2)
 
 `PrayerTimesCalculator::calculateWithMetadata()` and
 `TimetableService::monthlyWithMetadata()` return the unchanged result plus a
-metadata envelope. The vocabulary is shared (`SharedKernel\Enums` +
-`ValueObjects\CalculationMetadata`), so Qibla/Moon/Hijri can reuse it in later
-phases without touching the common key set.
+metadata envelope. `QiblaCalculator::calculateWithMetadata()` and the Moon
+methods (`atSunsetWithMetadata()`, `evaluateWithMetadata()`,
+`evaluateGeometryWithMetadata()`) extend the same vocabulary to their contexts.
+The vocabulary is shared (`SharedKernel\Enums` +
+`ValueObjects\CalculationMetadata`), so Hijri can reuse it in A3 without
+touching the common key set.
 
 - `IdentifiesCalculationSource` is the capability built-in engines and
   strategies implement; each declares a `SOURCE_ID` constant as the single
@@ -569,6 +572,20 @@ phases without touching the common key set.
 - `NightResolver` reports its selected mode (`seasonal`, `none`, `portions`)
   beside the two instants; the calculator uses that internal trace to list
   only the night strategy that actually ran.
+- Qibla's `calculate()` and `calculateWithMetadata()` share one private
+  `solve()`; exactly one geodesy source is reported. `heading_reference` is
+  always `true_north` and `magnetic_declination_degrees` is always `null` —
+  no magnetic model ships, so the metadata makes that absence explicit.
+- Moon's legacy `atSunset()` / `evaluate()` and the three metadata methods
+  share one private `sunset()` numeric routine; the evaluation methods fan out
+  through the unchanged `evaluateGeometry()`.
+- A Moon geometry outcome lists solar, ephemeris, conjunction-search, and ΔT
+  sources; evaluation adds the four `moon.criterion.*` sources and the
+  `crescent_criterion_is_not_observation` warning (`decision_required`).
+  Caller-supplied geometry lists only the criteria and invents no inputs.
+- `Moon\ValueObjects` never imports `Astro` (layering gate). The calibrated ΔT
+  bounds travel through `CalculationSource::range` (`2005..2050`), which the
+  metadata object parses instead of duplicating the provider constants.
 
 The full decision record is
 [`docs/design/2026-11-15-provenance-explainability-foundation.md`](docs/design/2026-11-15-provenance-explainability-foundation.md);

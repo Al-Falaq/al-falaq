@@ -114,6 +114,44 @@ changing the legacy methods: the same inputs produce the same `PrayerSchedule`
 through `calculate()` / `monthly()`. The JSON shape is documented at
 [Calculation Metadata](user/calculation-metadata.md).
 
+## Qibla metadata
+
+```php
+use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+
+$qiblaOutcome = QiblaCalculator::wgs84()->calculateWithMetadata(
+    Coordinates::fromDegrees(3.1390, 101.6869),
+);
+$qiblaMetadata = $qiblaOutcome->metadata->toArray();
+```
+
+The result stays a `QiblaResult`; `heading_reference` is always `true_north`,
+and `magnetic_declination_degrees` is always `null` until a sourced magnetic
+model ships.
+
+## Moon metadata
+
+```php
+use AlFalaq\AlFalaq\Moon\Services\CrescentCalculator;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+
+$moon = CrescentCalculator::default();
+$coordinates = Coordinates::fromDegrees(3.1390, 101.6869);
+$date = CivilDate::fromYmd(2025, 2, 28);
+
+$moonOutcome = $moon->atSunsetWithMetadata($coordinates, $date);
+$moonMetadata = $moonOutcome->metadata->toArray();
+
+$moonEvaluation = $moon->evaluateWithMetadata($coordinates, $date);
+$moonEvaluationMetadata = $moonEvaluation->metadata->toArray();
+```
+
+The geometry outcome carries ephemeris, conjunction-search, ΔT, and solar
+sources. The evaluation outcome adds the four criterion sources and the
+`crescent_criterion_is_not_observation` warning; a verdict is not a sighting.
+
 ## Sunnah
 
 ```php

@@ -8,8 +8,8 @@ and not a second calculation.
 The frozen contract lives in
 [design/2026-11-15-provenance-explainability-foundation.md](design/2026-11-15-provenance-explainability-foundation.md).
 This page is the working summary for contributors; the spec is the decision
-record. A1 shipped the shared vocabulary and the prayer/timetable path; Qibla,
-Moon, and Hijri metadata remain future phases.
+record. A1 shipped the shared vocabulary and the prayer/timetable path; A2
+added Qibla and Moon metadata. Hijri metadata remains A3.
 
 ## What it claims and does not claim
 
@@ -71,9 +71,10 @@ Determinism rules:
 
 ## Warning codes
 
-A1 emits exactly two codes: `polar_fallback_applied` and
-`unidentified_calculation_source`. The remaining rows are defined now so A2/A3
-implement a frozen vocabulary rather than inventing codes later.
+A1 and A2 emit five codes: `polar_fallback_applied` and
+`unidentified_calculation_source` (A1), plus `delta_t_extrapolated`,
+`moonset_indeterminate`, and `crescent_criterion_is_not_observation` (A2).
+The three Hijri codes remain reserved for A3.
 
 | Code | Emitted by | Status effect | Detail keys |
 |---|---|---|---|
@@ -132,12 +133,27 @@ A1 prayer registry:
 | `prayer.maghrib.interval` | `ALGORITHM` | — | `MinutesAfterSunsetMaghrib` |
 | `caller.adjustments` | `CALLER_INPUT` | — | non-empty caller adjustment layer |
 
-Reserved ids for later phases (defined in the spec, not emitted in A1):
-`qibla.spherical`, `qibla.wgs84-karney`, `moon.ephemeris.meeus-2ed`,
-`moon.conjunction-search.meeus-hourly`,
-`moon.delta-t.espenak-2005-2050`, `caller.delta-t`,
-`moon.criterion.yallop`, `moon.criterion.odeh`,
-`moon.criterion.mabims-1992`, `moon.criterion.neo-mabims-2021`,
+A2 Qibla registry:
+
+| Source id | Kind | Version/range | Owner |
+|---|---|---|---|
+| `qibla.spherical` | `ALGORITHM` | `todhunter-haversine` | `SphericalCalculator` |
+| `qibla.wgs84-karney` | `ALGORITHM` | `geographiclib-2.1` | `Wgs84KarneyCalculator` |
+
+A2 Moon registry:
+
+| Source id | Kind | Version/range | Owner |
+|---|---|---|---|
+| `moon.ephemeris.meeus-2ed` | `ALGORITHM` | `meeus-2ed` | `CrescentEphemeris` |
+| `moon.conjunction-search.meeus-hourly` | `ALGORITHM` | `meeus-hourly` | `EphemerisConjunctionSearch` |
+| `moon.delta-t.espenak-2005-2050` | `ALGORITHM` | range `2005..2050` | `DeltaTProvider` (identity via `CrescentCalculator`) |
+| `moon.criterion.yallop` | `ALGORITHM` | — | `YallopEvaluator` |
+| `moon.criterion.odeh` | `ALGORITHM` | — | `OdehEvaluator` |
+| `moon.criterion.mabims-1992` | `ALGORITHM` | — | `Mabims1992Evaluator` |
+| `moon.criterion.neo-mabims-2021` | `ALGORITHM` | — | `NeoMabims2021Evaluator` |
+| `caller.delta-t` | `CALLER_INPUT` | — | non-null ΔT override |
+
+Reserved ids for A3 (defined in the spec, not emitted yet):
 `hijri.maghrib-probe`, `hijri.offset.caller`.
 
 Prayer dependency rules:
@@ -216,6 +232,74 @@ the location, `NearestDay` replaces the date, and a custom handler may replace
 both. The handler source (for example `prayer.polar.nearest_latitude`) is added
 to `sources`.
 
+## Qibla metadata
+
+`QiblaCalculator::calculateWithMetadata()` returns a `QiblaCalculationOutcome`:
+the unchanged `QiblaResult` plus `QiblaCalculationMetadata`. The published
+example is
+[Calculation Metadata → Qibla](user/calculation-metadata.md#qibla).
+
+Qibla dependency rule:
+
+- exactly one geodesy source is listed: `qibla.spherical` from `default()` or
+  `qibla.wgs84-karney` from `wgs84()`;
+- a custom `GeodesyCalculator` without `IdentifiesCalculationSource` is
+  reported as `custom.geodesy` with an `unidentified_calculation_source`
+  warning. There is no fallback state: either the wired geodesy ran and is
+  named, or its identity is explicitly unknown.
+
+| Key | Meaning |
+|---|---|
+| `input` | Coordinates the caller requested |
+| `heading_reference` | Always `true_north` |
+| `magnetic_declination_degrees` | Always `null` until a sourced magnetic model ships |
+
+`QiblaCalculationOutcome::toArray()` wraps `result`
+(`QiblaResult::toArray()`: `direction_degrees`, `distance_km`) and `metadata`.
+The true-north policy is unchanged from A1: a consumer that displays a compass
+bearing applies its own declination and states the model and date.
+
+## Moon metadata
+
+The Moon path has two opt-in levels. `atSunsetWithMetadata()` returns
+`CrescentGeometryOutcome` (geometry plus provenance);
+`evaluateWithMetadata()` and `evaluateGeometryWithMetadata()` return
+`CrescentEvaluationOutcome` (geometry, four verdicts, plus provenance).
+`MoonCalculationMetadata` extends the common six keys with `input`, `delta_t`,
+`geometry_source`, and `criteria`.
+
+Moon dependency rules:
+
+- a geometry outcome lists `solar.mean-meeus`, `moon.ephemeris.meeus-2ed`,
+  `moon.conjunction-search.meeus-hourly`, and the ΔT source
+  (`moon.delta-t.espenak-2005-2050`, or `caller.delta-t` for an override);
+- an evaluation outcome adds the four `moon.criterion.*` sources in
+  `yallop`, `odeh`, `mabims1992`, `neomabims2021` order;
+- caller-supplied geometry (`evaluateGeometryWithMetadata()`) lists only the
+  four criteria: the bundle carries no coordinates, date, or ΔT, so those
+  fields are `null` and `geometry_source` is `caller_supplied`;
+- the ΔT provider's decimal year is the same value the provider receives:
+  `2050-01-01` is exactly `2050.0` (complete), `2050-01-02` is past the
+  calibrated endpoint (extrapolated);
+- a no-moonset evening keeps finite geometry with null lag/age and adds
+  `moonset_indeterminate`; caller-supplied geometry serializes
+  `details.date = null` because the bundle carries no date;
+- every evaluation adds `crescent_criterion_is_not_observation` and therefore
+  derives at least `decision_required`: a verdict is not a sighting.
+
+| Key | Meaning |
+|---|---|
+| `input` | Requested coordinates and civil date, or nulls for caller-supplied geometry |
+| `delta_t` | `seconds`, `origin` (`provider`/`override`), and the provider's calibrated years (null for overrides and caller-supplied geometry) |
+| `geometry_source` | `calculated` or `caller_supplied` |
+| `criteria` | Empty for geometry outcomes; the fixed four-criterion order for evaluations |
+
+`CrescentGeometryOutcome::toArray()` wraps `result`
+(`CrescentGeometry::toArray()`) and `metadata`.
+`CrescentEvaluationOutcome::toArray()` wraps
+`result.geometry` + `result.verdicts` (fixed key order, each
+`CrescentVerdict::toArray()`) and `metadata`.
+
 ## Schema and library versions
 
 - `CalculationMetadata::SCHEMA_VERSION` is `1.0`. It is independent of the
@@ -256,22 +340,40 @@ Then compare `result` with the stored payload and check that `sources`,
 with equal times means the dependency set changed; a mismatch in `status`
 means the replacement/extrapolation story changed.
 
+For Qibla, reproducibility needs the same geodesy wiring
+(`default()` vs `wgs84()` vs the same injected strategy). For Moon, it needs
+the same solar engine, ephemeris, conjunction search, and evaluator set, plus
+the same ΔT choice: an override (`caller.delta-t`) and the provider
+(`moon.delta-t.espenak-2005-2050`) can differ by seconds and change a boundary
+verdict. `evaluateGeometryWithMetadata()` replays criteria only; store the
+geometry payload with it when the sky itself must be reproduced.
+
 The legacy methods remain the compact path and keep their current behavior:
-`calculate()`, `monthly()`, and the other pre-existing methods return the same
+`calculate()`, `monthly()`, `atSunset()`, `evaluate()`, `evaluateGeometry()`,
+`calculate()` on Qibla, and the other pre-existing methods return the same
 values and throw the same exceptions. They expose no warnings. A caller that
 wants provenance opts in with `calculateWithMetadata()` /
-`monthlyWithMetadata()`.
+`monthlyWithMetadata()` (Prayer), `calculateWithMetadata()` (Qibla), or
+`atSunsetWithMetadata()` / `evaluateWithMetadata()` /
+`evaluateGeometryWithMetadata()` (Moon).
 
 ## Implementation notes
 
 - Metadata is built at orchestration boundaries (`PrayerTimesCalculator`,
-  `TimetableService`), never inside `Astro/`.
+  `TimetableService`, `QiblaCalculator`, `CrescentCalculator`), never inside
+  `Astro/`.
 - `calculate()` and `calculateWithMetadata()` share one private `run()`; the
   legacy path returns `run()['schedule']`, so the numeric pipeline cannot
-  drift between them.
+  drift between them. Qibla's `calculate()`/`calculateWithMetadata()` share
+  one `solve()`, and Moon's `atSunset()`/metadata methods share one
+  `sunset()`.
+- `Moon\ValueObjects` cannot import `Astro\Services\DeltaTProvider` (the
+  layering gate), so the calibrated bounds travel through the provider
+  source's `range` (`2005..2050`); the metadata object parses that documented
+  carrier instead of duplicating the constants.
 - `PrayerMetadataCalculatorInterface` extends `PrayerTimesCalculatorInterface`.
   Existing implementers are not forced to adopt it; `monthlyWithMetadata()`
   rejects an injected calculator that lacks it with a
   `ConfigurationException` instead of silently dropping provenance.
-- Exception behavior is unchanged. `calculateWithMetadata()` throws exactly
-  what `calculate()` throws; metadata is constructed only on success.
+- Exception behavior is unchanged. Each metadata method throws exactly what
+  its legacy sibling throws; metadata is constructed only on success.
