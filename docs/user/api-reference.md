@@ -34,7 +34,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `SharedKernel\Exceptions\InvalidCoordinatesException` | `outOfRange(string $which, mixed $received)`, `malformedArray()`; `extends ValidationException` |
 | `SharedKernel\Exceptions\ConfigurationException` | Invalid wiring or configuration; `extends AlFalaqException` |
 | `SharedKernel\Exceptions\AstronomicalException` | Inputs the astronomy cannot solve; `extends AlFalaqException` |
-| `SharedKernel\Traits\HasWithersGuard`, `SharedKernel\Traits\ValidatesFinite` | Stateless helpers used by the value objects; their members are `private` by design |
+| `SharedKernel\Traits\HasWithersGuard`, `SharedKernel\Traits\ValidatesFinite`, `SharedKernel\Traits\ResolvesCalculationSources` | Stateless helpers used by the value objects and services; `ResolvesCalculationSources` owns the `custom.<component>` + `unidentified_calculation_source` fallback; their members are `private` by design |
 
 ## Prayer — times, timetables, nights
 

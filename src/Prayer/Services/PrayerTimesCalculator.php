@@ -30,7 +30,6 @@ use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerAdjustments;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerCalculationMetadata;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerCalculationOutcome;
 use AlFalaq\AlFalaq\Prayer\ValueObjects\PrayerSchedule;
-use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\Enums\CalculationContext;
 use AlFalaq\AlFalaq\SharedKernel\Enums\WarningCode;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
@@ -38,6 +37,7 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ConfigurationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationMetadata;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationWarning;
+use AlFalaq\AlFalaq\SharedKernel\Traits\ResolvesCalculationSources;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
@@ -52,6 +52,7 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Minutes;
 final class PrayerTimesCalculator implements PrayerMetadataCalculatorInterface
 {
     use NormalizesCoordinatesInput;
+    use ResolvesCalculationSources;
 
     /**
      * Night-temp resolution, composed from the injected strategies (no policy of its own).
@@ -436,31 +437,6 @@ final class PrayerTimesCalculator implements PrayerMetadataCalculatorInterface
         }
 
         return $sources;
-    }
-
-    /**
-     * Identity for a wired component, or `custom.<name>` plus a warning.
-     *
-     * @param object $component Wired strategy or engine.
-     * @param string $name Registry slot name (solar, isha, …).
-     * @param list<CalculationWarning> $warnings Warning sink, appended in place.
-     * @return CalculationSource Identified source or the custom fallback.
-     */
-    private static function componentSource(object $component, string $name, array &$warnings): CalculationSource
-    {
-        if ($component instanceof IdentifiesCalculationSource) {
-            return $component->calculationSource();
-        }
-
-        $id = 'custom.' . $name;
-
-        $warnings[] = new CalculationWarning(
-            WarningCode::UNIDENTIFIED_CALCULATION_SOURCE,
-            sprintf('The %s component does not implement IdentifiesCalculationSource.', $name),
-            ['component' => $name, 'source_id' => $id],
-        );
-
-        return CalculationSource::algorithm($id);
     }
 
     /**
