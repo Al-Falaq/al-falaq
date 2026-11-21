@@ -96,4 +96,12 @@ final class QiblaResultTest extends TestCase
 
         self::assertSame(0.0, $result->magneticHeading(10.0));
     }
+
+    public function testToArrayHasTheWireShape(): void
+    {
+        self::assertSame(
+            ['direction_degrees' => 292.4, 'distance_km' => 7070.0],
+            (new QiblaResult(292.4, 7070.0))->toArray(),
+        );
+    }
 }

@@ -18,6 +18,8 @@ use AlFalaq\AlFalaq\Prayer\Strategies\SeasonAdjustedTwilight;
 use AlFalaq\AlFalaq\Prayer\Strategies\SeventhOfNightCorrection;
 use AlFalaq\AlFalaq\Prayer\Strategies\ThrowHandler;
 use AlFalaq\AlFalaq\Prayer\Strategies\TwilightAngleCorrection;
+use AlFalaq\AlFalaq\Qibla\Strategies\SphericalCalculator;
+use AlFalaq\AlFalaq\Qibla\Strategies\Wgs84KarneyCalculator;
 use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -65,7 +67,7 @@ final class BuiltInSourceIdentityTest extends TestCase
 
     public function testProviderCoversEveryBuiltInComponent(): void
     {
-        self::assertCount(13, iterator_to_array(self::componentProvider()));
+        self::assertCount(15, iterator_to_array(self::componentProvider()));
     }
 
     public function testMethodDefaultsSourceVersionIsFrozen(): void
@@ -100,5 +102,7 @@ final class BuiltInSourceIdentityTest extends TestCase
         yield 'interval isha' => [new IntervalIsha(90), 'prayer.isha.interval'];
         yield 'angle maghrib' => [new AngleMaghrib(4.0), 'prayer.maghrib.angle'];
         yield 'interval maghrib' => [new MinutesAfterSunsetMaghrib(0), 'prayer.maghrib.interval'];
+        yield 'qibla spherical' => [new SphericalCalculator(), 'qibla.spherical', 'todhunter-haversine'];
+        yield 'qibla wgs84' => [new Wgs84KarneyCalculator(), 'qibla.wgs84-karney', 'geographiclib-2.1'];
     }
 }

@@ -7,7 +7,9 @@ namespace AlFalaq\AlFalaq\Qibla\Strategies;
 use AlFalaq\AlFalaq\Astro\Services\KarneyInverse;
 use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
 use AlFalaq\AlFalaq\Qibla\Traits\ClampsMakkahSelf;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Angle;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
@@ -19,9 +21,11 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  * only the public contract: unwinding the engine's (-180, 180] azimuth into
  * [0, 360) and the degenerate Makkah-self clamp.
  */
-final class Wgs84KarneyCalculator implements GeodesyCalculator
+final class Wgs84KarneyCalculator implements GeodesyCalculator, IdentifiesCalculationSource
 {
     use ClampsMakkahSelf;
+    public const SOURCE_ID = 'qibla.wgs84-karney';
+    public const SOURCE_VERSION = 'geographiclib-2.1';
     /**
      * Bind the raw-math engine (defaults to a fresh instance).
      *
@@ -52,5 +56,15 @@ final class Wgs84KarneyCalculator implements GeodesyCalculator
         $direction = Angle::fromDegrees($solved['direction'])->normalized()->degrees;
 
         return self::clampMakkahSelf(['direction' => $direction, 'distanceKm' => $solved['distanceKm']]);
+    }
+
+    /**
+     * Stable provenance identity for this geodesy.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID/SOURCE_VERSION.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID, self::SOURCE_VERSION);
     }
 }

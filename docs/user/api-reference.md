@@ -82,8 +82,8 @@ Conventions: public services are `final` with explicit constructor injection and
 | --- | --- |
 | `Qibla\Services\QiblaCalculator` | `default(): self` (spherical); `wgs84(): self` (Karney); `calculate(Coordinates\|array): QiblaResult` |
 | `Qibla\Contracts\GeodesyCalculator` | `MAKKAH_LATITUDE = 21.4225241`, `MAKKAH_LONGITUDE = 39.8261818` (both referencing `SharedKernel\ValueObjects\Kaaba`), `SELF_DISTANCE_KM = 0.001`; `inverse(Coordinates): array{direction, distanceKm}` |
-| `Qibla\ValueObjects\QiblaResult` | `__construct(float $direction [0,360), float $distanceKm)`; `magneticHeading(mixed $declinationEast): float` |
-| `Qibla\Strategies\SphericalCalculator`, `Qibla\Strategies\Wgs84KarneyCalculator` | The two `GeodesyCalculator` implementations (spherical default; WGS84/Karney opt-in) |
+| `Qibla\ValueObjects\QiblaResult` | `__construct(float $direction [0,360), float $distanceKm)`; `magneticHeading(mixed $declinationEast): float`; `toArray()` (`direction_degrees` then `distance_km`) |
+| `Qibla\Strategies\SphericalCalculator`, `Qibla\Strategies\Wgs84KarneyCalculator` | The two `GeodesyCalculator` implementations (spherical default; WGS84/Karney opt-in); `IdentifiesCalculationSource` with `SOURCE_ID`/`SOURCE_VERSION` (`qibla.spherical`/`todhunter-haversine`, `qibla.wgs84-karney`/`geographiclib-2.1`) |
 | `Qibla\Traits\ClampsMakkahSelf` | Helper that clamps bearing and distance to 0.0 below `GeodesyCalculator::SELF_DISTANCE_KM` |
 
 ## Moon — crescent geometry and criteria

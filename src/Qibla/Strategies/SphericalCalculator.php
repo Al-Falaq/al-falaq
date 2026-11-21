@@ -7,14 +7,18 @@ namespace AlFalaq\AlFalaq\Qibla\Strategies;
 use AlFalaq\AlFalaq\Astro\Services\GeodesyEngine;
 use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
 use AlFalaq\AlFalaq\Qibla\Traits\ClampsMakkahSelf;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
  * Spherical-earth geodesy: Todhunter initial bearing + haversine (default, M2).
  */
-final class SphericalCalculator implements GeodesyCalculator
+final class SphericalCalculator implements GeodesyCalculator, IdentifiesCalculationSource
 {
     use ClampsMakkahSelf;
+    public const SOURCE_ID = 'qibla.spherical';
+    public const SOURCE_VERSION = 'todhunter-haversine';
     /**
      * Bind the raw-math engine (defaults to a fresh instance).
      *
@@ -41,5 +45,15 @@ final class SphericalCalculator implements GeodesyCalculator
         );
 
         return self::clampMakkahSelf($raw);
+    }
+
+    /**
+     * Stable provenance identity for this geodesy.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID/SOURCE_VERSION.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID, self::SOURCE_VERSION);
     }
 }
