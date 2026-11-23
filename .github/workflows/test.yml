@@ -80,11 +80,11 @@ jobs:
 
   mutation:
     # PR-only, after the fast gates: a red PR gets feedback in ~40s instead of
-    # burning ~8 min of Infection. Skipped checks still satisfy required status
+    # burning ~25 min of Infection. Skipped checks still satisfy required status
     # checks, so docs-only PRs are not blocked.
     needs: [static, test, changed]
     if: needs.changed.outputs.code == 'true'
-    timeout-minutes: 20
+    timeout-minutes: 45
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
