@@ -358,6 +358,26 @@ final class MoonMetadataValueObjectsTest extends TestCase
         );
     }
 
+    public function testProviderSourceAcceptsAnEqualCalibratedRange(): void
+    {
+        $metadata = new MoonCalculationMetadata(
+            self::common(),
+            Coordinates::fromDegrees(3.1390, 101.6869),
+            CivilDate::fromYmd(2025, 2, 28),
+            74.56,
+            CalculationSource::algorithm('moon.delta-t.x', range: '2005..2005'),
+            MoonCalculationMetadata::GEOMETRY_CALCULATED,
+            [],
+        );
+
+        self::assertSame([
+            'seconds' => 74.56,
+            'origin' => 'provider',
+            'calibrated_from_year' => 2005.0,
+            'calibrated_to_year' => 2005.0,
+        ], $metadata->toArray()['delta_t']);
+    }
+
     /**
      * @return iterable<string, array{CalculationSource}>
      */
@@ -423,6 +443,12 @@ final class MoonMetadataValueObjectsTest extends TestCase
 
         yield 'missing' => [[]];
         yield 'extra' => [[...$valid, 'extra' => new CrescentVerdict('extra', true, 0.0, 'A')]];
+        yield 'wrong key' => [[
+            'yallop' => $valid['yallop'],
+            'odeh' => $valid['odeh'],
+            'mabims1992' => $valid['mabims1992'],
+            'extra' => new CrescentVerdict('extra', true, 0.0, 'A'),
+        ]];
         yield 'non verdict' => [[
             'yallop' => new \stdClass(),
             'odeh' => $valid['odeh'],

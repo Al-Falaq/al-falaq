@@ -35,9 +35,10 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
 /**
  * Moon-sighting entry point: geometry at local sunset + criterion verdicts (M3).
  *
- * Two-method orchestrator: atSunset() runs the Meeus pipeline on
- * the Astro engine, evaluate() fans the geometry out to the four injected
- * criterion strategies. Strategies stay engine-free by construction.
+ * Core numeric orchestrator: atSunset() runs the Meeus pipeline on the Astro
+ * engine, evaluate() fans the geometry out to the four injected criterion
+ * strategies, and the metadata siblings share the same sunset() trace.
+ * Strategies stay engine-free by construction.
  */
 final class CrescentCalculator
 {

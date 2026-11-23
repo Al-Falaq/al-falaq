@@ -43,9 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Built-in Qibla/Moon source identities: `qibla.spherical`,
   `qibla.wgs84-karney`, `moon.ephemeris.meeus-2ed`,
   `moon.conjunction-search.meeus-hourly`,
-  `moon.delta-t.espenak-2005-2050`, `caller.delta-t`, and the four
-  `moon.criterion.*` ids. `SharedKernel\Traits\ResolvesCalculationSources`
-  centralizes identification of wired components.
+  `moon.delta-t.espenak-2005-2050`, and the four `moon.criterion.*` ids;
+  a caller ΔT override is reported as the synthetic `caller.delta-t` source.
+  `SharedKernel\Traits\ResolvesCalculationSources` centralizes identification
+  of wired components.
 - Documentation for Qibla/Moon metadata in `docs/provenance.md`,
   `docs/user/calculation-metadata.md`, the Qibla/Moon appendices, and
   executable `docs/integrations.md` recipes.

@@ -273,8 +273,9 @@ Moon dependency rules:
 - a geometry outcome lists `solar.mean-meeus`, `moon.ephemeris.meeus-2ed`,
   `moon.conjunction-search.meeus-hourly`, and the ΔT source
   (`moon.delta-t.espenak-2005-2050`, or `caller.delta-t` for an override);
-- an evaluation outcome adds the four `moon.criterion.*` sources in
-  `yallop`, `odeh`, `mabims1992`, `neomabims2021` order;
+- an evaluation outcome adds the four `moon.criterion.*` sources; the common
+  source list serializes them in id order (`mabims-1992`, `neo-mabims-2021`,
+  `odeh`, `yallop`) like every other source list;
 - caller-supplied geometry (`evaluateGeometryWithMetadata()`) lists only the
   four criteria: the bundle carries no coordinates, date, or ΔT, so those
   fields are `null` and `geometry_source` is `caller_supplied`;

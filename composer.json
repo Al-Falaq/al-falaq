@@ -55,7 +55,7 @@
         "goldens": "python3 tools/goldens.py",
         "changelog": "php tools/sync_changelog.php",
         "changelog:check": "php tools/sync_changelog.php --check",
-        "mutation": "infection --threads=4",
+        "mutation": "infection --threads=4 --only-covering-test-cases",
         "ci": ["@lint", "@cs", "@stan", "@changelog:check", "@test"]
     }
 }

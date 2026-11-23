@@ -156,6 +156,11 @@ final class MoonMetadataTest extends TestCase
     {
         $calculator = CrescentCalculator::default();
 
+        $lower = $calculator->atSunsetWithMetadata(self::kualaLumpur(), CivilDate::fromYmd(2005, 1, 1));
+
+        self::assertSame('complete', $lower->metadata->common->status->value);
+        self::assertSame([], $lower->metadata->common->warnings);
+
         self::assertSame(
             'complete',
             $calculator->atSunsetWithMetadata(self::kualaLumpur(), CivilDate::fromYmd(2050, 1, 1))
