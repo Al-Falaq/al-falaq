@@ -448,6 +448,62 @@ final class MoonMetadataTest extends TestCase
         );
     }
 
+    public function testLegacyPathsDoNotRequestComponentProvenance(): void
+    {
+        $calculator = self::calculator(solar: self::throwingSourceSolarEngine());
+
+        self::assertNotNull($calculator->atSunset(self::kualaLumpur(), self::date())->lagMinutes);
+        self::assertCount(4, $calculator->evaluate(self::kualaLumpur(), self::date()));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('legacy path requested provenance');
+        $calculator->atSunsetWithMetadata(self::kualaLumpur(), self::date());
+    }
+
+    /**
+     * Delegating solar engine whose identity callback always throws.
+     *
+     * @return SolarDayEngine Engine double.
+     */
+    private static function throwingSourceSolarEngine(): SolarDayEngine
+    {
+        $inner = new MeanSolarCalculator();
+
+        return new class ($inner) implements SolarDayEngine, IdentifiesCalculationSource {
+            public function __construct(private readonly SolarDayEngine $inner) {}
+
+            public function solarTime(Coordinates $coordinates, CivilDate $date, mixed $elevationM): SolarTime
+            {
+                return $this->inner->solarTime($coordinates, $date, $elevationM);
+            }
+
+            public function hourAngleFloat(Coordinates $coordinates, CivilDate $date, mixed $elevationM, float $angleDeg, bool $afterTransit): ?float
+            {
+                return $this->inner->hourAngleFloat($coordinates, $date, $elevationM, $angleDeg, $afterTransit);
+            }
+
+            public function hourAngle(Coordinates $coordinates, CivilDate $date, mixed $elevationM, float $angleDeg, bool $afterTransit): ?\DateTimeImmutable
+            {
+                return $this->inner->hourAngle($coordinates, $date, $elevationM, $angleDeg, $afterTransit);
+            }
+
+            public function afternoon(Coordinates $coordinates, CivilDate $date, mixed $elevationM, mixed $shadowLength): ?\DateTimeImmutable
+            {
+                return $this->inner->afternoon($coordinates, $date, $elevationM, $shadowLength);
+            }
+
+            public function isSolarDefined(Coordinates $coordinates, CivilDate $date, mixed $elevationM): bool
+            {
+                return $this->inner->isSolarDefined($coordinates, $date, $elevationM);
+            }
+
+            public function calculationSource(): CalculationSource
+            {
+                throw new \RuntimeException('legacy path requested provenance');
+            }
+        };
+    }
+
     /**
      * Delegating Yallop criterion, optionally with a custom identity.
      *

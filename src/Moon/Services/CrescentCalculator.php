@@ -129,7 +129,7 @@ final class CrescentCalculator
     {
         $warnings = [];
 
-        return $this->sunset($coordinates, $date, $deltaTOverride, $warnings)['geometry'];
+        return $this->sunset($coordinates, $date, $deltaTOverride, $warnings, false)['geometry'];
     }
 
     /**
@@ -148,7 +148,7 @@ final class CrescentCalculator
         ?float $deltaTOverride = null,
     ): CrescentGeometryOutcome {
         $warnings = [];
-        $trace = $this->sunset($coordinates, $date, $deltaTOverride, $warnings);
+        $trace = $this->sunset($coordinates, $date, $deltaTOverride, $warnings, true);
 
         if ($trace['geometry']->lagMinutes === null) {
             $warnings[] = self::moonsetWarning($date);
@@ -175,6 +175,7 @@ final class CrescentCalculator
      * @param CivilDate $date Civil date of the evening observation.
      * @param float|null $deltaTOverride Seconds override for TT−UT1; null uses the provider.
      * @param list<CalculationWarning> $warnings Warning sink, appended in place.
+     * @param bool $collectSources Resolve component identities for metadata; legacy paths pass false.
      * @return array{
      *     geometry: CrescentGeometry,
      *     deltaTSeconds: float,
@@ -187,6 +188,7 @@ final class CrescentCalculator
         CivilDate $date,
         ?float $deltaTOverride,
         array &$warnings,
+        bool $collectSources,
     ): array {
         if ($deltaTOverride !== null && ! is_finite($deltaTOverride)) {
             throw new ValidationException(sprintf(
@@ -296,12 +298,14 @@ final class CrescentCalculator
             $ageAtMoonsetHours = max(self::MOON_AGE_MIN_DAYS, $ageDays + $lagMinutes / 60.0 / 24.0) * 24.0;
         }
 
-        $sources = [
-            self::componentSource($this->solar, 'solar', $warnings),
-            self::componentSource($this->ephemeris, 'ephemeris', $warnings),
-            self::componentSource($this->conjunctionSearch, 'conjunction_search', $warnings),
-            $deltaTSource,
-        ];
+        $sources = $collectSources
+            ? [
+                self::componentSource($this->solar, 'solar', $warnings),
+                self::componentSource($this->ephemeris, 'ephemeris', $warnings),
+                self::componentSource($this->conjunctionSearch, 'conjunction_search', $warnings),
+                $deltaTSource,
+            ]
+            : [];
 
         return [
             'geometry' => new CrescentGeometry(
@@ -399,7 +403,7 @@ final class CrescentCalculator
         ?float $deltaTOverride = null,
     ): CrescentEvaluationOutcome {
         $warnings = [];
-        $trace = $this->sunset($coordinates, $date, $deltaTOverride, $warnings);
+        $trace = $this->sunset($coordinates, $date, $deltaTOverride, $warnings, true);
         $verdicts = $this->evaluateGeometry($trace['geometry']);
         $sources = [...$trace['sources'], ...$this->criterionSources($warnings)];
 
