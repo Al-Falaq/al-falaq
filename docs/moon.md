@@ -91,6 +91,34 @@ KL 2025-03-29 (`dt = 74.61 s`, `jd = 2460763.973662`):
 
 `age` = `moon_age_days`, `agem` = `moon_age_at_moonset_days`.
 
+## Provenance
+
+Three opt-in methods sit beside the legacy path:
+
+- `atSunsetWithMetadata(Coordinates, CivilDate, ?float): CrescentGeometryOutcome`;
+- `evaluateWithMetadata(Coordinates, CivilDate, ?float): CrescentEvaluationOutcome`;
+- `evaluateGeometryWithMetadata(CrescentGeometry): CrescentEvaluationOutcome`.
+
+They share the same `sunset()` numeric routine as `atSunset()` / `evaluate()`,
+so values and exceptions are unchanged. A geometry outcome lists
+`solar.mean-meeus`, `moon.ephemeris.meeus-2ed`,
+`moon.conjunction-search.meeus-hourly`, and the ΔT source
+(`moon.delta-t.espenak-2005-2050`, range `2005..2050`, or `caller.delta-t` for
+an override). An evaluation adds the four `moon.criterion.*` ids and emits
+`crescent_criterion_is_not_observation` with status `decision_required`: a
+criterion verdict is not an observation.
+
+The provider's calibrated range is inclusive at `2050.0`: `2050-01-01` is
+complete, `2050-01-02` is extrapolated with `delta_t_extrapolated`. A
+no-moonset evening keeps finite geometry, nulls the lag/age window, and adds
+`moonset_indeterminate`; caller-supplied geometry reports that warning with
+`details.date = null` because the bundle has no date. The metadata object
+derives the calibrated years from the source's `range` — `Moon\ValueObjects`
+never imports `Astro`.
+
+See [Calculation Metadata](user/calculation-metadata.md#crescent-geometry) for
+the published payloads.
+
 ## See also
 
 - [Moon Sighting](user/moon-sighting.md) — the published user guide

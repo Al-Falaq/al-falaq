@@ -16,9 +16,18 @@ use AlFalaq\AlFalaq\Moon\Strategies\NeoMabims2021Evaluator;
 use AlFalaq\AlFalaq\Moon\Strategies\OdehEvaluator;
 use AlFalaq\AlFalaq\Moon\Strategies\YallopEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentEvaluationOutcome;
+use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometryOutcome;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
+use AlFalaq\AlFalaq\Moon\ValueObjects\MoonCalculationMetadata;
+use AlFalaq\AlFalaq\SharedKernel\Enums\CalculationContext;
+use AlFalaq\AlFalaq\SharedKernel\Enums\WarningCode;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\Traits\ResolvesCalculationSources;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationMetadata;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationWarning;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
@@ -26,13 +35,15 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
 /**
  * Moon-sighting entry point: geometry at local sunset + criterion verdicts (M3).
  *
- * Two-method orchestrator: atSunset() runs the Meeus pipeline on
- * the Astro engine, evaluate() fans the geometry out to the four injected
- * criterion strategies. Strategies stay engine-free by construction.
+ * Core numeric orchestrator: atSunset() runs the Meeus pipeline on the Astro
+ * engine, evaluate() fans the geometry out to the four injected criterion
+ * strategies, and the metadata siblings share the same sunset() trace.
+ * Strategies stay engine-free by construction.
  */
 final class CrescentCalculator
 {
     use SharesSolarTheory;
+    use ResolvesCalculationSources;
 
     /**
      * Crescent semi-diameter factor: 0.27245 × parallax (pin line 252).
@@ -116,6 +127,69 @@ final class CrescentCalculator
      */
     public function atSunset(Coordinates $coordinates, CivilDate $date, ?float $deltaTOverride = null): CrescentGeometry
     {
+        $warnings = [];
+
+        return $this->sunset($coordinates, $date, $deltaTOverride, $warnings, false)['geometry'];
+    }
+
+    /**
+     * Compute the geometry plus the provenance that explains how it was produced.
+     *
+     * Shares sunset() with atSunset(); the numeric path cannot drift.
+     *
+     * @param Coordinates $coordinates Observer location.
+     * @param CivilDate $date Civil date of the evening observation.
+     * @param float|null $deltaTOverride Seconds override for TT−UT1; null uses the provider.
+     * @return CrescentGeometryOutcome Geometry plus provenance.
+     */
+    public function atSunsetWithMetadata(
+        Coordinates $coordinates,
+        CivilDate $date,
+        ?float $deltaTOverride = null,
+    ): CrescentGeometryOutcome {
+        $warnings = [];
+        $trace = $this->sunset($coordinates, $date, $deltaTOverride, $warnings, true);
+
+        if ($trace['geometry']->lagMinutes === null) {
+            $warnings[] = self::moonsetWarning($date);
+        }
+
+        return new CrescentGeometryOutcome(
+            $trace['geometry'],
+            new MoonCalculationMetadata(
+                CalculationMetadata::create(CalculationContext::MOON, $warnings, $trace['sources']),
+                $coordinates,
+                $date,
+                $trace['deltaTSeconds'],
+                $trace['deltaTSource'],
+                MoonCalculationMetadata::GEOMETRY_CALCULATED,
+                [],
+            ),
+        );
+    }
+
+    /**
+     * One numeric sunset run, shared by atSunset() and the metadata siblings.
+     *
+     * @param Coordinates $coordinates Observer location.
+     * @param CivilDate $date Civil date of the evening observation.
+     * @param float|null $deltaTOverride Seconds override for TT−UT1; null uses the provider.
+     * @param list<CalculationWarning> $warnings Warning sink, appended in place.
+     * @param bool $collectSources Resolve component identities for metadata; legacy paths pass false.
+     * @return array{
+     *     geometry: CrescentGeometry,
+     *     deltaTSeconds: float,
+     *     deltaTSource: CalculationSource,
+     *     sources: list<CalculationSource>,
+     * } Geometry plus the trace metadata needs.
+     */
+    private function sunset(
+        Coordinates $coordinates,
+        CivilDate $date,
+        ?float $deltaTOverride,
+        array &$warnings,
+        bool $collectSources,
+    ): array {
         if ($deltaTOverride !== null && ! is_finite($deltaTOverride)) {
             throw new ValidationException(sprintf(
                 'deltaTOverride must be a finite number of seconds, got %s.',
@@ -139,7 +213,29 @@ final class CrescentCalculator
         $jdSunsetUt = $jdMidnightUt + $sunsetHours / 24.0;
         $decimalYear = (float) $date->year + ($date->dayOfYear() - 1) / 365.25;
 
-        $deltaT = $deltaTOverride ?? DeltaTProvider::forYear($decimalYear);
+        if ($deltaTOverride !== null) {
+            $deltaT = $deltaTOverride;
+            $deltaTSource = CalculationSource::callerInput('caller.delta-t');
+        } else {
+            $deltaT = DeltaTProvider::forYear($decimalYear);
+            $deltaTSource = CalculationSource::algorithm(DeltaTProvider::MODEL_ID, range: DeltaTProvider::MODEL_RANGE);
+
+            if ($decimalYear < DeltaTProvider::VALID_FROM_YEAR || $decimalYear > DeltaTProvider::VALID_TO_YEAR) {
+                $warnings[] = new CalculationWarning(
+                    WarningCode::DELTA_T_EXTRAPOLATED,
+                    sprintf(
+                        'The ΔT provider is outside its calibrated range %s.',
+                        DeltaTProvider::MODEL_RANGE,
+                    ),
+                    [
+                        'year' => $decimalYear,
+                        'calibrated_from_year' => DeltaTProvider::VALID_FROM_YEAR,
+                        'calibrated_to_year' => DeltaTProvider::VALID_TO_YEAR,
+                    ],
+                );
+            }
+        }
+
         $jdSunsetTt = $jdSunsetUt + $deltaT / 86400.0;
 
         $lst = $this->ephemeris->siderealTime($jdSunsetUt, $coordinates->longitude);
@@ -202,17 +298,49 @@ final class CrescentCalculator
             $ageAtMoonsetHours = max(self::MOON_AGE_MIN_DAYS, $ageDays + $lagMinutes / 60.0 / 24.0) * 24.0;
         }
 
-        return new CrescentGeometry(
-            $sunAltitude,
-            $moonAltitude,
-            $arcl,
-            $ageDays * 24.0,
-            $lagMinutes,
-            $deltaAzimuth,
-            $illumination,
-            $moonGeoAltitude - $sunAltitude,
-            $width,
-            $ageAtMoonsetHours,
+        $sources = $collectSources
+            ? [
+                self::componentSource($this->solar, 'solar', $warnings),
+                self::componentSource($this->ephemeris, 'ephemeris', $warnings),
+                self::componentSource($this->conjunctionSearch, 'conjunction_search', $warnings),
+                $deltaTSource,
+            ]
+            : [];
+
+        return [
+            'geometry' => new CrescentGeometry(
+                $sunAltitude,
+                $moonAltitude,
+                $arcl,
+                $ageDays * 24.0,
+                $lagMinutes,
+                $deltaAzimuth,
+                $illumination,
+                $moonGeoAltitude - $sunAltitude,
+                $width,
+                $ageAtMoonsetHours,
+            ),
+            'deltaTSeconds' => $deltaT,
+            'deltaTSource' => $deltaTSource,
+            'sources' => $sources,
+        ];
+    }
+
+    /**
+     * Build the no-moonset warning; the null date is caller-supplied geometry.
+     *
+     * @param CivilDate|null $date Requested civil date, when known.
+     * @return CalculationWarning Machine-readable indeterminate explanation.
+     */
+    private static function moonsetWarning(?CivilDate $date): CalculationWarning
+    {
+        return new CalculationWarning(
+            WarningCode::MOONSET_INDETERMINATE,
+            'No moonset occurs on the requested civil date; moonset-dependent fields are null.',
+            [
+                'date' => $date?->isoformat(),
+                'reason' => 'no_moonset_on_civil_date',
+            ],
         );
     }
 
@@ -256,6 +384,114 @@ final class CrescentCalculator
             'mabims1992' => $mabims1992,
             'neomabims2021' => $neoMabims2021,
         ];
+    }
+
+    /**
+     * Compute the geometry and run all four criteria, with provenance.
+     *
+     * Shares sunset() with atSunset(); it does not call atSunset() and then
+     * recompute. The verdicts come from the same evaluateGeometry() fan-out.
+     *
+     * @param Coordinates $coordinates Observer location.
+     * @param CivilDate $date Civil date of the evening observation.
+     * @param float|null $deltaTOverride Seconds override for TT−UT1; null uses the provider.
+     * @return CrescentEvaluationOutcome Geometry, verdicts, and provenance.
+     */
+    public function evaluateWithMetadata(
+        Coordinates $coordinates,
+        CivilDate $date,
+        ?float $deltaTOverride = null,
+    ): CrescentEvaluationOutcome {
+        $warnings = [];
+        $trace = $this->sunset($coordinates, $date, $deltaTOverride, $warnings, true);
+        $verdicts = $this->evaluateGeometry($trace['geometry']);
+        $sources = [...$trace['sources'], ...$this->criterionSources($warnings)];
+
+        if ($trace['geometry']->lagMinutes === null) {
+            $warnings[] = self::moonsetWarning($date);
+        }
+
+        $warnings[] = self::criterionWarning();
+
+        return new CrescentEvaluationOutcome(
+            $trace['geometry'],
+            $verdicts,
+            new MoonCalculationMetadata(
+                CalculationMetadata::create(CalculationContext::MOON, $warnings, $sources),
+                $coordinates,
+                $date,
+                $trace['deltaTSeconds'],
+                $trace['deltaTSource'],
+                MoonCalculationMetadata::GEOMETRY_CALCULATED,
+                MoonCalculationMetadata::CRITERIA,
+            ),
+        );
+    }
+
+    /**
+     * Run all four criteria on caller-supplied geometry, with provenance.
+     *
+     * The geometry bundle carries no coordinates, date, ΔT, or geometry
+     * source, so those fields are null/caller_supplied rather than invented;
+     * only the criterion sources are reported.
+     *
+     * @param CrescentGeometry $geometry Sunset geometry from the caller.
+     * @return CrescentEvaluationOutcome Geometry, verdicts, and provenance.
+     */
+    public function evaluateGeometryWithMetadata(CrescentGeometry $geometry): CrescentEvaluationOutcome
+    {
+        $warnings = [];
+        $sources = $this->criterionSources($warnings);
+
+        if ($geometry->lagMinutes === null) {
+            $warnings[] = self::moonsetWarning(null);
+        }
+
+        $warnings[] = self::criterionWarning();
+
+        return new CrescentEvaluationOutcome(
+            $geometry,
+            $this->evaluateGeometry($geometry),
+            new MoonCalculationMetadata(
+                CalculationMetadata::create(CalculationContext::MOON, $warnings, $sources),
+                null,
+                null,
+                null,
+                null,
+                MoonCalculationMetadata::GEOMETRY_CALLER_SUPPLIED,
+                MoonCalculationMetadata::CRITERIA,
+            ),
+        );
+    }
+
+    /**
+     * Criterion sources in evaluation order, warning on unidentified ones.
+     *
+     * @param list<CalculationWarning> $warnings Warning sink, appended in place.
+     * @return list<CalculationSource> Criterion sources in evaluation order.
+     */
+    private function criterionSources(array &$warnings): array
+    {
+        return [
+            self::componentSource($this->yallop, 'criterion', $warnings),
+            self::componentSource($this->odeh, 'criterion', $warnings),
+            self::componentSource($this->mabims1992, 'criterion', $warnings),
+            self::componentSource($this->neoMabims2021, 'criterion', $warnings),
+        ];
+    }
+
+    /**
+     * Build the criterion-versus-observation warning.
+     *
+     * @return CalculationWarning Machine-readable decision-required explanation.
+     */
+    private static function criterionWarning(): CalculationWarning
+    {
+        return new CalculationWarning(
+            WarningCode::CRESCENT_CRITERION_IS_NOT_OBSERVATION,
+            'Crescent criteria are computed verdicts, not observations.',
+            ['criteria' => implode(',', MoonCalculationMetadata::CRITERIA)],
+        );
     }
 
     /**

@@ -120,6 +120,7 @@ A `visible: true` from Yallop does not declare Ramadan open, and a `false` does 
 
 ## See also
 
+- [Calculation Metadata](calculation-metadata/#crescent-geometry) — opt-in provenance for geometry and verdicts
 - [Hijri Converter](hijri-converter/) — how Neo-MABIMS becomes month-start tables
 - [Errors](errors/) — `AstronomicalException` when there is no sunset
 - [Citations](citations/) — Yallop (1997), Odeh (2006), MABIMS 1992 / 2021, Meeus ch. 47

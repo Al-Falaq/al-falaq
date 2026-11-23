@@ -29,6 +29,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/provenance.md` (contributor registry and semantics) and
   `docs/user/calculation-metadata.md` (published guide), plus an executable
   `calculateWithMetadata()` recipe in `docs/integrations.md`.
+- Opt-in Qibla metadata: `QiblaCalculator::calculateWithMetadata()` returns
+  `QiblaCalculationOutcome` with `QiblaCalculationMetadata`. It reports exactly
+  one geodesy source, `heading_reference: true_north`, and a null
+  `magnetic_declination_degrees` until a sourced magnetic model ships.
+- Opt-in Moon metadata: `CrescentCalculator::atSunsetWithMetadata()`,
+  `evaluateWithMetadata()`, and `evaluateGeometryWithMetadata()` return
+  `CrescentGeometryOutcome` / `CrescentEvaluationOutcome` with
+  `MoonCalculationMetadata`, covering ΔT origin and calibration, no-moonset,
+  and the criterion-versus-observation warnings.
+- Wire serializers `QiblaResult::toArray()`, `CrescentGeometry::toArray()`, and
+  `CrescentVerdict::toArray()` for stable JSON payloads.
+- Built-in Qibla/Moon source identities: `qibla.spherical`,
+  `qibla.wgs84-karney`, `moon.ephemeris.meeus-2ed`,
+  `moon.conjunction-search.meeus-hourly`,
+  `moon.delta-t.espenak-2005-2050`, and the four `moon.criterion.*` ids;
+  a caller ΔT override is reported as the synthetic `caller.delta-t` source.
+  `SharedKernel\Traits\ResolvesCalculationSources` centralizes identification
+  of wired components.
+- Documentation for Qibla/Moon metadata in `docs/provenance.md`,
+  `docs/user/calculation-metadata.md`, the Qibla/Moon appendices, and
+  executable `docs/integrations.md` recipes.
 
 ## [0.2.0] - 2026-11-15
 

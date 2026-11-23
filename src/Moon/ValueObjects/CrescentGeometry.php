@@ -86,4 +86,36 @@ final readonly class CrescentGeometry
             throw new ValidationException('CrescentGeometry: lagMinutes and ageAtMoonsetHours must both be null (no-moonset window) or both finite.');
         }
     }
+
+    /**
+     * Wire shape: spec §6.6 order, floats/null exactly as stored.
+     *
+     * @return array{
+     *     sun_altitude_degrees: float,
+     *     moon_altitude_degrees: float,
+     *     elongation_degrees: float,
+     *     moon_age_hours: float,
+     *     lag_minutes: float|null,
+     *     delta_azimuth_degrees: float,
+     *     illuminated_fraction: float,
+     *     arcv_geocentric_degrees: float,
+     *     width_arcminutes: float,
+     *     age_at_moonset_hours: float|null,
+     * }
+     */
+    public function toArray(): array
+    {
+        return [
+            'sun_altitude_degrees' => $this->sunAltitude,
+            'moon_altitude_degrees' => $this->moonAltitude,
+            'elongation_degrees' => $this->elongationDeg,
+            'moon_age_hours' => $this->moonAgeHours,
+            'lag_minutes' => $this->lagMinutes,
+            'delta_azimuth_degrees' => $this->deltaAzimuthDeg,
+            'illuminated_fraction' => $this->illuminatedFraction,
+            'arcv_geocentric_degrees' => $this->arcvGeoDeg,
+            'width_arcminutes' => $this->widthArcmin,
+            'age_at_moonset_hours' => $this->ageAtMoonsetHours,
+        ];
+    }
 }

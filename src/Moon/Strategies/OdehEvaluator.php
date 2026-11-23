@@ -7,12 +7,19 @@ namespace AlFalaq\AlFalaq\Moon\Strategies;
 use AlFalaq\AlFalaq\Moon\Contracts\CrescentEvaluator;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentVerdict;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 
 /**
  * Odeh (2006) V-criterion with visibility classes A/B/C/D (M3).
  */
-final class OdehEvaluator implements CrescentEvaluator
+final class OdehEvaluator implements CrescentEvaluator, IdentifiesCalculationSource
 {
+    /**
+     * Registry id for the Odeh criterion.
+     */
+    public const SOURCE_ID = 'moon.criterion.odeh';
+
     /**
      * Compute V = f(ARCV_topo, W) and map to Odeh classes (M3).
      *
@@ -58,5 +65,15 @@ final class OdehEvaluator implements CrescentEvaluator
         $limit = -0.1018 * $w ** 3 + 0.7319 * $w ** 2 - 6.3226 * $w + 7.1651;
 
         return $arcvTopo - $limit;
+    }
+
+    /**
+     * Stable provenance identity for this criterion.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID);
     }
 }

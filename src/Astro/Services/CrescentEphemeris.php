@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AlFalaq\AlFalaq\Astro\Services;
 
 use AlFalaq\AlFalaq\Astro\Traits\SharesSolarTheory;
+use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\AstronomicalException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
 /**
@@ -19,9 +21,19 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
  *
  * @internal Entry point is CrescentCalculator, not this class.
  */
-final class CrescentEphemeris
+final class CrescentEphemeris implements IdentifiesCalculationSource
 {
     use SharesSolarTheory;
+
+    /**
+     * Registry id for the Meeus 2nd-edition ephemeris.
+     */
+    public const SOURCE_ID = 'moon.ephemeris.meeus-2ed';
+
+    /**
+     * Model version of the Meeus transcription.
+     */
+    public const SOURCE_VERSION = 'meeus-2ed';
 
     /**
      * Parallax equatorial radius in km (pin CrescentGeometry.py:35, Task 0).
@@ -517,4 +529,13 @@ final class CrescentEphemeris
         return ['ra' => $ra, 'dec' => $dec, 'distanceKm' => $distanceKm];
     }
 
+    /**
+     * Stable provenance identity for this ephemeris.
+     *
+     * @return CalculationSource Algorithm source carrying SOURCE_ID/SOURCE_VERSION.
+     */
+    public function calculationSource(): CalculationSource
+    {
+        return CalculationSource::algorithm(self::SOURCE_ID, self::SOURCE_VERSION);
+    }
 }

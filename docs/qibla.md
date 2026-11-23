@@ -124,6 +124,25 @@ the `QiblaCalculator` strategies + `tests/Goldens/qibla_*.csv`.
 - `magneticHeading(declinationEast)` feeds true-north goldens as
   `unwind(true − declination_east)` (untouched by the spherical oracle).
 
+## Provenance
+
+`calculateWithMetadata(Coordinates)` returns `QiblaCalculationOutcome`: the
+same `QiblaResult` plus `QiblaCalculationMetadata`. The metadata lists exactly
+one geodesy source — `qibla.spherical` (`todhunter-haversine`) from
+`default()`, or `qibla.wgs84-karney` (`geographiclib-2.1`) from `wgs84()` — and
+the requested `input.coordinates`.
+
+The heading policy is frozen in the metadata: `heading_reference` is always
+`true_north` and `magnetic_declination_degrees` is always `null`. No magnetic
+model ships; a consumer that displays a compass bearing applies its own
+declination and states the model and date. A custom `GeodesyCalculator`
+without `IdentifiesCalculationSource` is reported as `custom.geodesy` with an
+`unidentified_calculation_source` warning; there is no silent fallback.
+
+`calculate()` is unchanged and remains the compact path. The published shape
+is documented in
+[Calculation Metadata](user/calculation-metadata.md#qibla).
+
 ## See also
 
 - [Qibla](user/qibla.md) — the published user guide
