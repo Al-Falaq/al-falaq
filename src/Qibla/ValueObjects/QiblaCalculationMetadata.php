@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Qibla\ValueObjects;
 
+use AlFalaq\AlFalaq\SharedKernel\Enums\CalculationContext;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationMetadata;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 
@@ -29,7 +31,14 @@ final readonly class QiblaCalculationMetadata
     public function __construct(
         public CalculationMetadata $common,
         public Coordinates $coordinates,
-    ) {}
+    ) {
+        if ($common->context !== CalculationContext::QIBLA) {
+            throw new ValidationException(sprintf(
+                'Qibla metadata requires the qibla calculation context, got "%s".',
+                $common->context->value,
+            ));
+        }
+    }
 
     /**
      * Wire shape: common six keys, then input, heading reference, declination.

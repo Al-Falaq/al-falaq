@@ -6,9 +6,13 @@ namespace AlFalaq\AlFalaq\Tests\Qibla;
 
 use AlFalaq\AlFalaq\Qibla\Contracts\GeodesyCalculator;
 use AlFalaq\AlFalaq\Qibla\Services\QiblaCalculator;
+use AlFalaq\AlFalaq\Qibla\ValueObjects\QiblaCalculationMetadata;
 use AlFalaq\AlFalaq\Qibla\ValueObjects\QiblaCalculationOutcome;
 use AlFalaq\AlFalaq\SharedKernel\Contracts\IdentifiesCalculationSource;
+use AlFalaq\AlFalaq\SharedKernel\Enums\CalculationContext;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\InvalidCoordinatesException;
+use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationMetadata;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationSource;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\LibraryVersion;
@@ -73,6 +77,16 @@ final class QiblaMetadataTest extends TestCase
             'digest' => null,
             'range' => null,
         ]], $outcome->metadata->toArray()['sources']);
+    }
+
+    public function testMetadataRejectsAnotherCalculationContext(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        new QiblaCalculationMetadata(
+            CalculationMetadata::create(CalculationContext::MOON),
+            self::kualaLumpur(),
+        );
     }
 
     public function testOutcomeToArrayWrapsResultAndMetadata(): void

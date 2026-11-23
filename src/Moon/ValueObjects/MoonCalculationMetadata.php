@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Moon\ValueObjects;
 
+use AlFalaq\AlFalaq\SharedKernel\Enums\CalculationContext;
 use AlFalaq\AlFalaq\SharedKernel\Enums\SourceKind;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CalculationMetadata;
@@ -66,6 +67,13 @@ final readonly class MoonCalculationMetadata
         public string $geometrySource,
         public array $criteria,
     ) {
+        if ($common->context !== CalculationContext::MOON) {
+            throw new ValidationException(sprintf(
+                'Moon metadata requires the moon calculation context, got "%s".',
+                $common->context->value,
+            ));
+        }
+
         if ($geometrySource !== self::GEOMETRY_CALCULATED && $geometrySource !== self::GEOMETRY_CALLER_SUPPLIED) {
             throw new ValidationException(sprintf('Unknown Moon geometry source "%s".', $geometrySource));
         }

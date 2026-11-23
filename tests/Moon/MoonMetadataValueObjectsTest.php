@@ -202,6 +202,21 @@ final class MoonMetadataValueObjectsTest extends TestCase
         yield 'extra' => [['yallop', 'odeh', 'mabims1992', 'neomabims2021', 'extra']];
     }
 
+    public function testMetadataRejectsAnotherCalculationContext(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        new MoonCalculationMetadata(
+            CalculationMetadata::create(CalculationContext::QIBLA),
+            null,
+            null,
+            null,
+            null,
+            MoonCalculationMetadata::GEOMETRY_CALLER_SUPPLIED,
+            [],
+        );
+    }
+
     public function testUnknownGeometrySourceIsRejected(): void
     {
         $this->expectException(ValidationException::class);
