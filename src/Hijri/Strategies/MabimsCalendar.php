@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Hijri\Strategies;
 
+use AlFalaq\AlFalaq\Hijri\Contracts\DescribesCalendar;
 use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
 use AlFalaq\AlFalaq\Hijri\Data\MabimsMonthStarts;
+use AlFalaq\AlFalaq\Hijri\Enums\CalendarCoverage;
+use AlFalaq\AlFalaq\Hijri\Enums\CalendarFamily;
 use AlFalaq\AlFalaq\Hijri\Enums\MabimsCountry;
 use AlFalaq\AlFalaq\Hijri\Traits\LooksUpMonthStarts;
 use AlFalaq\AlFalaq\Hijri\Traits\ShiftsHijriDays;
+use AlFalaq\AlFalaq\Hijri\ValueObjects\CalendarProvenance;
 
 /**
  * Neo-MABIMS (MY/ID/SG/BN) calendar, backed by per-country generated tables.
@@ -17,11 +21,19 @@ use AlFalaq\AlFalaq\Hijri\Traits\ShiftsHijriDays;
  * member state; dates outside it raise `HijriOutOfRangeException`. The country
  * picks a precomputed table — the crescent criteria are never re-evaluated at
  * conversion time. Regenerate with `python3 tools/gen_hijri.py`.
+ * Implements `DescribesCalendar`: the generated table is reported with its
+ * per-country digest, generator pin, and MIT license.
  */
-final class MabimsCalendar implements HijriCalendar
+final class MabimsCalendar implements HijriCalendar, DescribesCalendar
 {
     use ShiftsHijriDays;
     use LooksUpMonthStarts;
+
+    /** Generator and commit pin that produced the shipped month-start tables. */
+    private const DATA_SOURCE = 'tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7';
+
+    /** Redistribution status of the generated tables. */
+    private const DATA_LICENSE = 'MIT';
 
     /**
      * Bind the member state whose table this instance resolves.
@@ -52,6 +64,34 @@ final class MabimsCalendar implements HijriCalendar
     public function name(): string
     {
         return 'mabims';
+    }
+
+    /**
+     * Describe this generated-table calendar and the bound member state's data.
+     *
+     * The key stays the generic `'mabims'` for every country; the member state
+     * is carried in `authority`.
+     *
+     * @return CalendarProvenance MABIMS family, generated-table coverage, per-country digest and pin.
+     */
+    public function calendarProvenance(): CalendarProvenance
+    {
+        return new CalendarProvenance(
+            $this->name(),
+            CalendarFamily::MABIMS,
+            CalendarCoverage::GENERATED_TABLE,
+            authority: $this->country->value,
+            range: sprintf(
+                '%d-%02d..%d-%02d AH',
+                MabimsMonthStarts::FIRST_YEAR,
+                MabimsMonthStarts::FIRST_MONTH,
+                MabimsMonthStarts::LAST_YEAR,
+                MabimsMonthStarts::LAST_MONTH,
+            ),
+            digest: MabimsMonthStarts::digestFor($this->country),
+            source: self::DATA_SOURCE,
+            license: self::DATA_LICENSE,
+        );
     }
 
     /**

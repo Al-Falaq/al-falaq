@@ -6,16 +6,22 @@ namespace AlFalaq\AlFalaq\Tests\Hijri;
 
 use AlFalaq\AlFalaq\Hijri\Contracts\DescribesCalendar;
 use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
+use AlFalaq\AlFalaq\Hijri\Data\MabimsMonthStarts;
+use AlFalaq\AlFalaq\Hijri\Data\UmmAlQuraMonthStarts;
 use AlFalaq\AlFalaq\Hijri\Enums\CalendarCoverage;
 use AlFalaq\AlFalaq\Hijri\Enums\CalendarFamily;
 use AlFalaq\AlFalaq\Hijri\Enums\HijriDateFrame;
+use AlFalaq\AlFalaq\Hijri\Enums\MabimsCountry;
+use AlFalaq\AlFalaq\Hijri\Strategies\MabimsCalendar;
+use AlFalaq\AlFalaq\Hijri\Strategies\TabularCalendar;
+use AlFalaq\AlFalaq\Hijri\Strategies\UmmAlQuraCalendar;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\CalendarProvenance;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Calendar description vocabulary: key freedom, table validation, wire shape.
+ * Calendar description vocabulary, built-in calendar identities, and the opt-in provenance guard.
  */
 final class CalendarProvenanceTest extends TestCase
 {
@@ -262,6 +268,95 @@ final class CalendarProvenanceTest extends TestCase
 
         self::assertNull($provenance->digest);
         self::assertSame('1900-01-01..2100-12-31 CE', $provenance->toArray()['range']);
+    }
+
+    public function testTabularCalendarDescribesItsArithmeticCoverage(): void
+    {
+        self::assertSame([
+            'key' => 'tabular',
+            'family' => 'tabular',
+            'coverage' => 'arithmetic_rule',
+            'authority' => null,
+            'range' => '1900-01-01..2100-12-31 CE',
+            'digest' => null,
+            'source' => null,
+            'license' => null,
+        ], (new TabularCalendar())->calendarProvenance()->toArray());
+    }
+
+    public function testUmmAlQuraCalendarDescribesItsGeneratedTable(): void
+    {
+        self::assertSame([
+            'key' => 'uqu',
+            'family' => 'umm_al_qura',
+            'coverage' => 'generated_table',
+            'authority' => null,
+            'range' => '1423-01..1500-12 AH',
+            'digest' => UmmAlQuraMonthStarts::SHA256,
+            'source' => 'tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7',
+            'license' => 'MIT',
+        ], (new UmmAlQuraCalendar())->calendarProvenance()->toArray());
+    }
+
+    /**
+     * @param MabimsCountry $country Member state whose table identity is asserted.
+     */
+    #[DataProvider('mabimsCountryProvider')]
+    public function testEveryMabimsCountryDescribesItsOwnGeneratedTable(MabimsCountry $country): void
+    {
+        self::assertSame([
+            'key' => 'mabims',
+            'family' => 'mabims',
+            'coverage' => 'generated_table',
+            'authority' => $country->value,
+            'range' => '1445-01..1500-12 AH',
+            'digest' => MabimsMonthStarts::digestFor($country),
+            'source' => 'tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7',
+            'license' => 'MIT',
+        ], (new MabimsCalendar($country))->calendarProvenance()->toArray());
+    }
+
+    /**
+     * @return iterable<string, array{MabimsCountry}>
+     */
+    public static function mabimsCountryProvider(): iterable
+    {
+        foreach (MabimsCountry::cases() as $country) {
+            yield $country->value => [$country];
+        }
+    }
+
+    public function testShippedCalendarsNeverClaimAnOfficialTable(): void
+    {
+        foreach (self::shippedCalendars() as $label => $calendar) {
+            self::assertNotSame(
+                CalendarCoverage::OFFICIAL_TABLE,
+                $calendar->calendarProvenance()->coverage,
+                sprintf('%s must not claim an official table.', $label),
+            );
+        }
+    }
+
+    public function testEveryShippedCalendarImplementsDescribesCalendar(): void
+    {
+        foreach (self::shippedCalendars() as $label => $calendar) {
+            self::assertInstanceOf(DescribesCalendar::class, $calendar, $label);
+        }
+    }
+
+    /**
+     * Every calendar shipped in the library, keyed by a readable label.
+     *
+     * @return iterable<string, HijriCalendar&DescribesCalendar>
+     */
+    private static function shippedCalendars(): iterable
+    {
+        yield 'tabular' => new TabularCalendar();
+        yield 'uqu' => new UmmAlQuraCalendar();
+
+        foreach (MabimsCountry::cases() as $country) {
+            yield 'mabims-' . $country->value => new MabimsCalendar($country);
+        }
     }
 
     public function testEnumsHaveTheFrozenValues(): void

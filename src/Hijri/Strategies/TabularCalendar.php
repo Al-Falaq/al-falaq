@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace AlFalaq\AlFalaq\Hijri\Strategies;
 
+use AlFalaq\AlFalaq\Hijri\Contracts\DescribesCalendar;
 use AlFalaq\AlFalaq\Hijri\Contracts\HijriCalendar;
+use AlFalaq\AlFalaq\Hijri\Enums\CalendarCoverage;
+use AlFalaq\AlFalaq\Hijri\Enums\CalendarFamily;
 use AlFalaq\AlFalaq\Hijri\Exceptions\HijriOutOfRangeException;
 use AlFalaq\AlFalaq\Hijri\Traits\ShiftsHijriDays;
+use AlFalaq\AlFalaq\Hijri\ValueObjects\CalendarProvenance;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 use AlFalaq\AlFalaq\SharedKernel\ValueObjects\CivilDate;
@@ -22,8 +26,10 @@ use AlFalaq\AlFalaq\SharedKernel\ValueObjects\JulianDay;
  * months by ±1–2 days; never present them as observed.
  * `adjustmentDays` plays the pin's `adjustment_days` role (the .NET
  * `HijriAdjustment` nudge): it shifts the whole conversion by N days.
+ * Implements `DescribesCalendar`: the arithmetic rule is described as
+ * `arithmetic_rule` over the civil conversion window.
  */
-final class TabularCalendar implements HijriCalendar
+final class TabularCalendar implements HijriCalendar, DescribesCalendar
 {
     use ShiftsHijriDays;
 
@@ -67,6 +73,21 @@ final class TabularCalendar implements HijriCalendar
     public function name(): string
     {
         return 'tabular';
+    }
+
+    /**
+     * Describe this arithmetic calendar and its civil conversion window.
+     *
+     * @return CalendarProvenance Tabular family, arithmetic-rule coverage, no table data.
+     */
+    public function calendarProvenance(): CalendarProvenance
+    {
+        return new CalendarProvenance(
+            $this->name(),
+            CalendarFamily::TABULAR,
+            CalendarCoverage::ARITHMETIC_RULE,
+            range: sprintf('%d-01-01..%d-12-31 CE', CivilDate::MIN_YEAR, CivilDate::MAX_YEAR),
+        );
     }
 
     /**
