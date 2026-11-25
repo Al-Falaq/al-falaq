@@ -109,13 +109,18 @@ Conventions: public services are `final` with explicit constructor injection and
 | --- | --- |
 | `Hijri\Services\GregorianToHijriConverter` | `default(): self`; `convert(DateTimeImmutable, HijriCalendar, ?Coordinates, ?CalculationParameters, bool $changeAtSunset = false, ?OffsetStore $offsets = null): HijriDate` |
 | `Hijri\Contracts\HijriCalendar` | `fromGregorian(CivilDate): HijriDate`; `toGregorian(HijriDate): CivilDate`; `monthLength(int, int): int`; `shift(HijriDate, int): HijriDate` (validates the start date; ±3650-day cap); `name(): string` |
+| `Hijri\Contracts\DescribesCalendar` | `calendarProvenance(): CalendarProvenance` (opt-in capability; deliberately not part of `HijriCalendar`) |
 | `Hijri\Contracts\OffsetStore` | `offsetDaysFor(HijriDate, HijriCalendar): int` (caller-implemented; 0 = no-op) |
 | `Hijri\Strategies\TabularCalendar` | `__construct(int $adjustmentDays = 0 [-2,2])`; `name() = 'tabular'` |
 | `Hijri\Strategies\UmmAlQuraCalendar` | `name() = 'uqu'`; coverage 1423-01…1500-12 AH |
 | `Hijri\Strategies\MabimsCalendar` | `__construct(MabimsCountry)`; `country(): MabimsCountry`; `name() = 'mabims'`; coverage 1445-01…1500-12 AH |
 | `Hijri\ValueObjects\HijriDate` | `__construct(int $year >= 1, int $month 1–12, int $day 1–30)`; `isoformat()`; `compareTo()`; `equals()` |
+| `Hijri\ValueObjects\CalendarProvenance` | `__construct(string $key, ?CalendarFamily, ?CalendarCoverage, ?string $authority = null, ?string $range = null, ?string $digest = null, ?string $source = null, ?string $license = null)`; the key is stored verbatim (no trimming or normalization) and may be any non-blank label, not only a `CalculationSource` id; rejects half-described family/coverage and table-backed data without a lowercase SHA-256 digest and range (official tables also need authority, source, and license); `toArray()` (eight-key wire shape) |
 | `Hijri\Enums\HijriMonth` | int enum 1–12; `label(string $locale): string` (`en`/`ar`) |
 | `Hijri\Enums\MabimsCountry` | `MY, ID, SG, BN`; `referenceCoordinates()`; `fromString(string)` (case-insensitive) |
+| `Hijri\Enums\HijriDateFrame` | `CIVIL_DATE`, `SUNSET_ROLLOVER` |
+| `Hijri\Enums\CalendarFamily` | `TABULAR`, `UMM_AL_QURA`, `MABIMS` |
+| `Hijri\Enums\CalendarCoverage` | `ARITHMETIC_RULE`, `GENERATED_TABLE`, `OFFICIAL_TABLE` |
 | `Hijri\Traits\LooksUpMonthStarts`, `Hijri\Traits\ShiftsHijriDays` | Helpers shared by the month-start calendars: `LooksUpMonthStarts` contributes `fromGregorian`/`toGregorian`/`monthLength`, `ShiftsHijriDays` contributes `shift` |
 | `Hijri\Exceptions\HijriOutOfRangeException` | `forDate(string $calendar, string $iso, string $range)`; extends `ValidationException` |
 | `Hijri\Exceptions\HijriDataException` | `forMonthStart(string $iso)`; malformed generated table data; extends `AlFalaqException` |

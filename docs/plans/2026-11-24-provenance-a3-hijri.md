@@ -250,10 +250,10 @@ final readonly class CalendarProvenance
      * @param string $key Calendar's stable name(), not a CalculationSource id.
      * @param CalendarFamily|null $family Family, or null for an undescribed custom calendar.
      * @param CalendarCoverage|null $coverage Coverage, or null for an undescribed custom calendar.
-     * @param string|null $authority Member-state code for MABIMS; null otherwise.
+     * @param string|null $authority Member-state code for MABIMS or the publishing authority for an official table; null otherwise.
      * @param string|null $range Covered span, required for table-backed calendars.
      * @param string|null $digest Lowercase SHA-256, required for table-backed calendars.
-     * @param string|null $source Human-readable generator/pin reference.
+     * @param string|null $source Human-readable generator/pin or dataset reference.
      * @param string|null $license Redistribution status.
      */
     public function __construct(
