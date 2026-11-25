@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Land A3 of the provenance/explainability programme: reuse the frozen `SharedKernel` vocabulary for the Hijri path, exposing the calendar key/family/coverage, MABIMS country authority, covered span, table digest, offset source, date frame, and maghrib-only fallback without changing any legacy result, method signature, or numeric output.
+**Goal:** Land A3 of the provenance/explainability programme: reuse the frozen `SharedKernel` vocabulary for the Hijri path, exposing the calendar key/family/coverage, MABIMS country authority, covered span, table digest, offset source, date frame, and maghrib-only fallback without changing any existing result, method signature, or numeric output.
 
 **Architecture:** A3 is five stacked layers delivered as individually revertable commits:
 
@@ -12,7 +12,7 @@
 4. **Converter trace and opt-in method** — `GregorianToHijriConverter` gets one private `trace()` returning date, resolved civil date, offset days, and the aggregated maghrib-fallback flag. `convert()` returns `trace()['date']`; `convertWithMetadata()` builds the outcome from the same trace and reads `DescribesCalendar` only after the numeric path succeeds.
 5. **Docs, integration snippet, benchmark, changelog, and gates** — contributor and published docs, executable wiring, an A3 benchmark line, and the full CI/mutation/bench/docs gates.
 
-Legacy behaviour is frozen: `convert()` keeps its signature, return type, exception types, and output. `HijriCalendar` and `OffsetStore` are unchanged. `DescribesCalendar` is a separate opt-in capability, not a new base contract.
+Existing behaviour is frozen: `convert()` keeps its signature, return type, exception types, and output. `HijriCalendar` and `OffsetStore` are unchanged. `DescribesCalendar` is a separate opt-in capability, not a new base contract.
 
 **Tech Stack:** PHP 8.2+ (no runtime dependencies), PHPUnit 11, PHPStan max + strict-rules, php-cs-fixer `@PER`, Infection (MSI ≥ 85), Astro Starlight docs site, plain-PHP tooling under `tools/`.
 
@@ -26,7 +26,7 @@ Legacy behaviour is frozen: `convert()` keeps its signature, return type, except
 
 **Frozen artefacts:** released user-docs snapshots under `docs/user/vX.Y.Z/` are never edited. Only current `docs/user/*.md` files change.
 
-**Review gate:** A1 and A2 were plan-first. Do **not** start Task 1 until the public signatures, validation rules, and wire shape in Tasks 1–4 are reviewed. The shape is the contract; implementation follows it.
+**Review status:** Confirmed on 2026-11-25. All eight decisions below are approved; Task 1 may start. The public signatures, validation rules, and wire shape in Tasks 1–4 are the contract; implementation follows them.
 
 ---
 
@@ -61,7 +61,7 @@ Legacy behaviour is frozen: `convert()` keeps its signature, return type, except
 
 ### Non-negotiable invariants
 
-1. Every legacy test keeps passing unchanged; no golden is re-pinned; `convert()` output is byte-identical for every calendar, frame, and offset state.
+1. Every existing test keeps passing unchanged; no golden is re-pinned; `convert()` output is byte-identical for every calendar, frame, and offset state.
 2. `convert()` and `convertWithMetadata()` share one private `trace()`. Metadata never recomputes astronomy, offsets, or calendar provenance.
 3. `convert()` never calls `DescribesCalendar::calendarProvenance()`, builds warnings, or reads provenance-only code. A custom calendar whose `calendarProvenance()` throws must still convert through `convert()`.
 4. `CalculationMetadata::create()` is the only envelope constructor. Status is derived from warnings; callers cannot supply it.
@@ -76,19 +76,19 @@ Legacy behaviour is frozen: `convert()` keeps its signature, return type, except
 
 ---
 
-## Resolved decisions for review
+## Confirmed decisions
 
-These are the points the spec leaves implicit. Review them before implementation; the tests and docs pin the chosen answer.
+These are the points the spec leaves implicit. All eight were confirmed on 2026-11-25 before implementation; the tests and docs pin the chosen answer.
 
 1. **`HijriCalculationMetadata` is a validated value object, not a bag.** It rejects a context other than `hijri`, a civil frame carrying coordinates/parameters or a maghrib fallback, and a sunset frame missing coordinates/parameters. This mirrors the A2 `MoonCalculationMetadata` review fix and prevents impossible provenance from being published through the public constructor.
 
-2. **The fallback warning's `date` detail is the resolved civil date.** Spec §10.4 fixes the trace to one boolean flag and no probe-date field. `resolvedCivilDate` is the effective Gregorian day the frame produced and is always available. The warning therefore names the effective day, not necessarily the day whose individual probe took the fallback. Document this in `docs/provenance.md`.
+2. **The fallback warning's `date` detail is the resolved civil date.** Spec §10.4 fixes the trace to one boolean flag and no probe-date field. `resolvedCivilDate` is the effective Gregorian day the frame produced and is always available. The warning therefore names the effective day, not necessarily the day whose individual probe took the fallback. Make the warning message say that `date` is the effective Gregorian date, and document the same in `docs/provenance.md` and `docs/user/calculation-metadata.md`.
 
 3. **A custom calendar is not a `CalculationSource`.** Spec §8.1 reports the calendar in the `calendar` block. A custom calendar without `DescribesCalendar` adds the `unidentified_calculation_source` warning with `source_id = custom.calendar`, but does **not** add a `custom.calendar` entry to `sources`. The `calendar` value in §8.2 is the warning namespace, not a source-list slot.
 
 4. **`offset` is not warned as unidentified.** Every `OffsetStore` is caller-owned by contract. When a store is supplied, the converter reports the synthetic `hijri.offset.caller` caller-input source. No identity capability is added to `OffsetStore`, and no `custom.offset` warning is emitted.
 
-5. **Generated-table `source` is `tools/gen_hijri.py @ a7baa8b` and `license` is `MIT`.** The short pin form matches the spec example; the full SHA remains in the generated file headers and `UQ_PROVENANCE.md`. This is descriptive metadata, not a second source of truth. Tabular arithmetic has a null source and license.
+5. **Generated-table `source` is `tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7` and `license` is `MIT`.** The full pin SHA is unambiguous and matches the generated file headers and `UQ_PROVENANCE.md`; the spec's short form is illustrative. This is descriptive metadata, not a second source of truth. Tabular arithmetic has a null source and license.
 
 6. **`OFFICIAL_TABLE` is implemented and unused by shipped calendars.** No shipped calendar claims official status. The validation path is tested with a custom `DescribesCalendar` double so the reserved coverage cannot rot.
 
@@ -149,9 +149,9 @@ private function trace(
 
 `convert()` returns `trace()['date']`. `convertWithMetadata()` uses the rest. The trace does **not** read `DescribesCalendar`; only the metadata method does, after the trace succeeds.
 
-- [ ] **Step 5: Review gate**
+- [x] **Step 5: Review gate**
 
-Stop here until the public surface and wire shape in Tasks 1–4 are approved. Do not implement around an unresolved shape.
+Approved on 2026-11-25. Proceed to Task 1; the public surface and wire shape in Tasks 1–4 are confirmed.
 
 ---
 
@@ -183,7 +183,7 @@ Stop here until the public surface and wire shape in Tasks 1–4 are approved. D
     'authority' => 'MY',
     'range' => '1445-01..1500-12 AH',
     'digest' => str_repeat('a', 64),
-    'source' => 'tools/gen_hijri.py @ a7baa8b',
+    'source' => 'tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7',
     'license' => 'MIT',
 ]
 ```
@@ -390,13 +390,13 @@ In `CalendarProvenanceTest`, add:
 ]
 ```
 
-- `testUmmAlQuraCalendarDescribesItsGeneratedTable` — key `uqu`, family `umm_al_qura`, coverage `generated_table`, authority `null`, range `1423-01..1500-12 AH`, digest `UmmAlQuraMonthStarts::SHA256`, source `tools/gen_hijri.py @ a7baa8b`, license `MIT`.
+- `testUmmAlQuraCalendarDescribesItsGeneratedTable` — key `uqu`, family `umm_al_qura`, coverage `generated_table`, authority `null`, range `1423-01..1500-12 AH`, digest `UmmAlQuraMonthStarts::SHA256`, source `tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7`, license `MIT`.
 - `testEveryMabimsCountryDescribesItsOwnGeneratedTable` — data provider over `MabimsCountry::cases()`:
   - key `mabims`, family `mabims`, coverage `generated_table`;
   - authority equals `$country->value`;
   - range `1445-01..1500-12 AH`;
   - digest equals `MabimsMonthStarts::digestFor($country)`;
-  - source `tools/gen_hijri.py @ a7baa8b`, license `MIT`.
+  - source `tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7`, license `MIT`.
 - `testShippedCalendarsNeverClaimAnOfficialTable` — over `TabularCalendar`, `UmmAlQuraCalendar`, and every `MabimsCalendar`; coverage is never `CalendarCoverage::OFFICIAL_TABLE`.
 - `testEveryShippedCalendarImplementsDescribesCalendar` — the three calendar classes (and every MABIMS country) are `instanceof DescribesCalendar`.
 
@@ -485,7 +485,7 @@ final class MabimsCalendar implements HijriCalendar, DescribesCalendar
 }
 ```
 
-Add `private const DATA_SOURCE = 'tools/gen_hijri.py @ a7baa8b';` and `private const DATA_LICENSE = 'MIT';` to both table-backed strategies. Do not duplicate the digest constants; the data classes remain the source of truth.
+Add `private const DATA_SOURCE = 'tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7';` and `private const DATA_LICENSE = 'MIT';` to both table-backed strategies. Do not duplicate the digest constants; the data classes remain the source of truth.
 
 `MabimsCalendar::name()` stays the generic `'mabims'` key for all four countries; `authority` carries the member state. The docs must tell consumers to key per-country corrections by `calendar.authority`, not `calendar.key`.
 
@@ -761,7 +761,7 @@ final readonly class HijriCalculationOutcome
     /**
      * Bind a result and its provenance.
      *
-     * @param HijriDate $result Converted date (same value the legacy path returns).
+     * @param HijriDate $result Converted date (same value the compact path returns).
      * @param HijriCalculationMetadata $metadata Provenance for this conversion.
      */
     public function __construct(
@@ -831,16 +831,16 @@ private function maghrib(Coordinates $coordinates, CivilDate $date): \DateTimeIm
 private function offsets(int $days): OffsetStore
 ```
 
-**Legacy equality**
+**Compact-path equality**
 
-- `testLegacyConvertEqualsMetadataResult` — data provider over:
+- `testCompactConvertEqualsMetadataResult` — data provider over:
   - calendars: `TabularCalendar`, `UmmAlQuraCalendar`, `MabimsCalendar(MY)`, `MabimsCalendar(SG)`;
   - frames: civil (`2025-03-01T12:00:00Z`, no coordinates) and sunset (`2025-03-01T20:00:00Z`, KL + parameters, `changeAtSunset: true`);
   - offsets: `null`, `0`, `2`.
 
   Assert `convert(...)->toArray() === convertWithMetadata(...)->result->toArray()` for every combination.
 - `testMetadataPathCallsTheOffsetStoreOnce` — a counting `OffsetStore`; `convertWithMetadata()` records exactly one `offsetDaysFor()` call.
-- `testLegacyConvertDoesNotReadCalendarProvenance` — a delegating `HijriCalendar` that implements `DescribesCalendar` and throws `\RuntimeException` from `calendarProvenance()`:
+- `testCompactConvertDoesNotReadCalendarProvenance` — a delegating `HijriCalendar` that implements `DescribesCalendar` and throws `\RuntimeException` from `calendarProvenance()`:
   - `convert()` returns the converted date;
   - `convertWithMetadata()` throws the same `\RuntimeException`.
 - `testMetadataPathReadsCalendarProvenanceOnce` — the same double with a counter; `convertWithMetadata()` calls `calendarProvenance()` exactly once; `convert()` calls it zero times.
@@ -936,7 +936,7 @@ private function offsets(int $days): OffsetStore
   - status `fallback_applied` (highest rank wins).
 - `testMetadataIsDeterministic` — two identical calls produce identical `toArray()` output.
 - `testJsonEncodingSucceedsAndLeaksNoInternals` — `json_encode($outcome->toArray(), JSON_THROW_ON_ERROR)` succeeds; the JSON contains no `AlFalaq\\`, `HijriCalendar`, `DateTime`, or `Astro` token.
-- `testOutcomeToArrayWrapsTheLegacyPayload` — `result` equals `convert(...)->toArray()`; `metadata` equals `outcome->metadata->toArray()`.
+- `testOutcomeToArrayWrapsTheCompactPayload` — `result` equals `convert(...)->toArray()`; `metadata` equals `outcome->metadata->toArray()`.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -976,7 +976,7 @@ Add:
 /**
  * Shared numeric path: conversion, rollover, and offset application.
  *
- * The legacy path returns `date` and never reads calendar provenance.
+ * The compact path returns `date` and never reads calendar provenance.
  *
  * @param \DateTimeImmutable $dateTime Source instant (zone-aware).
  * @param HijriCalendar $calendar Target calendar system.
@@ -1116,7 +1116,7 @@ Do not change any numeric statement, comparison, comment, or exception type. The
  * Convert one instant and report the calendar, frame, offsets, and fallback.
  *
  * Shares trace() with convert(); provenance is read only after the numeric
- * path succeeds. The legacy path never calls DescribesCalendar.
+ * path succeeds. The compact path never calls DescribesCalendar.
  *
  * @param \DateTimeImmutable $dateTime Source instant (zone-aware).
  * @param HijriCalendar $calendar Target calendar system.
@@ -1168,7 +1168,7 @@ public function convertWithMetadata(
     if ($trace['maghribFallbackApplied']) {
         $warnings[] = new CalculationWarning(
             WarningCode::SUNSET_FRAME_MAGHRIB_FALLBACK,
-            'The full prayer schedule was undefined; the sunset roll used maghrib alone.',
+            'The full prayer schedule was undefined while resolving the sunset roll; maghrib alone was used. The date is the effective Gregorian date.',
             [
                 'date' => $trace['resolvedCivilDate']->isoformat(),
                 'reason' => 'full_schedule_undefined',
@@ -1277,16 +1277,17 @@ In `docs/provenance.md`:
   - the rule that the calendar is reported in `calendar`, not `sources`;
   - sunset frame → `hijri.maghrib-probe`; supplied `OffsetStore` → `hijri.offset.caller`; neither → no Hijri source;
   - `offsets.days` distinguishes no store (`null`) from a real zero (`0`) and `offsets.applied` is `days !== null`;
-  - `fallback.kind = maghrib_only` plus `sunset_frame_maghrib_fallback`; the warning's `date` is the resolved civil date;
+  - `fallback.kind = maghrib_only` plus `sunset_frame_maghrib_fallback`; the warning's `date` is the resolved civil date (the effective Gregorian date), not necessarily the probe date;
   - coverage-driven warnings: `generated_table` → `generated_calendar_table`, `arithmetic_rule` → `tabular_calendar_estimate`, `official_table` → no coverage warning;
   - a custom calendar without `DescribesCalendar` gets `custom.calendar` + `unidentified_calculation_source`, but no source entry;
   - MABIMS consumers must key per-country corrections by `calendar.authority`, not `calendar.key`.
 - Implementation notes:
-  - `convert()` returns `trace()['date']` and never calls `DescribesCalendar`; a calendar whose `calendarProvenance()` throws still converts through the legacy path;
+  - `convert()` returns `trace()['date']` and never calls `DescribesCalendar`; a calendar whose `calendarProvenance()` throws still converts through the compact path;
   - the fallback flag is aggregated across the forward and backward probes;
   - `HijriCalculationMetadata` validates the frame/input pairing.
 - Reproducibility recipe: same calendar key *and* MABIMS country, same frame, same parameters, same offset store, same library version.
-- Legacy methods list: add `convert()` to the compact methods that expose no warnings.
+- Compact methods list: add `convert()` to the compact methods that expose no warnings, and state explicitly that `convert()` is not deprecated.
+- Replace every "legacy" reference in `docs/provenance.md` and `docs/user/calculation-metadata.md` with "compact" terminology; do not leave wording that implies the compact methods are deprecated.
 
 - [ ] **Step 2: Update the published guide**
 
@@ -1298,15 +1299,16 @@ In `docs/user/calculation-metadata.md`:
   - a full JSON example generated from the implementation, showing `result`, the common six keys, `input` (instant/zone/frame/coordinates/parameters), `effective.gregorian_date`, `calendar`, `offsets`, and `fallback`;
   - a civil-date variant showing `coordinates`/`parameters` as `null` and no `hijri.maghrib-probe` source;
   - the offset-store variants (`null`, `0`, non-zero) and the `applied` flag;
-  - the maghrib-only fallback example and the unchanged-date case;
+  - the maghrib-only fallback example and the unchanged-date case, stating that the warning's `date` is the effective Gregorian date, not necessarily the probe date;
   - the MABIMS `authority` note.
 - Rewrite the existing `## Generated and official Hijri tables` section in present tense and place it under `## Hijri` (or keep it as a sub-note there).
+- Replace "The legacy methods expose no warnings" with "The compact methods expose no warnings", and state explicitly that `convert()` is not deprecated.
 - Update `## Handling warnings at your boundary` with the three Hijri codes and `fallback_applied`.
 - Every JSON block must be valid JSON; generate the examples from the implementation, then re-indent them for readability. Do not hand-invent digests or dates.
 
 - [ ] **Step 3: Update the Hijri appendix and user pointers**
 
-- `docs/hijri.md`: add a `## Provenance` section with `convertWithMetadata()`, the calendar block fields, the frame/offset/fallback semantics, and the rule that `convert()` does not read provenance. Link `user/calculation-metadata.md#hijri`.
+- `docs/hijri.md`: add a `## Provenance` section with `convertWithMetadata()`, the calendar block fields, the frame/offset/fallback semantics, and the rule that `convert()` is the non-deprecated compact path and does not read provenance. Link `user/calculation-metadata.md#hijri`.
 - `docs/user/hijri-converter.md`: one-sentence pointer to the metadata guide.
 - `docs/user/integration.md`: extend the metadata pointer to mention Hijri conversion.
 - `docs/user/migration.md`: name `convertWithMetadata()` in the additive provenance note.
@@ -1391,7 +1393,7 @@ printf(
 );
 ```
 
-Add the imports for `GregorianToHijriConverter` and `UmmAlQuraCalendar`. Do not fold this into the legacy tripwires.
+Add the imports for `GregorianToHijriConverter` and `UmmAlQuraCalendar`. Do not fold this into the existing tripwires.
 
 - [ ] **Step 7: Changelog and generated page**
 
@@ -1437,7 +1439,7 @@ composer bench
 ```
 
 - Mutation: MSI ≥ 85. If a new mutant escapes, add the missing assertion; do not lower the gate and do not add a baseline entry.
-- Benchmark: legacy tripwires pass; record the legacy, A1, A2, and A3 medians from the output.
+- Benchmark: existing tripwires pass; record the baseline, A1, A2, and A3 medians from the output.
 
 - [ ] **Step 10: Build the docs site**
 
@@ -1482,7 +1484,7 @@ gh pr create --base main --head feat/provenance-a3-hijri \
   --body-file /tmp/opencode/pr-a3-body.md
 ```
 
-The PR body records: the A3 scope, the legacy-compatibility grid (4 calendars × 2 frames × 3 offset states), the exact calendar provenance table, the fallback-date decision, the gate evidence (tests/coverage/arch/mutation/bench/docs build), and the fact that no release bump is included. Watch `gh pr checks <n>` until green; do not merge without the user's instruction.
+The PR body records: the A3 scope, the compact-path compatibility grid (4 calendars × 2 frames × 3 offset states), the exact calendar provenance table, the fallback-date decision, the gate evidence (tests/coverage/arch/mutation/bench/docs build), and the fact that no release bump is included. Watch `gh pr checks <n>` until green; do not merge without the user's instruction.
 
 ---
 
@@ -1491,11 +1493,11 @@ The PR body records: the A3 scope, the legacy-compatibility grid (4 calendars ×
 - [ ] `composer validate --strict`, `composer ci`, `composer arch`, and `composer changelog:check` are green.
 - [ ] `composer test` reports line coverage ≥ 95% (never lowered).
 - [ ] `composer mutation` reports MSI ≥ 85.
-- [ ] `composer bench` stays within 50 ms single-day / 30,000 ms year; legacy, A1, A2, and A3 medians are recorded.
+- [ ] `composer bench` stays within 50 ms single-day / 30,000 ms year; baseline, A1, A2, and A3 medians are recorded.
 - [ ] The 828 baseline tests plus the new provenance/metadata tests all pass; the assertion count only grows.
 - [ ] `convert()` results are byte-for-byte equal to `convertWithMetadata()->result` across every calendar, both frames, and offset states `null`/`0`/`2`.
 - [ ] Metadata identifies the calendar key/family/coverage, MABIMS country authority, span, digest, offset source, frame, and maghrib-only fallback.
-- [ ] `convert()` never calls `calendarProvenance()`; a throwing `calendarProvenance()` still converts through the legacy path.
+- [ ] `convert()` never calls `calendarProvenance()`; a throwing `calendarProvenance()` still converts through the compact path.
 - [ ] A custom calendar without `DescribesCalendar` gets `custom.calendar` + `unidentified_calculation_source` and no source entry.
 - [ ] Generated, arithmetic, and official coverage warnings are driven by `CalendarCoverage`, not by class names.
 - [ ] Offset `null` and `0` are distinguishable in `offsets`; `applied` is derived from `days !== null`.
