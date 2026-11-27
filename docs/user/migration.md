@@ -20,7 +20,9 @@ opt-in methods only where you need the provenance envelope; see
   `TimetableService::monthlyWithMetadata()`;
 - Qibla: `QiblaCalculator::calculateWithMetadata()`;
 - Moon: `CrescentCalculator::atSunsetWithMetadata()`,
-  `evaluateWithMetadata()`, and `evaluateGeometryWithMetadata()`.
+  `evaluateWithMetadata()`, and `evaluateGeometryWithMetadata()`;
+- Hijri: `GregorianToHijriConverter::convertWithMetadata()` returns a
+  `HijriCalculationOutcome` with the same `HijriDate` and a provenance envelope.
 
 ## 0.2.0
 

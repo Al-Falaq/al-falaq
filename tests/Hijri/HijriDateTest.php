@@ -72,6 +72,21 @@ final class HijriDateTest extends TestCase
     }
 
     /**
+     * toArray() exports the four-key wire shape.
+     *
+     * @return void
+     */
+    public function testToArrayHasTheWireShape(): void
+    {
+        self::assertSame([
+            'year' => 1448,
+            'month' => 5,
+            'day' => 25,
+            'iso' => '1448-05-25',
+        ], (new HijriDate(1448, 5, 25))->toArray());
+    }
+
+    /**
      * plusDays was removed from the contract.
      *
      * @return void

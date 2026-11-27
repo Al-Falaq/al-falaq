@@ -101,6 +101,38 @@ already-converted date, and the result is applied as a single
 `HijriCalendar::shift()`, so a correction crosses month and year boundaries
 correctly. A missing entry returns `0`, and `0` is a no-op.
 
+## Provenance
+
+`GregorianToHijriConverter::convertWithMetadata()` takes the same arguments as
+`convert()` and returns a `HijriCalculationOutcome`: the unchanged `HijriDate`
+plus `HijriCalculationMetadata`. The metadata extends the common envelope with
+`input` (instant, zone, frame, and the sunset frame's coordinates/parameters),
+`effective.gregorian_date` (the date actually converted), `calendar`, `offsets`,
+and `fallback`:
+
+- `calendar` is the converting calendar's `CalendarProvenance`: `key`, `family`,
+  `coverage`, `authority`, `range`, `digest`, `source`, and `license`. The
+  built-in calendars describe themselves; a custom calendar that does not
+  implement `DescribesCalendar` is reported by `name()` with null facts and an
+  `unidentified_calculation_source` warning. For MABIMS, `key` is the generic
+  `mabims` and `authority` carries the member state — key per-country
+  corrections by `authority`, not `key`.
+- `offsets.days` is `null` when no `OffsetStore` answered and the store's answer
+  otherwise; `applied` is `days !== null`. A store returning `0` is distinct
+  from no store.
+- `fallback.applied` and `fallback.kind = maghrib_only` report a sunset probe
+  that used maghrib alone; the warning's `date` is the effective Gregorian
+  date, not necessarily the day whose individual probe fell back. Coverage
+  warnings are driven by `calendar.coverage`: generated tables warn
+  `generated_calendar_table`, arithmetic calendars warn
+  `tabular_calendar_estimate`, and an official table emits neither.
+
+`convert()` is the compact, non-deprecated path. It returns the same value and
+never reads provenance or calendar identity, so a calendar whose
+`calendarProvenance()` throws still converts. Both methods share one private
+numeric trace. See [Calculation Metadata](user/calculation-metadata.md#hijri)
+for the full wire examples.
+
 ## When a date is out of range
 
 Nothing saturates and nothing wraps.

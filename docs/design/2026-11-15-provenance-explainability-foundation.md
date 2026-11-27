@@ -794,7 +794,9 @@ final readonly class CalendarProvenance
 }
 ```
 
-`key` is the calendar's stable `name()` value. `family` and `coverage` are
+`key` is the calendar's stable key: its `name()` for a calendar that does not
+implement `DescribesCalendar`, or the key returned by `calendarProvenance()`
+for one that does (which should equal `name()`). `family` and `coverage` are
 nullable only for a custom calendar that does not implement
 `DescribesCalendar`. `authority` is the member-state code for MABIMS and
 `null` for the current generated Umm al-Qura table, which is not an official
@@ -805,10 +807,12 @@ tables follow the repository license.
 
 Validation:
 
-- `key` is non-empty after trimming. It is the calendar's own `name()` value,
-  not a `CalculationSource` id; a custom calendar may use a name that does not
-  match the source-id grammar. Built-in keys are the lowercase values in the
-  table above.
+- `key` is non-empty after trimming. It is the calendar's stable key (normally
+  its own `name()`), not a `CalculationSource` id; a custom calendar may use a
+  name that does not match the source-id grammar. A `DescribesCalendar`
+  implementation supplies the key through `calendarProvenance()` and should
+  return its `name()`. Built-in keys are the lowercase values in the table
+  above.
 - `family` and `coverage` are both `null` or both non-null. A half-described
   custom calendar is not a valid provenance object.
 - `GENERATED_TABLE` and `OFFICIAL_TABLE` require a lowercase SHA-256 `digest`
@@ -1035,7 +1039,7 @@ selected.
 | `moonset_indeterminate` | Moon, no moonset on the civil date | `indeterminate` | `date`, `reason` |
 | `crescent_criterion_is_not_observation` | Moon evaluation | `decision_required` | `criteria` (comma-separated fixed order) |
 | `generated_calendar_table` | Hijri UQ/MABIMS | none | `calendar`, `range` |
-| `tabular_calendar_estimate` | Hijri tabular | none | `adjustment_days` |
+| `tabular_calendar_estimate` | Hijri tabular | none | `offset_days` |
 | `unidentified_calculation_source` | Any custom component without `IdentifiesCalculationSource` | none | `component`, `source_id` |
 
 `reason` values in this slice:
@@ -1046,9 +1050,11 @@ selected.
 `unidentified_calculation_source.source_id` is always `custom.<component>`;
 `component` is one of the fixed names in section 8.2.
 
-`tabular_calendar_estimate.adjustment_days` is the applied `OffsetStore`
+`tabular_calendar_estimate.offset_days` is the applied `OffsetStore`
 correction (`0` when no store is supplied); the warning itself means the month
-length is arithmetic, not observed.
+length is arithmetic, not observed. (The key was drafted as `adjustment_days`
+and renamed before release to avoid confusion with `TabularCalendar`'s
+constructor `adjustmentDays`, which metadata does not report.)
 
 A warning is never used to make an invalid request succeed. For example, an
 out-of-range table lookup still raises `HijriOutOfRangeException`; a polar day

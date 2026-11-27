@@ -52,6 +52,21 @@ final readonly class HijriDate
     }
 
     /**
+     * Wire shape: year, month, day, then ISO rendering.
+     *
+     * @return array{year: int, month: int, day: int, iso: string}
+     */
+    public function toArray(): array
+    {
+        return [
+            'year' => $this->year,
+            'month' => $this->month,
+            'day' => $this->day,
+            'iso' => $this->isoformat(),
+        ];
+    }
+
+    /**
      * Three-way comparison by year, then month, then day.
      *
      * @param HijriDate $other Date to compare against.

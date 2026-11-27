@@ -7,6 +7,7 @@ namespace AlFalaq\AlFalaq\Tests\Wiring;
 use AlFalaq\AlFalaq\Astro\Contracts\SolarDayEngine;
 use AlFalaq\AlFalaq\Astro\Services\MeanSolarCalculator;
 use AlFalaq\AlFalaq\Astro\ValueObjects\SolarTime;
+use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriCalculationOutcome;
 use AlFalaq\AlFalaq\Hijri\ValueObjects\HijriDate;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentEvaluationOutcome;
 use AlFalaq\AlFalaq\Moon\ValueObjects\CrescentGeometry;
@@ -233,6 +234,10 @@ final class CalculatorWiringTest extends TestCase
             'moonEvaluation' => CrescentEvaluationOutcome::class,
             'moonEvaluationMetadata' => 'array',
         ],
+        'Hijri metadata' => [
+            'hijriMetadataOutcome' => HijriCalculationOutcome::class,
+            'hijriMetadata' => 'array',
+        ],
         'Sunnah' => [
             'sunnah' => SunnahTimes::class,
         ],
@@ -329,6 +334,10 @@ final class CalculatorWiringTest extends TestCase
         $moonEvaluationOutcome = $bySection['Moon metadata']['moonEvaluation'] ?? null;
         self::assertInstanceOf(CrescentEvaluationOutcome::class, $moonEvaluationOutcome);
         self::assertSame('moon', $moonEvaluationOutcome->metadata->common->context->value);
+
+        $hijriMetadataOutcome = $bySection['Hijri metadata']['hijriMetadataOutcome'] ?? null;
+        self::assertInstanceOf(HijriCalculationOutcome::class, $hijriMetadataOutcome);
+        self::assertSame('hijri', $hijriMetadataOutcome->metadata->common->context->value);
 
         $schedule = $prayer['schedule'] ?? null;
         self::assertInstanceOf(PrayerSchedule::class, $schedule);

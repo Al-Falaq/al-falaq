@@ -13,12 +13,12 @@ monthly timetable (`TimetableService`), next-prayer resolver
 (tabular, Umm al-Qura, per-country MABIMS + Gregorian bridge) shipped
 (calculation-method defaults frozen + milestone amendments; no deferred-context
 `LogicException` markers remain in `src/` — the final no-throw sweep was an
-M5 gate). **Provenance A1 and A2 landed** — shared calculation-metadata
+M5 gate). **Provenance A1, A2, and A3 landed** — shared calculation-metadata
 vocabulary plus opt-in provenance for prayer/timetable
 (`calculateWithMetadata()` / `monthlyWithMetadata()`), Qibla
-(`calculateWithMetadata()`), and Moon (`atSunsetWithMetadata()`,
-`evaluateWithMetadata()`, `evaluateGeometryWithMetadata()`); Hijri metadata
-remains A3. Public surface is `src/{SharedKernel,Prayer,Qibla,
+(`calculateWithMetadata()`), Moon (`atSunsetWithMetadata()`,
+`evaluateWithMetadata()`, `evaluateGeometryWithMetadata()`), and Hijri
+(`convertWithMetadata()`). Public surface is `src/{SharedKernel,Prayer,Qibla,
 Moon,Hijri}/`; `src/Astro/` is `@internal`.
 
 ## Setup Commands
@@ -49,17 +49,26 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - Docs-site dependencies are audit-gated in `docs.yml`
   (`npm audit --omit=dev --audit-level=moderate`); Dependabot tracks both
   `github-actions` and the `npm` package in `docs_site/`.
-- `composer mutation` — Infection gate (MSI ≥ 85, about 25 min). `composer.json`
+- `composer mutation` — Infection gate (MSI ≥ 85; ~20 min locally). `composer.json`
   sets `config.process-timeout: 0` so the script survives Composer's default
-  300 s process timeout; CI sets the same via `COMPOSER_PROCESS_TIMEOUT`.
-  The `mutation` CI job is deliberately PR-only and conditional: it waits for
-  `static` + `test` (`needs:`), skips drafts, skips PRs that touch no signal
-  path (`src/`, `tests/`, `tools/`, `infection.json.dist`, `phpunit.xml`,
-  `composer.json`, `composer.lock`), and superseded PR runs are cancelled by
-  the workflow `concurrency` group. Do not move it back to `push` triggers:
-  same-repo branches then ran the job twice per push (once for `push`, once for
-  `pull_request`). Direct pushes to `main` bypass the gate by design — if that
-  becomes routine, add a scheduled `main` run instead of a push trigger.
+  300 s process timeout. **CI runs mutation only in
+  `.github/workflows/mutation.yml`, only on PRs labelled `release-readiness`,
+  and only when the PR touches a signal path** (`src/`, `tests/`, `tools/`,
+  `infection.json.dist`, `phpunit.xml`, `composer.json`, `composer.lock`).
+  Ordinary PRs get a *skipped* mutation check, which satisfies required status
+  checks. Do **not** force-run mutation on normal PRs, re-add it to `test.yml`,
+  or add a `push` trigger: same-repo branches then ran it twice per push, and
+  a single unsharded job was SIGTERM'd (~10 min) on CI runners. To run the gate
+  on a PR, add the `release-readiness` label; adding/removing the label triggers
+  the workflow (`labeled` / `unlabeled` event types). The workflow shards
+  Infection per `src/` context (`Astro`, `Hijri`, `Moon`, `Prayer`, `Qibla`,
+  `SharedKernel`) so each job stays under the runner limit, and a stable
+  aggregate `mutation` job fails when change detection or a shard fails.
+  Removing an unrelated label does not clear the gate; only removing
+  `release-readiness` does. `pull_request_target`
+  is deliberately not used — it would run untrusted PR code with elevated
+  permissions. Direct pushes to `main` bypass the gate by design; if that
+  becomes routine, add a scheduled `main` run instead.
 - `composer changelog` regenerates `docs/user/changelog.md` from `CHANGELOG.md`;
   `composer changelog:check` fails when the published page is stale (also in the
   release gate). Never hand-edit the generated page.
@@ -154,6 +163,15 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   `CalculationSource` (`moon.delta-t.espenak-2005-2050`, range `2005..2050`);
   `MoonCalculationMetadata` parses that range instead of importing the
   provider.
+- Gotcha: `convert()` must stay provenance-free; only `convertWithMetadata()`
+  reads `DescribesCalendar`. Both share one private `trace()`, and a calendar
+  whose `calendarProvenance()` throws must still convert through the compact
+  path.
+- Gotcha: a custom Hijri calendar is reported in the `calendar` block, not in
+  `sources`; the `unidentified_calculation_source` warning carries
+  `custom.calendar`. Coverage warnings are driven by `CalendarProvenance`'s
+  `coverage`, not class names. `Hijri\ValueObjects` may import
+  `Prayer\ValueObjects` but must not import `Astro` or `Moon`.
 - Gotcha: `composer update` without `config.platform.php=8.2.0` resolves
   8.4-only deps and breaks the 8.2/8.3 CI legs.
 - `docs/` is contributor-facing (algorithm appendices, internals,

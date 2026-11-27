@@ -161,9 +161,10 @@ add_shortcode('prayer_times', function ($atts) {
 
 If you also need to record how a result was produced, see
 [Calculation Metadata](calculation-metadata/) for the opt-in
-`calculateWithMetadata()` paths on prayer and Qibla results and the three Moon
-metadata methods. The compact methods documented on this page are unchanged
-and remain the default.
+`calculateWithMetadata()` paths on prayer and Qibla results, the three Moon
+metadata methods, and `convertWithMetadata()` for Hijri conversion. The compact
+methods documented on this page are unchanged, remain the default, and are not
+deprecated.
 
 ## See also
 

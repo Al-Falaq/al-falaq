@@ -9,7 +9,8 @@ The frozen contract lives in
 [design/2026-11-15-provenance-explainability-foundation.md](design/2026-11-15-provenance-explainability-foundation.md).
 This page is the working summary for contributors; the spec is the decision
 record. A1 shipped the shared vocabulary and the prayer/timetable path; A2
-added Qibla and Moon metadata. Hijri metadata remains A3.
+added Qibla and Moon metadata; A3 added Hijri calendar metadata. The
+provenance surface is complete for prayer, Qibla, Moon, and Hijri.
 
 ## What it claims and does not claim
 
@@ -71,10 +72,11 @@ Determinism rules:
 
 ## Warning codes
 
-A1 and A2 emit five codes: `polar_fallback_applied` and
-`unidentified_calculation_source` (A1), plus `delta_t_extrapolated`,
-`moonset_indeterminate`, and `crescent_criterion_is_not_observation` (A2).
-The three Hijri codes remain reserved for A3.
+A1, A2, and A3 emit eight codes: `polar_fallback_applied` and
+`unidentified_calculation_source` (A1), `delta_t_extrapolated`,
+`moonset_indeterminate`, and `crescent_criterion_is_not_observation` (A2), and
+`sunset_frame_maghrib_fallback`, `generated_calendar_table`, and
+`tabular_calendar_estimate` (A3).
 
 | Code | Emitted by | Status effect | Detail keys |
 |---|---|---|---|
@@ -84,7 +86,7 @@ The three Hijri codes remain reserved for A3.
 | `moonset_indeterminate` | Moon, no moonset on the civil date | `indeterminate` | `date`, `reason` |
 | `crescent_criterion_is_not_observation` | Moon evaluation | `decision_required` | `criteria` (comma-separated, fixed order) |
 | `generated_calendar_table` | Hijri UQ/MABIMS | none | `calendar`, `range` |
-| `tabular_calendar_estimate` | Hijri tabular | none | `adjustment_days` |
+| `tabular_calendar_estimate` | Hijri tabular | none | `offset_days` |
 | `unidentified_calculation_source` | Any custom component without `IdentifiesCalculationSource` | none | `component`, `source_id` |
 
 `reason` values in the frozen vocabulary:
@@ -153,8 +155,17 @@ A2 Moon registry:
 | `moon.criterion.neo-mabims-2021` | `ALGORITHM` | — | `NeoMabims2021Evaluator` |
 | `caller.delta-t` | `CALLER_INPUT` | — | non-null ΔT override |
 
-Reserved ids for A3 (defined in the spec, not emitted yet):
-`hijri.maghrib-probe`, `hijri.offset.caller`.
+A3 Hijri registry:
+
+| Source id | Kind | Version/range | Owner |
+|---|---|---|---|
+| `hijri.maghrib-probe` | `ALGORITHM` | — | `GregorianToHijriConverter` (sunset frame) |
+| `hijri.offset.caller` | `CALLER_INPUT` | — | non-null `OffsetStore` |
+
+The calendar itself is reported in the `calendar` block, never as a
+`CalculationSource`; see [Hijri metadata](#hijri-metadata). A caller-supplied
+`OffsetStore` is caller-owned by contract, so it is reported as
+`hijri.offset.caller` and never as an unidentified component.
 
 Prayer dependency rules:
 
@@ -301,6 +312,76 @@ Moon dependency rules:
 `result.geometry` + `result.verdicts` (fixed key order, each
 `CrescentVerdict::toArray()`) and `metadata`.
 
+## Hijri metadata
+
+`GregorianToHijriConverter::convertWithMetadata()` returns a
+`HijriCalculationOutcome`: the unchanged `HijriDate` plus
+`HijriCalculationMetadata`. It takes the same arguments as `convert()`. The
+published example is
+[Calculation Metadata → Hijri](user/calculation-metadata.md#hijri).
+
+`HijriCalculationMetadata` extends the common six keys with `input`,
+`effective`, `calendar`, `offsets`, and `fallback`:
+
+| Key | Meaning |
+|---|---|
+| `input` | `instant` (UTC), `zone`, `frame` (`civil_date` or `sunset_rollover`), and the frame's `coordinates`/`parameters` (both null for the civil frame) |
+| `effective` | `gregorian_date` actually converted after the frame and rollover decision |
+| `calendar` | `CalendarProvenance::toArray()` |
+| `offsets` | `days` (`null` when no store answered) and `applied` (`days !== null`) |
+| `fallback` | `applied` and `kind` (`maghrib_only` or null) |
+
+The three built-in calendars describe themselves through `DescribesCalendar`:
+
+| Calendar | `key` | `family` | `coverage` | `authority` | `range` | `digest` | `source` | `license` |
+|---|---|---|---|---|---|---|---|---|
+| `TabularCalendar` | `tabular` | `tabular` | `arithmetic_rule` | `null` | `1900-01-01..2100-12-31 CE` | `null` | `null` | `null` |
+| `UmmAlQuraCalendar` | `uqu` | `umm_al_qura` | `generated_table` | `null` | `1423-01..1500-12 AH` | `21903bf9442b546908ab18a62f173e2011c760d1247a6cfcf46bb8f7584c0f9f` | `tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7` | `MIT` |
+| `MabimsCalendar` | `mabims` | `mabims` | `generated_table` | `MY`, `ID`, `SG`, or `BN` | `1445-01..1500-12 AH` | per-country SHA-256 (below) | `tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7` | `MIT` |
+
+MABIMS per-country digests (`MabimsMonthStarts::digestFor($country)`):
+
+- MY `4b3e2a9a62ea1683616219b4373e988364dddb4f710bd6793369c2e3a5bd70fc`
+- ID `56e6ea28b91c77503e2577d35d41013033790bff7740a2c48bfc8bc5008658bc`
+- SG `38d2042f37ae6b380ad68083843b716d2bf8fed27ec45f34ed0130bab07b6197`
+- BN `6f1ddde50b696caa517575bde93008a9d6ae98e517221bd40dd886ba0885c20f`
+
+Rules:
+
+- The calendar is reported in `calendar`, not `sources`. A calendar is a
+  conversion system, not a `CalculationSource`; only the maghrib probe and a
+  supplied offset store contribute sources.
+- A sunset-frame conversion adds `hijri.maghrib-probe`. A supplied
+  `OffsetStore` adds `hijri.offset.caller` regardless of its answer. A
+  civil-frame conversion with no store has an empty `sources` list.
+- `offsets.days` distinguishes no store (`null`) from a real zero (`0`).
+  `offsets.applied` is derived as `days !== null`: it means a store answered,
+  not that the date moved. A store returning `0` still lists
+  `hijri.offset.caller` and serializes `applied: true`.
+- A maghrib-only probe sets `fallback.applied = true`,
+  `fallback.kind = maghrib_only`, and emits
+  `sunset_frame_maghrib_fallback` with `reason = full_schedule_undefined`.
+  The warning's `date` detail is the resolved civil date — the effective
+  Gregorian date — not necessarily the day whose individual probe fell back.
+  The flag is aggregated across the forward and backward probes, so a fallback
+  in the backward probe is reported against the effective (current UTC) day.
+  The warning is visible even when the resolved date is unchanged.
+- Coverage drives the coverage warning, not the class name:
+  `generated_table` emits `generated_calendar_table`, `arithmetic_rule` emits
+  `tabular_calendar_estimate`, and `official_table` emits no coverage warning.
+  No shipped calendar claims `official_table`. See
+  [Calculation Metadata → Hijri](user/calculation-metadata.md#hijri) for the
+  detail keys and the `offset_days` / `TabularCalendar::adjustmentDays`
+  distinction.
+- A custom calendar without `DescribesCalendar` is reported in `calendar` as
+  its `name()` with null family/coverage, and emits
+  `unidentified_calculation_source` with `source_id = custom.calendar`. It adds
+  no source entry. A `DescribesCalendar` calendar supplies its own key through
+  `calendarProvenance()`; it should equal `name()`.
+- `MabimsCalendar::name()` is the generic `mabims` for every country. Key
+  per-country corrections and comparisons by `calendar.authority`, not
+  `calendar.key`.
+
 ## Schema and library versions
 
 - `CalculationMetadata::SCHEMA_VERSION` is `1.0`. It is independent of the
@@ -349,25 +430,44 @@ the same ΔT choice: an override (`caller.delta-t`) and the provider
 verdict. `evaluateGeometryWithMetadata()` replays criteria only; store the
 geometry payload with it when the sky itself must be reproduced.
 
-The legacy methods remain the compact path and keep their current behavior:
+For Hijri, reproducibility needs the same calendar key *and* — for MABIMS —
+the same country authority, the same frame, the same `CalculationParameters`
+for the sunset frame, the same `OffsetStore` answers, and the same
+`library_version`. Feed `input.instant` and `input.zone` back through
+`convertWithMetadata()` with the same frame; do not feed
+`effective.gregorian_date` directly, because that would bypass the frame
+decision. A different calendar table (key or authority), frame, offset store,
+or library version can change the date, the digest, or the warnings.
+
+The compact methods remain the default and are not deprecated:
 `calculate()`, `monthly()`, `atSunset()`, `evaluate()`, `evaluateGeometry()`,
-`calculate()` on Qibla, and the other pre-existing methods return the same
-values and throw the same exceptions. They expose no warnings. A caller that
-wants provenance opts in with `calculateWithMetadata()` /
-`monthlyWithMetadata()` (Prayer), `calculateWithMetadata()` (Qibla), or
+`calculate()` on Qibla, `convert()`, and the other pre-existing methods return
+the same values and throw the same exceptions. They expose no warnings. A
+caller that wants provenance opts in with `calculateWithMetadata()` /
+`monthlyWithMetadata()` (Prayer), `calculateWithMetadata()` (Qibla),
 `atSunsetWithMetadata()` / `evaluateWithMetadata()` /
-`evaluateGeometryWithMetadata()` (Moon).
+`evaluateGeometryWithMetadata()` (Moon), or `convertWithMetadata()` (Hijri).
 
 ## Implementation notes
 
 - Metadata is built at orchestration boundaries (`PrayerTimesCalculator`,
-  `TimetableService`, `QiblaCalculator`, `CrescentCalculator`), never inside
-  `Astro/`.
+  `TimetableService`, `QiblaCalculator`, `CrescentCalculator`,
+  `GregorianToHijriConverter`), never inside `Astro/`.
 - `calculate()` and `calculateWithMetadata()` share one private `run()`; the
-  legacy path returns `run()['schedule']`, so the numeric pipeline cannot
+  compact path returns `run()['schedule']`, so the numeric pipeline cannot
   drift between them. Qibla's `calculate()`/`calculateWithMetadata()` share
-  one `solve()`, and Moon's `atSunset()`/metadata methods share one
-  `sunset()`.
+  one `solve()`, Moon's `atSunset()`/metadata methods share one `sunset()`,
+  and Hijri's `convert()`/`convertWithMetadata()` share one `trace()`.
+- `convert()` returns `trace()['date']` and never calls `DescribesCalendar`,
+  builds warnings, or reads provenance-only code. A custom calendar whose
+  `calendarProvenance()` throws still converts through the compact path.
+  `convertWithMetadata()` reads provenance only after the numeric path
+  succeeds.
+- The maghrib fallback flag is a single boolean aggregated across the forward
+  and backward probes; the trace records no probe date, so the warning names
+  the resolved civil date. `HijriCalculationMetadata` validates the
+  frame/input pairing: a civil frame cannot carry coordinates, parameters, or
+  a fallback, and a sunset frame requires both coordinates and parameters.
 - `Moon\ValueObjects` cannot import `Astro\Services\DeltaTProvider` (the
   layering gate), so the calibrated bounds travel through the provider
   source's `range` (`2005..2050`); the metadata object parses that documented
@@ -376,5 +476,10 @@ wants provenance opts in with `calculateWithMetadata()` /
   Existing implementers are not forced to adopt it; `monthlyWithMetadata()`
   rejects an injected calculator that lacks it with a
   `ConfigurationException` instead of silently dropping provenance.
-- Exception behavior is unchanged. Each metadata method throws exactly what
-  its legacy sibling throws; metadata is constructed only on success.
+- Numeric exception behavior is unchanged: each metadata method throws exactly
+  what its compact sibling throws for the same inputs, and metadata is
+  constructed only after the numeric path succeeds. Opting into metadata can
+  additionally surface provenance-only failures — for example a custom
+  `DescribesCalendar` implementation whose `calendarProvenance()` throws. The
+  compact path never reads that capability, so callers must handle these extra
+  failures when they enable metadata.
