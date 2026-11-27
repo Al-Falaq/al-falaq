@@ -49,19 +49,24 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - Docs-site dependencies are audit-gated in `docs.yml`
   (`npm audit --omit=dev --audit-level=moderate`); Dependabot tracks both
   `github-actions` and the `npm` package in `docs_site/`.
-- `composer mutation` — Infection gate (MSI ≥ 85; ~20 min locally, up to ~60 min
-  on CI runners). `composer.json` sets `config.process-timeout: 0` so the script
-  survives Composer's default 300 s process timeout; CI sets the same via
-  `COMPOSER_PROCESS_TIMEOUT`. The `mutation` job has `timeout-minutes: 90`: an
-  A3-sized test suite exceeded the old 45-minute limit on CI.
-  The `mutation` CI job is deliberately PR-only and conditional: it waits for
-  `static` + `test` (`needs:`), skips drafts, skips PRs that touch no signal
-  path (`src/`, `tests/`, `tools/`, `infection.json.dist`, `phpunit.xml`,
-  `composer.json`, `composer.lock`), and superseded PR runs are cancelled by
-  the workflow `concurrency` group. Do not move it back to `push` triggers:
-  same-repo branches then ran the job twice per push (once for `push`, once for
-  `pull_request`). Direct pushes to `main` bypass the gate by design — if that
-  becomes routine, add a scheduled `main` run instead of a push trigger.
+- `composer mutation` — Infection gate (MSI ≥ 85; ~20 min locally). `composer.json`
+  sets `config.process-timeout: 0` so the script survives Composer's default
+  300 s process timeout. **CI runs mutation only in
+  `.github/workflows/mutation.yml`, only on PRs labelled `release-readiness`,
+  and only when the PR touches a signal path** (`src/`, `tests/`, `tools/`,
+  `infection.json.dist`, `phpunit.xml`, `composer.json`, `composer.lock`).
+  Ordinary PRs get a *skipped* mutation check, which satisfies required status
+  checks. Do **not** force-run mutation on normal PRs, re-add it to `test.yml`,
+  or add a `push` trigger: same-repo branches then ran it twice per push, and
+  a single unsharded job was SIGTERM'd (~10 min) on CI runners. To run the gate
+  on a PR, add the `release-readiness` label; adding/removing the label triggers
+  the workflow (`labeled` / `unlabeled` event types). The workflow shards
+  Infection per `src/` context (`Astro`, `Hijri`, `Moon`, `Prayer`, `Qibla`,
+  `SharedKernel`) so each job stays under the runner limit, and a stable
+  aggregate `mutation` job fails only when a shard fails. `pull_request_target`
+  is deliberately not used — it would run untrusted PR code with elevated
+  permissions. Direct pushes to `main` bypass the gate by design; if that
+  becomes routine, add a scheduled `main` run instead.
 - `composer changelog` regenerates `docs/user/changelog.md` from `CHANGELOG.md`;
   `composer changelog:check` fails when the published page is stale (also in the
   release gate). Never hand-edit the generated page.

@@ -1,0 +1,77 @@
+name: mutation
+
+# Mutation is expensive (~20 min locally, longer on CI runners) and is only
+# useful at a release boundary. It runs ONLY when a PR carries the
+# `release-readiness` label. A skipped check satisfies required status checks,
+# so ordinary PRs are not blocked. Do not fold this back into test.yml.
+on:
+  pull_request:
+    # `labeled` starts the gate when a PR is declared release-ready;
+    # `unlabeled` clears it. `pull_request_target` is deliberately avoided:
+    # it would run untrusted PR code with elevated permissions.
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changed:
+    # An `unlabeled` event only needs to clear the previous check.
+    if: github.event.action != 'unlabeled'
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: diff
+        run: |
+          if git diff --quiet \
+            "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" \
+            -- src tests tools infection.json.dist phpunit.xml \
+               composer.json composer.lock; then
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  shard:
+    needs: [changed]
+    if: >-
+      needs.changed.result == 'success' &&
+      needs.changed.outputs.code == 'true' &&
+      contains(github.event.pull_request.labels.*.name, 'release-readiness') &&
+      !github.event.pull_request.draft
+    strategy:
+      fail-fast: false
+      matrix:
+        context: [Astro, Hijri, Moon, Prayer, Qibla, SharedKernel]
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: date
+          coverage: pcov
+      - run: composer install --no-progress
+      # Each shard enforces the unchanged MSI >= 85 gate on its own context;
+      # splitting keeps every job well under the runner's wall-clock limit.
+      - run: composer mutation -- --filter=src/${{ matrix.context }}
+
+  # Stable required-check name. Skipped when the label is absent; fails only
+  # when at least one shard failed.
+  mutation:
+    needs: [shard]
+    if: always() && needs.shard.result != 'skipped'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce mutation shards
+        run: |
+          if [ "${{ needs.shard.result }}" != "success" ]; then
+            echo "At least one mutation shard failed or was skipped." >&2
+            exit 1
+          fi

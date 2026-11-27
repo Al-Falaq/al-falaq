@@ -10,8 +10,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  # A superseded PR push should not queue a second ~8 min mutation run; main
-  # pushes are never cancelled.
+  # A superseded PR push should not queue a second test matrix run; main
+  # pushes are never cancelled. Mutation lives in its own label-gated workflow.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -77,24 +77,3 @@ jobs:
           else
             echo "code=true" >> "$GITHUB_OUTPUT"
           fi
-
-  mutation:
-    # PR-only, after the fast gates: a red PR gets feedback in ~40s instead of
-    # burning ~25 min of Infection. Skipped checks still satisfy required status
-    # checks, so docs-only PRs are not blocked.
-    needs: [static, test, changed]
-    if: needs.changed.outputs.code == 'true'
-    # A3 added ~100 tests and a much larger converter trace; Infection takes
-    # longer on the CI runners than on a local workstation. Keep the gate,
-    # give the job room to finish instead of cancelling mid-run (SIGTERM 143).
-    timeout-minutes: 90
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
-        with:
-          php-version: '8.4'
-          extensions: date
-          coverage: pcov
-      - run: composer install --no-progress
-      - run: composer mutation
