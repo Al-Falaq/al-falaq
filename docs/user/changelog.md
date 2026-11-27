@@ -54,6 +54,23 @@ Versioned snapshots of the whole documentation site are kept per release — use
 - Documentation for Qibla/Moon metadata in `docs/provenance.md`,
   `docs/user/calculation-metadata.md`, the Qibla/Moon appendices, and
   executable `docs/integrations.md` recipes.
+- Opt-in Hijri metadata: `GregorianToHijriConverter::convertWithMetadata()`
+  returns `HijriCalculationOutcome` with `HijriCalculationMetadata`, covering
+  the calendar key/family/coverage, MABIMS country authority, covered span,
+  table digest, offset source, date frame, and maghrib-only fallback. The
+  compact `convert()` path is unchanged and is not deprecated.
+- `CalendarProvenance`, `DescribesCalendar`, and the `HijriDateFrame` /
+  `CalendarFamily` / `CalendarCoverage` enums.
+- Built-in calendar identities on `TabularCalendar`, `UmmAlQuraCalendar`, and
+  `MabimsCalendar`, with generated-table warnings and per-country MABIMS
+  digests.
+- `HijriDate::toArray()`.
+- Generated/arithmetic/official coverage semantics and the
+  `sunset_frame_maghrib_fallback`, `generated_calendar_table`, and
+  `tabular_calendar_estimate` warnings.
+- Documentation for Hijri metadata in `docs/provenance.md`, the published
+  metadata guide, the Hijri appendices, and the executable
+  `docs/integrations.md` recipe.
 
 ## [0.2.0] - 2026-11-15
 

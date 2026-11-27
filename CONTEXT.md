@@ -15,7 +15,7 @@ One offline library any PHP app can drop in — no extensions beyond `date`,
 no network, no framework — with behavioral parity to the pinned Python
 implementation, proven by golden vectors.
 
-## Current status (M5 landed; provenance A1 + A2 landed)
+## Current status (M5 landed; provenance A1 + A2 + A3 landed)
 
 Landed: composer scaffold, `SharedKernel` value objects (`Coordinates`,
 `CivilDate`, `Angle`, `Minutes`, `JulianDay`), exception hierarchy, prayer pipeline
@@ -27,15 +27,17 @@ freeze + milestone amendments, Qibla (spherical + WGS84/Karney), Sunnah markers
 (floor 85 → 95 at M5), CI matrix. No throwing stubs remain in `src/`. Outcome:
 M5 hardening complete (95% coverage, MSI≥85% scoped gate, examples refreshed); release-ready PR, no tag. Post-M5 architecture rounds deepened the seams (day-engine port, rule validation, single-owners) — see CHANGELOG Unreleased.
 
-Provenance A1 and A2 (P0.1 slices) landed: the shared `SharedKernel`
+Provenance A1, A2, and A3 (P0.1 slices) landed: the shared `SharedKernel`
 metadata vocabulary (`CalculationMetadata`, `CalculationSource`,
 `CalculationWarning`, `IdentifiesCalculationSource`,
 status/warning/source enums, `LibraryVersion`) plus the opt-in prayer/timetable
 path (`calculateWithMetadata()`, `monthlyWithMetadata()`, schema `1.0`), Qibla
 metadata (`QiblaCalculator::calculateWithMetadata()`), and Moon metadata
 (`atSunsetWithMetadata()`, `evaluateWithMetadata()`,
-`evaluateGeometryWithMetadata()`). Legacy methods and numeric outputs are
-unchanged. Hijri metadata is A3, not shipped.
+`evaluateGeometryWithMetadata()`), and Hijri metadata
+(`GregorianToHijriConverter::convertWithMetadata()`, `CalendarProvenance`,
+`DescribesCalendar`, and the Hijri metadata value objects). Compact methods
+and numeric outputs are unchanged.
 
 ## Stack & tooling
 

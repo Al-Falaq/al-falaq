@@ -223,6 +223,32 @@ implementation applies official day corrections after conversion; for MABIMS,
 `MabimsCalendar::country()` identifies the member state so per-country
 corrections can be keyed correctly (`name()` is `'mabims'` for all four).
 
+## Hijri metadata
+
+```php
+use AlFalaq\AlFalaq\Hijri\Enums\MabimsCountry;
+use AlFalaq\AlFalaq\Hijri\Services\GregorianToHijriConverter;
+use AlFalaq\AlFalaq\Hijri\Strategies\MabimsCalendar;
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+
+$hijriMetadataOutcome = GregorianToHijriConverter::default()->convertWithMetadata(
+    new \DateTimeImmutable('2026-11-14 20:00:00', new \DateTimeZone('Asia/Kuala_Lumpur')),
+    new MabimsCalendar(MabimsCountry::MY),
+    Coordinates::fromDegrees(3.1390, 101.6869),
+    CalculationMethod::SINGAPORE->defaultParameters(),
+    changeAtSunset: true,
+);
+
+$hijriMetadata = $hijriMetadataOutcome->metadata->toArray();
+```
+
+The instant is `12:00Z` on 14 November, after the Kuala Lumpur maghrib, so the
+UTC date rolls forward to 15 November. The result stays a `HijriDate`; the
+metadata reports `calendar.key = mabims`, `calendar.authority = MY`, the
+generated-table warning, and `hijri.maghrib-probe` as its source. `convert()`
+with the same arguments returns that same date without reading provenance.
+
 ## Clock input (edges only)
 
 The domain never reads the clock. Callers pass time explicitly:

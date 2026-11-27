@@ -128,6 +128,11 @@ Nothing saturates and nothing wraps. Outside a calendar's span you get `HijriOut
 
 Extend coverage by adding a table, never by widening a guard. The tabular calendar's `adjustmentDays` (−2…+2, same role as .NET's `HijriAdjustment`) is the sanctioned way to express regional tabular corrections without forking the arithmetic.
 
+For stored or audited results, `convertWithMetadata()` reports the calendar
+identity, frame, offsets, and any maghrib-only fallback; see
+[Calculation Metadata](calculation-metadata/#hijri). `convert()` remains the
+compact, non-deprecated path.
+
 ## See also
 
 - [Moon Sighting](moon-sighting/) — the crescent geometry behind the tables

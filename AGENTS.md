@@ -13,12 +13,12 @@ monthly timetable (`TimetableService`), next-prayer resolver
 (tabular, Umm al-Qura, per-country MABIMS + Gregorian bridge) shipped
 (calculation-method defaults frozen + milestone amendments; no deferred-context
 `LogicException` markers remain in `src/` — the final no-throw sweep was an
-M5 gate). **Provenance A1 and A2 landed** — shared calculation-metadata
+M5 gate). **Provenance A1, A2, and A3 landed** — shared calculation-metadata
 vocabulary plus opt-in provenance for prayer/timetable
 (`calculateWithMetadata()` / `monthlyWithMetadata()`), Qibla
-(`calculateWithMetadata()`), and Moon (`atSunsetWithMetadata()`,
-`evaluateWithMetadata()`, `evaluateGeometryWithMetadata()`); Hijri metadata
-remains A3. Public surface is `src/{SharedKernel,Prayer,Qibla,
+(`calculateWithMetadata()`), Moon (`atSunsetWithMetadata()`,
+`evaluateWithMetadata()`, `evaluateGeometryWithMetadata()`), and Hijri
+(`convertWithMetadata()`). Public surface is `src/{SharedKernel,Prayer,Qibla,
 Moon,Hijri}/`; `src/Astro/` is `@internal`.
 
 ## Setup Commands
@@ -154,6 +154,15 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   `CalculationSource` (`moon.delta-t.espenak-2005-2050`, range `2005..2050`);
   `MoonCalculationMetadata` parses that range instead of importing the
   provider.
+- Gotcha: `convert()` must stay provenance-free; only `convertWithMetadata()`
+  reads `DescribesCalendar`. Both share one private `trace()`, and a calendar
+  whose `calendarProvenance()` throws must still convert through the compact
+  path.
+- Gotcha: a custom Hijri calendar is reported in the `calendar` block, not in
+  `sources`; the `unidentified_calculation_source` warning carries
+  `custom.calendar`. Coverage warnings are driven by `CalendarProvenance`'s
+  `coverage`, not class names. `Hijri\ValueObjects` may import
+  `Prayer\ValueObjects` but must not import `Astro` or `Moon`.
 - Gotcha: `composer update` without `config.platform.php=8.2.0` resolves
   8.4-only deps and breaks the 8.2/8.3 CI legs.
 - `docs/` is contributor-facing (algorithm appendices, internals,

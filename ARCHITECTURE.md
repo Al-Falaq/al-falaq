@@ -543,16 +543,17 @@ no HTML.
   (`MabimsCalendar::country()` narrows MABIMS further). Month labels are
   `en`/`ar` only via `HijriMonth::label()` (no ICU).
 
-### Calculation provenance (A1–A2)
+### Calculation provenance (A1–A3)
 
 `PrayerTimesCalculator::calculateWithMetadata()` and
 `TimetableService::monthlyWithMetadata()` return the unchanged result plus a
 metadata envelope. `QiblaCalculator::calculateWithMetadata()` and the Moon
 methods (`atSunsetWithMetadata()`, `evaluateWithMetadata()`,
 `evaluateGeometryWithMetadata()`) extend the same vocabulary to their contexts.
-The vocabulary is shared (`SharedKernel\Enums` +
-`ValueObjects\CalculationMetadata`), so Hijri can reuse it in A3 without
-touching the common key set.
+`GregorianToHijriConverter::convertWithMetadata()` completes the surface for
+Hijri. The vocabulary is shared (`SharedKernel\Enums` +
+`ValueObjects\CalculationMetadata`), which Hijri reuses without touching the
+common key set.
 
 - `IdentifiesCalculationSource` is the capability built-in engines and
   strategies implement; each declares a `SOURCE_ID` constant as the single
@@ -563,7 +564,7 @@ touching the common key set.
   `TimetableService`), never inside `Astro/`; `Astro` only exposes engine
   identity through the shared contract.
 - One private `run()` serves both `calculate()` and
-  `calculateWithMetadata()`, so the numeric pipeline cannot drift. The legacy
+  `calculateWithMetadata()`, so the numeric pipeline cannot drift. The compact
   method returns `run()['schedule']`; the metadata method wraps the same value.
 - The surface is additive-only: existing methods, return types, numeric
   outputs, and exception behavior are unchanged. `CalculationMetadata` schema
@@ -586,6 +587,19 @@ touching the common key set.
 - `Moon\ValueObjects` never imports `Astro` (layering gate). The calibrated ΔT
   bounds travel through `CalculationSource::range` (`2005..2050`), which the
   metadata object parses instead of duplicating the provider constants.
+- Hijri's `convert()` and `convertWithMetadata()` share one private `trace()`;
+  the compact method returns `trace()['date']` and never calls
+  `DescribesCalendar`, builds warnings, or reads provenance. Built-in calendars
+  report their own `CalendarProvenance`; a custom calendar without the opt-in
+  capability is reported in the `calendar` block with an
+  `unidentified_calculation_source` warning, never as a `CalculationSource`.
+- Only the sunset frame's maghrib probe (`hijri.maghrib-probe`) and a supplied
+  `OffsetStore` (`hijri.offset.caller`) contribute Hijri sources. The
+  maghrib-only fallback flag is aggregated across forward and backward probes
+  and its warning names the resolved civil date. Coverage warnings are driven
+  by `CalendarProvenance::coverage`: generated tables warn
+  `generated_calendar_table`, arithmetic rules warn
+  `tabular_calendar_estimate`, and official tables emit no coverage warning.
 
 The full decision record is
 [`docs/design/2026-11-15-provenance-explainability-foundation.md`](docs/design/2026-11-15-provenance-explainability-foundation.md);

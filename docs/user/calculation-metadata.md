@@ -1,6 +1,6 @@
 ---
 title: Calculation Metadata
-description: Opt-in provenance for prayer, Qibla, and crescent results — what ran, which inputs were used, and which warnings fired.
+description: Opt-in provenance for prayer, Qibla, Moon, and Hijri results — what ran, which inputs were used, and which warnings fired.
 ---
 
 # Calculation Metadata
@@ -9,11 +9,12 @@ description: Opt-in provenance for prayer, Qibla, and crescent results — what 
 answer *how a result was produced*: the inputs you requested, the inputs that
 were actually used, the algorithm identities behind it, and any warnings.
 
-Three contexts ship metadata: **prayer** (schedules and monthly timetables),
-**Qibla** (direction and distance), and **Moon** (sunset geometry and crescent
-verdicts). Hijri metadata remains a later phase. The compact methods stay the
-default. Use metadata when a result is stored, audited, shown to an authority,
-or debugged; skip it on high-volume display paths that only need the numbers.
+Four contexts ship metadata: **prayer** (schedules and monthly timetables),
+**Qibla** (direction and distance), **Moon** (sunset geometry and crescent
+verdicts), and **Hijri** (Gregorian→Hijri conversion). The compact methods stay
+the default and are not deprecated. Use metadata when a result is stored,
+audited, shown to an authority, or debugged; skip it on high-volume display
+paths that only need the numbers.
 
 ## One prayer calculation
 
@@ -363,6 +364,240 @@ finite but `lag_minutes` and `age_at_moonset_hours` are null. Metadata derives
 Caller-supplied geometry has no date, so that detail serializes as `null` —
 the warning still fires because the null window is in the bundle.
 
+## Hijri
+
+```php
+use AlFalaq\AlFalaq\Hijri\Enums\MabimsCountry;
+use AlFalaq\AlFalaq\Hijri\Services\GregorianToHijriConverter;
+use AlFalaq\AlFalaq\Hijri\Strategies\MabimsCalendar;
+use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
+use AlFalaq\AlFalaq\SharedKernel\ValueObjects\Coordinates;
+
+$outcome = GregorianToHijriConverter::default()->convertWithMetadata(
+    new DateTimeImmutable('2026-11-14 20:00:00', new DateTimeZone('Asia/Kuala_Lumpur')),
+    new MabimsCalendar(MabimsCountry::MY),
+    Coordinates::fromDegrees(3.1390, 101.6869),
+    CalculationMethod::SINGAPORE->defaultParameters(),
+    changeAtSunset: true,
+);
+
+$hijri = $outcome->result;       // same HijriDate as convert()
+$metadata = $outcome->metadata;  // provenance
+```
+
+The instant is `12:00Z` on 14 November, after the Kuala Lumpur maghrib, so the
+UTC date rolls forward to 15 November before the calendar lookup. The result
+is identical to `convert()` with the same arguments — both share one numeric
+trace. `convert()` is the compact, non-deprecated path: it does not read
+calendar provenance or emit warnings.
+
+```json
+{
+  "result": {"year": 1448, "month": 6, "day": 5, "iso": "1448-06-05"},
+  "metadata": {
+    "schema_version": "1.0",
+    "context": "hijri",
+    "status": "complete",
+    "library_version": "0.3.0-dev",
+    "warnings": [
+      {"code": "generated_calendar_table", "message": "This calendar is a generated table, not an official authority dataset.", "details": {"calendar": "mabims", "range": "1445-01..1500-12 AH"}}
+    ],
+    "sources": [
+      {"id": "hijri.maghrib-probe", "kind": "algorithm", "version": null, "digest": null, "range": null}
+    ],
+    "input": {
+      "instant": "2026-11-14T12:00:00+00:00",
+      "zone": "Asia/Kuala_Lumpur",
+      "frame": "sunset_rollover",
+      "coordinates": {"latitude": 3.139, "longitude": 101.6869},
+      "parameters": {
+        "method": "singapore",
+        "madhab": "shafi",
+        "high_latitude_rule": "middle_of_night",
+        "polar_circle_rule": "nearest_latitude",
+        "fajr_angle_degrees": 20,
+        "isha_rule": {"type": "angle", "angle_degrees": 18, "minutes": null},
+        "maghrib_rule": {"type": "interval", "angle_degrees": null, "minutes": 0},
+        "dhuhr_offset_minutes": 0,
+        "imsak_offset_minutes": 10,
+        "ishraq_offset_minutes": 15,
+        "dhuha_offset_minutes": 28,
+        "elevation_m": 0,
+        "is_ramadan": false,
+        "method_adjustments": {
+          "imsak": 0, "fajr": 0, "sunrise": 0, "syuruk": 0, "ishraq": 0,
+          "dhuha": 0, "dhuhr": 1, "asr": 0, "maghrib": 0, "isha": 0
+        },
+        "adjustments": {
+          "imsak": 0, "fajr": 0, "sunrise": 0, "syuruk": 0, "ishraq": 0,
+          "dhuha": 0, "dhuhr": 0, "asr": 0, "maghrib": 0, "isha": 0
+        }
+      }
+    },
+    "effective": {"gregorian_date": "2026-11-15"},
+    "calendar": {
+      "key": "mabims",
+      "family": "mabims",
+      "coverage": "generated_table",
+      "authority": "MY",
+      "range": "1445-01..1500-12 AH",
+      "digest": "4b3e2a9a62ea1683616219b4373e988364dddb4f710bd6793369c2e3a5bd70fc",
+      "source": "tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7",
+      "license": "MIT"
+    },
+    "offsets": {"days": null, "applied": false},
+    "fallback": {"applied": false, "kind": null}
+  }
+}
+```
+
+| Key | Use it to |
+|---|---|
+| `input` | show the requested instant and zone, the frame, and the observer/policy the frame consulted |
+| `effective` | show the Gregorian date actually converted after the sunset roll |
+| `calendar` | identify the calendar key/family/coverage, MABIMS authority, covered span, digest, generator pin, and license |
+| `offsets` | tell "no store" (`null`) from a store's answer, including a real zero |
+| `fallback` | detect that the sunset probe used maghrib alone |
+
+### Civil-date frame
+
+Without `changeAtSunset`, the caller's own zone decides the civil date. The
+converter does not consult coordinates or parameters, so the metadata reports
+them as `null` and lists no `hijri.maghrib-probe` source:
+
+```php
+$civil = GregorianToHijriConverter::default()->convertWithMetadata(
+    new DateTimeImmutable('2026-11-14 20:00:00', new DateTimeZone('Asia/Kuala_Lumpur')),
+    new MabimsCalendar(MabimsCountry::MY),
+);
+```
+
+The parts that differ from the sunset payload:
+
+```json
+{
+  "result": {"year": 1448, "month": 6, "day": 4, "iso": "1448-06-04"},
+  "metadata": {
+    "sources": [],
+    "input": {
+      "instant": "2026-11-14T12:00:00+00:00",
+      "zone": "Asia/Kuala_Lumpur",
+      "frame": "civil_date",
+      "coordinates": null,
+      "parameters": null
+    },
+    "effective": {"gregorian_date": "2026-11-14"},
+    "calendar": {
+      "key": "mabims",
+      "family": "mabims",
+      "coverage": "generated_table",
+      "authority": "MY",
+      "range": "1445-01..1500-12 AH",
+      "digest": "4b3e2a9a62ea1683616219b4373e988364dddb4f710bd6793369c2e3a5bd70fc",
+      "source": "tools/gen_hijri.py @ a7baa8b202790d3bc84c47a610ac763be6c0b7e7",
+      "license": "MIT"
+    },
+    "offsets": {"days": null, "applied": false},
+    "fallback": {"applied": false, "kind": null}
+  }
+}
+```
+
+### Offset stores
+
+A supplied `OffsetStore` is asked once with the converted date. Its answer is
+recorded in `offsets`, and `hijri.offset.caller` is added to `sources`
+regardless of the answer:
+
+| Store answer | `offsets` | `hijri.offset.caller` |
+|---|---|---|
+| no store | `{"days": null, "applied": false}` | absent |
+| returns `0` | `{"days": 0, "applied": true}` | present |
+| returns `2` | `{"days": 2, "applied": true}` | present |
+
+`applied` means "a store answered", not "the date moved". A zero-day answer
+still serializes `applied: true`; a two-day answer shifts the result from
+`1448-06-05` to `1448-06-07`. The library ships no correction table, so the
+source id names the caller's store, not a dataset.
+
+### Maghrib-only fallback
+
+When the full prayer schedule is undefined but maghrib itself is defined, the
+sunset frame resolves maghrib alone. The fallback is visible even when the
+resolved date is unchanged:
+
+```php
+use AlFalaq\AlFalaq\Hijri\Strategies\TabularCalendar;
+use AlFalaq\AlFalaq\Prayer\Enums\PolarCircleRule;
+
+$fallback = GregorianToHijriConverter::default()->convertWithMetadata(
+    new DateTimeImmutable('2025-11-27T08:00:00+00:00'),
+    new TabularCalendar(),
+    Coordinates::fromDegrees(69.6496, 18.9553),
+    CalculationMethod::MUSLIM_WORLD_LEAGUE->defaultParameters()
+        ->withPolarCircleRule(PolarCircleRule::NONE),
+    changeAtSunset: true,
+);
+```
+
+```json
+{
+  "result": {"year": 1447, "month": 6, "day": 6, "iso": "1447-06-06"},
+  "metadata": {
+    "status": "fallback_applied",
+    "warnings": [
+      {"code": "sunset_frame_maghrib_fallback", "message": "The full prayer schedule was undefined while resolving the sunset roll; maghrib alone was used. The date is the effective Gregorian date.", "details": {"date": "2025-11-27", "reason": "full_schedule_undefined"}},
+      {"code": "tabular_calendar_estimate", "message": "This calendar uses an arithmetic month rule, not an observed month length.", "details": {"adjustment_days": 0}}
+    ],
+    "sources": [
+      {"id": "hijri.maghrib-probe", "kind": "algorithm", "version": null, "digest": null, "range": null}
+    ],
+    "effective": {"gregorian_date": "2025-11-27"},
+    "calendar": {
+      "key": "tabular",
+      "family": "tabular",
+      "coverage": "arithmetic_rule",
+      "authority": null,
+      "range": "1900-01-01..2100-12-31 CE",
+      "digest": null,
+      "source": null,
+      "license": null
+    },
+    "offsets": {"days": null, "applied": false},
+    "fallback": {"applied": true, "kind": "maghrib_only"}
+  }
+}
+```
+
+At `2025-11-27T20:00:00+00:00` the same frame rolls to `2025-11-28`, and the
+warning's `date` becomes `2025-11-28`. That detail is always the effective
+Gregorian date, not necessarily the day whose individual probe fell back: the
+flag aggregates the forward and backward probes, so a backward-probe fallback
+is reported against the effective (current UTC) day.
+
+### MABIMS authority
+
+`MabimsCalendar::name()` is the generic `mabims` for every member state, so
+`calendar.key` does not distinguish Malaysia from Indonesia, Singapore, or
+Brunei. Key per-country corrections and comparisons by `calendar.authority`
+(`MY`, `ID`, `SG`, `BN`), never by `calendar.key`.
+
+### Generated and official tables
+
+The Umm al-Qura and MABIMS calendars ship generated month-start tables; the
+tabular calendar is arithmetic. Coverage drives the warning, not the class
+name: `generated_table` emits `generated_calendar_table` (with the calendar
+key and range), `arithmetic_rule` emits `tabular_calendar_estimate` (with
+`adjustment_days`), and `official_table` emits no coverage warning. A calendar
+may claim `official_table` only when it ships its own authority, source,
+license, range, and digest; no shipped calendar does. Treat a converted Hijri
+date as a computed estimate, not an official decree.
+
+A custom calendar without `DescribesCalendar` is reported in `calendar` with
+its `name()` and null family/coverage, adds
+`unidentified_calculation_source` with `source_id: "custom.calendar"`, and
+adds no source entry.
+
 ## Storing a result for reproduction
 
 Store the request and the outcome together:
@@ -397,7 +632,7 @@ agree.
 
 ## Handling warnings at your boundary
 
-The legacy methods expose no warnings and keep their exception behavior. A
+The compact methods expose no warnings and keep their exception behavior. A
 caller that wants to react opts in and branches on `code`:
 
 ```php
@@ -423,10 +658,16 @@ Rules of thumb:
 - Moon warnings to expect: `delta_t_extrapolated` (provider outside
   2005–2050), `moonset_indeterminate` (null lag/age), and
   `crescent_criterion_is_not_observation` (every evaluation);
+- Hijri warnings to expect: `generated_calendar_table` (UQ/MABIMS generated
+  table), `tabular_calendar_estimate` (arithmetic calendar), and
+  `sunset_frame_maghrib_fallback` (sunset probe used maghrib alone, which
+  derives `fallback_applied`); `official_table` coverage emits none of these;
 - `decision_required` (Moon evaluation) means the calculation cannot make the
   decision for you;
 - an `unidentified_calculation_source` warning means a custom wired component
-  has no declared identity; its source is reported as `custom.<component>`;
+  has no declared identity; its source is reported as `custom.<component>`.
+  For a custom Hijri calendar the component is `calendar`, but the calendar
+  is reported in the `calendar` block and adds no source entry;
 - promote codes to exceptions at your own boundary if your product requires
   it; the library does not install a global warning mode.
 
@@ -456,15 +697,6 @@ metadata marks results with `crescent_criterion_is_not_observation` and
 `decision_required` so a consuming application cannot present a criterion as a
 sighting. Local authority announcements remain the deciding input for
 practice.
-
-## Generated and official Hijri tables
-
-The Umm al-Qura and MABIMS calendars ship generated month-start tables; the
-tabular calendar is arithmetic. A3 marks generated tables with
-`generated_calendar_table` (plus a data digest) and the arithmetic calendar
-with `tabular_calendar_estimate`. An official table is only labelled as such
-when it ships its own digest, coverage range, source, and license. Until then,
-treat a converted Hijri date as a computed estimate, not an official decree.
 
 ## Schema compatibility
 

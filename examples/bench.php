@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use AlFalaq\AlFalaq\Hijri\Services\GregorianToHijriConverter;
+use AlFalaq\AlFalaq\Hijri\Strategies\UmmAlQuraCalendar;
 use AlFalaq\AlFalaq\Moon\Services\CrescentCalculator;
 use AlFalaq\AlFalaq\Prayer\Enums\CalculationMethod;
 use AlFalaq\AlFalaq\Prayer\Services\PrayerTimesCalculator;
@@ -131,6 +133,25 @@ printf(
     $qiblaMs,
     $moonGeometrySamples[2],
     $moonEvaluationSamples[2],
+);
+
+// A3 provenance: the Hijri sunset-frame envelope (NOT gated).
+$hijriConverter = GregorianToHijriConverter::default();
+$hijriCalendar = new UmmAlQuraCalendar();
+$hijriInstant = new \DateTimeImmutable('2025-03-01 20:00:00', new \DateTimeZone('UTC'));
+$hijriSamples = [];
+
+for ($i = 0; $i < 11; $i++) {
+    $start = hrtime(true);
+    $hijriConverter->convertWithMetadata($hijriInstant, $hijriCalendar, $coords, $params, true);
+    $hijriSamples[] = (hrtime(true) - $start) / 1e6;
+}
+
+sort($hijriSamples);
+
+printf(
+    "bench: A3 metadata (NOT gated): hijri median %.3f ms (11 runs)\n",
+    $hijriSamples[5],
 );
 printf(
     "bench: PRD reference (NOT gated, hardware- and load-dependent): single-day p50 < 2ms; year < 1000ms; peak < 16MB\n",
