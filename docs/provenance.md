@@ -370,7 +370,10 @@ Rules:
   `generated_table` emits `generated_calendar_table` with `calendar` and
   `range`; `arithmetic_rule` emits `tabular_calendar_estimate` with
   `adjustment_days`; `official_table` emits no coverage warning. No shipped
-  calendar claims `official_table`.
+  calendar claims `official_table`. The `adjustment_days` detail is the
+  `OffsetStore` answer (0 when no store answered), not `TabularCalendar`'s
+  constructor `adjustmentDays`: that arithmetic nudge is applied inside
+  `fromGregorian()` and A3 metadata has no separate field for it.
 - A custom calendar without `DescribesCalendar` is reported in `calendar` as
   its `name()` with null family/coverage, and emits
   `unidentified_calculation_source` with `source_id = custom.calendar`. It adds
@@ -473,5 +476,10 @@ caller that wants provenance opts in with `calculateWithMetadata()` /
   Existing implementers are not forced to adopt it; `monthlyWithMetadata()`
   rejects an injected calculator that lacks it with a
   `ConfigurationException` instead of silently dropping provenance.
-- Exception behavior is unchanged. Each metadata method throws exactly what
-  its compact sibling throws; metadata is constructed only on success.
+- Numeric exception behavior is unchanged: each metadata method throws exactly
+  what its compact sibling throws for the same inputs, and metadata is
+  constructed only after the numeric path succeeds. Opting into metadata can
+  additionally surface provenance-only failures — for example a custom
+  `DescribesCalendar` implementation whose `calendarProvenance()` throws. The
+  compact path never reads that capability, so callers must handle these extra
+  failures when they enable metadata.

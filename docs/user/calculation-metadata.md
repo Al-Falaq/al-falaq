@@ -588,10 +588,15 @@ The Umm al-Qura and MABIMS calendars ship generated month-start tables; the
 tabular calendar is arithmetic. Coverage drives the warning, not the class
 name: `generated_table` emits `generated_calendar_table` (with the calendar
 key and range), `arithmetic_rule` emits `tabular_calendar_estimate` (with
-`adjustment_days`), and `official_table` emits no coverage warning. A calendar
-may claim `official_table` only when it ships its own authority, source,
-license, range, and digest; no shipped calendar does. Treat a converted Hijri
-date as a computed estimate, not an official decree.
+`adjustment_days`), and `official_table` emits no coverage warning (a sunset
+maghrib-only fallback still emits `sunset_frame_maghrib_fallback`, which is not
+a coverage warning). The `adjustment_days` detail is the `OffsetStore` answer,
+also reported in `offsets.days`; it is 0 when no store answered and does not
+include `TabularCalendar`'s constructor `adjustmentDays`, an internal arithmetic
+nudge with no separate metadata field in A3. A calendar may claim
+`official_table` only when it ships its own authority, source, license, range,
+and digest; no shipped calendar does. Treat a converted Hijri date as a
+computed estimate, not an official decree.
 
 A custom calendar without `DescribesCalendar` is reported in `calendar` with
 its `name()` and null family/coverage, adds
@@ -661,7 +666,8 @@ Rules of thumb:
 - Hijri warnings to expect: `generated_calendar_table` (UQ/MABIMS generated
   table), `tabular_calendar_estimate` (arithmetic calendar), and
   `sunset_frame_maghrib_fallback` (sunset probe used maghrib alone, which
-  derives `fallback_applied`); `official_table` coverage emits none of these;
+  derives `fallback_applied`); `official_table` emits no coverage warning, though
+  a sunset maghrib-only fallback still emits `sunset_frame_maghrib_fallback`;
 - `decision_required` (Moon evaluation) means the calculation cannot make the
   decision for you;
 - an `unidentified_calculation_source` warning means a custom wired component

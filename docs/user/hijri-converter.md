@@ -130,7 +130,7 @@ Extend coverage by adding a table, never by widening a guard. The tabular calend
 
 For stored or audited results, `convertWithMetadata()` reports the calendar
 identity, frame, offsets, and any maghrib-only fallback; see
-[Calculation Metadata](calculation-metadata/#hijri). `convert()` remains the
+[Calculation Metadata](../calculation-metadata/#hijri). `convert()` remains the
 compact, non-deprecated path.
 
 ## See also

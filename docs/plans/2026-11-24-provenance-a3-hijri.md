@@ -1516,7 +1516,7 @@ Every task is one commit. If a gate fails late, revert the offending commit rath
 git revert <commit>
 ```
 
-Tasks 1–3 are additive vocabulary/value objects and can be reverted independently. Task 4 stacks on all three and must be reverted before any of them. Task 5 is documentation/release-note work except for the benchmark and wiring test; it can be reverted independently, but the generated changelog must be regenerated afterwards.
+Revert in reverse dependency order: Task 4 must be reverted before Tasks 1–3, then Task 3 before Task 2 before Task 1 (Tasks 2 and 3 depend on Task 1's calendar-provenance vocabulary, so reverting Task 1 first would break them). Task 5 is documentation/release-note work except for the benchmark and wiring test; it can be reverted independently, but the generated changelog must be regenerated afterward.
 
 ---
 
