@@ -49,9 +49,11 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
 - Docs-site dependencies are audit-gated in `docs.yml`
   (`npm audit --omit=dev --audit-level=moderate`); Dependabot tracks both
   `github-actions` and the `npm` package in `docs_site/`.
-- `composer mutation` — Infection gate (MSI ≥ 85, about 25 min). `composer.json`
-  sets `config.process-timeout: 0` so the script survives Composer's default
-  300 s process timeout; CI sets the same via `COMPOSER_PROCESS_TIMEOUT`.
+- `composer mutation` — Infection gate (MSI ≥ 85; ~20 min locally, up to ~60 min
+  on CI runners). `composer.json` sets `config.process-timeout: 0` so the script
+  survives Composer's default 300 s process timeout; CI sets the same via
+  `COMPOSER_PROCESS_TIMEOUT`. The `mutation` job has `timeout-minutes: 90`: an
+  A3-sized test suite exceeded the old 45-minute limit on CI.
   The `mutation` CI job is deliberately PR-only and conditional: it waits for
   `static` + `test` (`needs:`), skips drafts, skips PRs that touch no signal
   path (`src/`, `tests/`, `tools/`, `infection.json.dist`, `phpunit.xml`,

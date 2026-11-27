@@ -84,7 +84,10 @@ jobs:
     # checks, so docs-only PRs are not blocked.
     needs: [static, test, changed]
     if: needs.changed.outputs.code == 'true'
-    timeout-minutes: 45
+    # A3 added ~100 tests and a much larger converter trace; Infection takes
+    # longer on the CI runners than on a local workstation. Keep the gate,
+    # give the job room to finish instead of cancelling mid-run (SIGTERM 143).
+    timeout-minutes: 90
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
