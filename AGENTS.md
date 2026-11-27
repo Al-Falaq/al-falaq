@@ -63,7 +63,9 @@ Moon,Hijri}/`; `src/Astro/` is `@internal`.
   the workflow (`labeled` / `unlabeled` event types). The workflow shards
   Infection per `src/` context (`Astro`, `Hijri`, `Moon`, `Prayer`, `Qibla`,
   `SharedKernel`) so each job stays under the runner limit, and a stable
-  aggregate `mutation` job fails only when a shard fails. `pull_request_target`
+  aggregate `mutation` job fails when change detection or a shard fails.
+  Removing an unrelated label does not clear the gate; only removing
+  `release-readiness` does. `pull_request_target`
   is deliberately not used — it would run untrusted PR code with elevated
   permissions. Direct pushes to `main` bypass the gate by design; if that
   becomes routine, add a scheduled `main` run instead.

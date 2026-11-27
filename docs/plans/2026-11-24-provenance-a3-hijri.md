@@ -1516,7 +1516,7 @@ Every task is one commit. If a gate fails late, revert the offending commit rath
 git revert <commit>
 ```
 
-Revert in reverse dependency order: Task 4 must be reverted before Tasks 1–3, then Task 3 before Task 2 before Task 1 (Tasks 2 and 3 depend on Task 1's calendar-provenance vocabulary, so reverting Task 1 first would break them). Task 5 is documentation/release-note work except for the benchmark and wiring test; it can be reverted independently, but the generated changelog must be regenerated afterward.
+Revert in reverse dependency order: revert the A3 benchmark block in `examples/bench.php` and the Hijri assertions in `tests/Wiring/CalculatorWiringTest.php` first, because they call `convertWithMetadata()` (Task 4) and `HijriCalculationOutcome` (Task 3). Then revert Task 4 before Tasks 1–3, then Task 3 before Task 2 before Task 1 (Tasks 2 and 3 depend on Task 1's calendar-provenance vocabulary, so reverting Task 1 first would break them). The remainder of Task 5 is documentation and release-note work and can be reverted independently, but the generated changelog must be regenerated afterward.
 
 ---
 
