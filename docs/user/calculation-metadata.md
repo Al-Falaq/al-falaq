@@ -547,7 +547,7 @@ $fallback = GregorianToHijriConverter::default()->convertWithMetadata(
     "status": "fallback_applied",
     "warnings": [
       {"code": "sunset_frame_maghrib_fallback", "message": "The full prayer schedule was undefined while resolving the sunset roll; maghrib alone was used. The date is the effective Gregorian date.", "details": {"date": "2025-11-27", "reason": "full_schedule_undefined"}},
-      {"code": "tabular_calendar_estimate", "message": "This calendar uses an arithmetic month rule, not an observed month length.", "details": {"adjustment_days": 0}}
+      {"code": "tabular_calendar_estimate", "message": "This calendar uses an arithmetic month rule, not an observed month length.", "details": {"offset_days": 0}}
     ],
     "sources": [
       {"id": "hijri.maghrib-probe", "kind": "algorithm", "version": null, "digest": null, "range": null}
@@ -588,9 +588,9 @@ The Umm al-Qura and MABIMS calendars ship generated month-start tables; the
 tabular calendar is arithmetic. Coverage drives the warning, not the class
 name: `generated_table` emits `generated_calendar_table` (with the calendar
 key and range), `arithmetic_rule` emits `tabular_calendar_estimate` (with
-`adjustment_days`), and `official_table` emits no coverage warning (a sunset
+`offset_days`), and `official_table` emits no coverage warning (a sunset
 maghrib-only fallback still emits `sunset_frame_maghrib_fallback`, which is not
-a coverage warning). The `adjustment_days` detail is the `OffsetStore` answer,
+a coverage warning). The `offset_days` detail is the `OffsetStore` answer,
 also reported in `offsets.days`; it is 0 when no store answered and does not
 include `TabularCalendar`'s constructor `adjustmentDays`, an internal arithmetic
 nudge with no separate metadata field in A3. A calendar may claim

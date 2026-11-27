@@ -1035,7 +1035,7 @@ selected.
 | `moonset_indeterminate` | Moon, no moonset on the civil date | `indeterminate` | `date`, `reason` |
 | `crescent_criterion_is_not_observation` | Moon evaluation | `decision_required` | `criteria` (comma-separated fixed order) |
 | `generated_calendar_table` | Hijri UQ/MABIMS | none | `calendar`, `range` |
-| `tabular_calendar_estimate` | Hijri tabular | none | `adjustment_days` |
+| `tabular_calendar_estimate` | Hijri tabular | none | `offset_days` |
 | `unidentified_calculation_source` | Any custom component without `IdentifiesCalculationSource` | none | `component`, `source_id` |
 
 `reason` values in this slice:
@@ -1046,9 +1046,11 @@ selected.
 `unidentified_calculation_source.source_id` is always `custom.<component>`;
 `component` is one of the fixed names in section 8.2.
 
-`tabular_calendar_estimate.adjustment_days` is the applied `OffsetStore`
+`tabular_calendar_estimate.offset_days` is the applied `OffsetStore`
 correction (`0` when no store is supplied); the warning itself means the month
-length is arithmetic, not observed.
+length is arithmetic, not observed. (The key was drafted as `adjustment_days`
+and renamed before release to avoid confusion with `TabularCalendar`'s
+constructor `adjustmentDays`, which metadata does not report.)
 
 A warning is never used to make an invalid request succeed. For example, an
 out-of-range table lookup still raises `HijriOutOfRangeException`; a polar day

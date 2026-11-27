@@ -86,7 +86,7 @@ A1, A2, and A3 emit eight codes: `polar_fallback_applied` and
 | `moonset_indeterminate` | Moon, no moonset on the civil date | `indeterminate` | `date`, `reason` |
 | `crescent_criterion_is_not_observation` | Moon evaluation | `decision_required` | `criteria` (comma-separated, fixed order) |
 | `generated_calendar_table` | Hijri UQ/MABIMS | none | `calendar`, `range` |
-| `tabular_calendar_estimate` | Hijri tabular | none | `adjustment_days` |
+| `tabular_calendar_estimate` | Hijri tabular | none | `offset_days` |
 | `unidentified_calculation_source` | Any custom component without `IdentifiesCalculationSource` | none | `component`, `source_id` |
 
 `reason` values in the frozen vocabulary:
@@ -369,8 +369,8 @@ Rules:
 - Coverage drives the coverage warning, not the class name:
   `generated_table` emits `generated_calendar_table` with `calendar` and
   `range`; `arithmetic_rule` emits `tabular_calendar_estimate` with
-  `adjustment_days`; `official_table` emits no coverage warning. No shipped
-  calendar claims `official_table`. The `adjustment_days` detail is the
+  `offset_days`; `official_table` emits no coverage warning. No shipped
+  calendar claims `official_table`. The `offset_days` detail is the
   `OffsetStore` answer (0 when no store answered), not `TabularCalendar`'s
   constructor `adjustmentDays`: that arithmetic nudge is applied inside
   `fromGregorian()` and A3 metadata has no separate field for it.

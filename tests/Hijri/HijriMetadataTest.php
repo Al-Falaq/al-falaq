@@ -920,7 +920,7 @@ final class HijriMetadataTest extends TestCase
         self::assertSame(['days' => null, 'applied' => false], $none->metadata->toArray()['offsets']);
         self::assertNotContains('hijri.offset.caller', self::sourceIds($none));
         self::assertSame(
-            ['adjustment_days' => 0],
+            ['offset_days' => 0],
             self::warningDetails($none, WarningCode::TABULAR_CALENDAR_ESTIMATE),
         );
 
@@ -928,14 +928,14 @@ final class HijriMetadataTest extends TestCase
         self::assertContains('hijri.offset.caller', self::sourceIds($zero));
         self::assertSame($none->result->toArray(), $zero->result->toArray());
         self::assertSame(
-            ['adjustment_days' => 0],
+            ['offset_days' => 0],
             self::warningDetails($zero, WarningCode::TABULAR_CALENDAR_ESTIMATE),
         );
 
         self::assertSame(['days' => 2, 'applied' => true], $two->metadata->toArray()['offsets']);
         self::assertSame($calendar->shift($none->result, 2)->toArray(), $two->result->toArray());
         self::assertSame(
-            ['adjustment_days' => 2],
+            ['offset_days' => 2],
             self::warningDetails($two, WarningCode::TABULAR_CALENDAR_ESTIMATE),
         );
     }

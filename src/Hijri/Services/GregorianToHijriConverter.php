@@ -137,7 +137,7 @@ final class GregorianToHijriConverter
             $warnings[] = new CalculationWarning(
                 WarningCode::TABULAR_CALENDAR_ESTIMATE,
                 'This calendar uses an arithmetic month rule, not an observed month length.',
-                ['adjustment_days' => $trace['offsetDays'] ?? 0],
+                ['offset_days' => $trace['offsetDays'] ?? 0],
             );
         }
 
