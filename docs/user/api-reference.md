@@ -107,7 +107,7 @@ Conventions: public services are `final` with explicit constructor injection and
 
 | Class | Key members |
 | --- | --- |
-| `Hijri\Services\GregorianToHijriConverter` | `default(): self`; `convert(DateTimeImmutable, HijriCalendar, ?Coordinates, ?CalculationParameters, bool $changeAtSunset = false, ?OffsetStore $offsets = null): HijriDate` |
+| `Hijri\Services\GregorianToHijriConverter` | `default(): self`; `MAGHRIB_PROBE_SOURCE_ID = 'hijri.maghrib-probe'`; `OFFSET_SOURCE_ID = 'hijri.offset.caller'`; `convert(DateTimeImmutable, HijriCalendar, ?Coordinates, ?CalculationParameters, bool $changeAtSunset = false, ?OffsetStore $offsets = null): HijriDate`; `convertWithMetadata(...): HijriCalculationOutcome` (same arguments; shares the private trace with `convert()` and reads `DescribesCalendar` only after the numeric path succeeds) |
 | `Hijri\Contracts\HijriCalendar` | `fromGregorian(CivilDate): HijriDate`; `toGregorian(HijriDate): CivilDate`; `monthLength(int, int): int`; `shift(HijriDate, int): HijriDate` (validates the start date; ±3650-day cap); `name(): string` |
 | `Hijri\Contracts\DescribesCalendar` | `calendarProvenance(): CalendarProvenance` (opt-in capability; deliberately not part of `HijriCalendar`) |
 | `Hijri\Contracts\OffsetStore` | `offsetDaysFor(HijriDate, HijriCalendar): int` (caller-implemented; 0 = no-op) |
