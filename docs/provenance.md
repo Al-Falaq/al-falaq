@@ -367,17 +367,17 @@ Rules:
   in the backward probe is reported against the effective (current UTC) day.
   The warning is visible even when the resolved date is unchanged.
 - Coverage drives the coverage warning, not the class name:
-  `generated_table` emits `generated_calendar_table` with `calendar` and
-  `range`; `arithmetic_rule` emits `tabular_calendar_estimate` with
-  `offset_days`; `official_table` emits no coverage warning. No shipped
-  calendar claims `official_table`. The `offset_days` detail is the
-  `OffsetStore` answer (0 when no store answered), not `TabularCalendar`'s
-  constructor `adjustmentDays`: that arithmetic nudge is applied inside
-  `fromGregorian()` and A3 metadata has no separate field for it.
+  `generated_table` emits `generated_calendar_table`, `arithmetic_rule` emits
+  `tabular_calendar_estimate`, and `official_table` emits no coverage warning.
+  No shipped calendar claims `official_table`. See
+  [Calculation Metadata → Hijri](user/calculation-metadata.md#hijri) for the
+  detail keys and the `offset_days` / `TabularCalendar::adjustmentDays`
+  distinction.
 - A custom calendar without `DescribesCalendar` is reported in `calendar` as
   its `name()` with null family/coverage, and emits
   `unidentified_calculation_source` with `source_id = custom.calendar`. It adds
-  no source entry.
+  no source entry. A `DescribesCalendar` calendar supplies its own key through
+  `calendarProvenance()`; it should equal `name()`.
 - `MabimsCalendar::name()` is the generic `mabims` for every country. Key
   per-country corrections and comparisons by `calendar.authority`, not
   `calendar.key`.

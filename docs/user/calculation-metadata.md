@@ -601,7 +601,8 @@ computed estimate, not an official decree.
 A custom calendar without `DescribesCalendar` is reported in `calendar` with
 its `name()` and null family/coverage, adds
 `unidentified_calculation_source` with `source_id: "custom.calendar"`, and
-adds no source entry.
+adds no source entry. A `DescribesCalendar` calendar supplies the `calendar`
+block through `calendarProvenance()`; its `key` should match `name()`.
 
 ## Storing a result for reproduction
 

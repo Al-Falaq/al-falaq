@@ -17,6 +17,9 @@ interface DescribesCalendar
     /**
      * Stable, auditable identity for this calendar.
      *
+     * The returned key should match the calendar's `name()`; metadata records
+     * `calendarProvenance()->key` verbatim as `calendar.key`.
+     *
      * @return CalendarProvenance Calendar key, family, coverage, and data identity.
      */
     public function calendarProvenance(): CalendarProvenance;

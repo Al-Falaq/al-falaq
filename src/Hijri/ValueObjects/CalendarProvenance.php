@@ -11,19 +11,20 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 /**
  * Auditable identity of a Hijri calendar: key, family, coverage, and data.
  *
- * The key is the calendar's own `name()`, not a `CalculationSource` id, so a
- * custom calendar may use any non-blank label. It is stored verbatim, without
- * trimming or normalization. Family and coverage are
- * published together or omitted together; table-backed coverage requires a
- * range and a lowercase SHA-256 digest, and an official table additionally
- * requires an authority, source, and license.
+ * The key is the calendar's stable key (normally its `name()`), not a
+ * `CalculationSource` id, so a custom calendar may use any non-blank label.
+ * A `DescribesCalendar` calendar supplies it through `calendarProvenance()`;
+ * it is stored verbatim, without trimming or normalization. Family and
+ * coverage are published together or omitted together; table-backed coverage
+ * requires a range and a lowercase SHA-256 digest, and an official table
+ * additionally requires an authority, source, and license.
  */
 final readonly class CalendarProvenance
 {
     /**
      * Bind a validated calendar identity.
      *
-     * @param string $key Calendar's stable name(), not a CalculationSource id.
+     * @param string $key Calendar's stable key (normally its name()), not a CalculationSource id.
      * @param CalendarFamily|null $family Family, or null for an undescribed custom calendar.
      * @param CalendarCoverage|null $coverage Coverage, or null for an undescribed custom calendar.
      * @param string|null $authority Member-state code for MABIMS or the publishing authority for an official table; null otherwise.

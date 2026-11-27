@@ -61,8 +61,10 @@ interface HijriCalendar
      * Stable calendar key, matching the pin's `name`.
      *
      * Built-in calendars return 'tabular', 'uqu', or 'mabims'. A custom
-     * calendar may return its own stable non-blank key; metadata records it
-     * verbatim as `calendar.key`.
+     * calendar may return its own stable non-blank key. Metadata records this
+     * value as `calendar.key` when the calendar does not implement
+     * `DescribesCalendar`; a `DescribesCalendar` calendar reports its key
+     * through `calendarProvenance()` instead.
      *
      * @return string Stable non-blank calendar key.
      */

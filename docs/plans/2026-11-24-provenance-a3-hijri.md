@@ -59,23 +59,6 @@ Existing behaviour is frozen: `convert()` keeps its signature, return type, exce
 - Package metadata reads, clock reads, network calls, or Composer runtime dependencies.
 - Regenerating or editing released docs snapshots.
 
-### Landed amendments
-
-Three changes landed with the branch after this plan was confirmed; they are
-recorded here so the branch and the plan stay one contract:
-
-- **Mutation workflow (#41).** The branch moves mutation into the label-gated
-  `.github/workflows/mutation.yml` and removes it from `test.yml`; `AGENTS.md`
-  documents the required-check semantics. This is a release-process change,
-  not part of the A3 wire shape, and reverts independently of Tasks 1–5.
-- **`tabular_calendar_estimate` detail rename.** The warning detail is now
-  `offset_days` (drafted as `adjustment_days`), matching `offsets.days` and
-  avoiding confusion with `TabularCalendar`'s constructor `adjustmentDays`.
-  The design record §7.1 was updated in the same commit.
-- **`HijriCalendar::name()` docblock.** Clarified that built-ins return
-  `tabular`, `uqu`, or `mabims` while a custom calendar may return its own
-  stable non-blank key. No signature or behavior change.
-
 ### Non-negotiable invariants
 
 1. Every existing test keeps passing unchanged; no golden is re-pinned; `convert()` output is byte-identical for every calendar, frame, and offset state.
@@ -1548,7 +1531,7 @@ Recommendation: finish A3, then treat P0.2 as the next workstream rather than bl
 
 ## Backlog ordering after that
 
-1. **#41 — mutation only by demand (landed with A3):** the PR mutation gate is now label-gated in `.github/workflows/mutation.yml`; keep its required-check semantics in sync with `AGENTS.md`.
+1. **#41 — mutation only by demand**: now relevant because the PR mutation gate runs ~24 minutes; reduces CI cost without weakening required checks.
 2. **#16 — official Umm al-Qura table**: natural follow-on to A3's `OFFICIAL_TABLE` enum and the `authority`/`license` fields, but gated on a sourced, redistributable dataset.
 3. **#12 — MABIMS-1992 pre-conjunction guard**: domain enhancement with its own goldens, explicitly post-1.0.
 4. **#11 — Brunei CSV empty cells**: correctness bug, but blocked on a sourced KHEU Doha definition; not a quick fix.
