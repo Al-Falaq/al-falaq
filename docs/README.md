@@ -49,6 +49,7 @@ still cite the original root filenames; the links above are canonical.
 |---|---|
 | [2026-10-22-repo-hygiene-report.md](artifacts/2026-10-22-repo-hygiene-report.md) | Repository hygiene snapshot at `ebcc3aa`, including the 2026-11-02 tier-delivery verification |
 | [2026-11-11-project-improvement-report.md](artifacts/2026-11-11-project-improvement-report.md) | Strategic improvement plan, package boundaries, and release roadmap |
+| [2026-11-28-provenance-a1-a3-delivery-audit.md](artifacts/2026-11-28-provenance-a1-a3-delivery-audit.md) | Read-only delivery audit of A1–A3 against the provenance design spec and the improvement report at merge commit `349ab6e` |
 
 ## Editing rules
 
