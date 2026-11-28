@@ -73,7 +73,6 @@ final class SharedVocabularyTest extends TestCase
 
     public function testLibraryVersionCurrentIsTheCheckedInRuntimeVersion(): void
     {
-        self::assertSame('0.3.0-dev', LibraryVersion::CURRENT);
         self::assertSame(LibraryVersion::CURRENT, LibraryVersion::current()->value);
     }
 

@@ -1,0 +1,484 @@
+---
+title: Changelog
+description: Release history for al-falaq — what shipped, what changed, what to do.
+slug: v0.3.0/changelog
+---
+
+# Changelog
+
+All notable changes to this project are documented here, following [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Dates are release dates; the `Unreleased` section tracks the main branch.
+
+Versioned snapshots of the whole documentation site are kept per release — use the version switcher at the top of the page to read the docs as they were for any shipped version.
+
+## \[Unreleased]
+
+No changes yet.
+
+## \[0.3.0] - 2026-11-28
+
+### Added
+
+* Opt-in calculation metadata: `PrayerTimesCalculator::calculateWithMetadata()`
+  and `TimetableService::monthlyWithMetadata()` return the unchanged result
+  plus a provenance envelope (schema `1.0`) with requested/effective inputs,
+  the full policy snapshot, stable warning codes, and a stable source
+  registry. Legacy methods, return types, numeric outputs, and exception
+  behavior are unchanged.
+* Shared provenance vocabulary in `SharedKernel`: `CalculationMetadata`,
+  `CalculationSource`, `CalculationWarning`, `LibraryVersion`, the
+  `CalculationContext`/`CalculationStatus`/`WarningCode`/`SourceKind` enums,
+  and the `IdentifiesCalculationSource` driven capability.
+* Built-in source identity (`SOURCE_ID`, plus `meeus-2ed` on the solar engine)
+  on `MeanSolarCalculator` and the twelve prayer strategies;
+  `CalculationMethod::SOURCE_VERSION = 'method-defaults-v1'` pins the preset
+  defaults independently of the package version.
+* `CalculationParameters::toArray()` and `PrayerAdjustments::toArray()` for
+  reproducible policy snapshots; `NightResolver` reports its selected mode
+  beside Fajr and Isha.
+* `docs/provenance.md` (contributor registry and semantics) and
+  `docs/user/calculation-metadata.md` (published guide), plus an executable
+  `calculateWithMetadata()` recipe in `docs/integrations.md`.
+* Opt-in Qibla metadata: `QiblaCalculator::calculateWithMetadata()` returns
+  `QiblaCalculationOutcome` with `QiblaCalculationMetadata`. It reports exactly
+  one geodesy source, `heading_reference: true_north`, and a null
+  `magnetic_declination_degrees` until a sourced magnetic model ships.
+* Opt-in Moon metadata: `CrescentCalculator::atSunsetWithMetadata()`,
+  `evaluateWithMetadata()`, and `evaluateGeometryWithMetadata()` return
+  `CrescentGeometryOutcome` / `CrescentEvaluationOutcome` with
+  `MoonCalculationMetadata`, covering ΔT origin and calibration, no-moonset,
+  and the criterion-versus-observation warnings.
+* Wire serializers `QiblaResult::toArray()`, `CrescentGeometry::toArray()`, and
+  `CrescentVerdict::toArray()` for stable JSON payloads.
+* Built-in Qibla/Moon source identities: `qibla.spherical`,
+  `qibla.wgs84-karney`, `moon.ephemeris.meeus-2ed`,
+  `moon.conjunction-search.meeus-hourly`,
+  `moon.delta-t.espenak-2005-2050`, and the four `moon.criterion.*` ids;
+  a caller ΔT override is reported as the synthetic `caller.delta-t` source.
+  `SharedKernel\Traits\ResolvesCalculationSources` centralizes identification
+  of wired components.
+* Documentation for Qibla/Moon metadata in `docs/provenance.md`,
+  `docs/user/calculation-metadata.md`, the Qibla/Moon appendices, and
+  executable `docs/integrations.md` recipes.
+* Opt-in Hijri metadata: `GregorianToHijriConverter::convertWithMetadata()`
+  returns `HijriCalculationOutcome` with `HijriCalculationMetadata`, covering
+  the calendar key/family/coverage, MABIMS country authority, covered span,
+  table digest, offset source, date frame, and maghrib-only fallback. The
+  compact `convert()` path is unchanged and is not deprecated.
+* `CalendarProvenance`, `DescribesCalendar`, and the `HijriDateFrame` /
+  `CalendarFamily` / `CalendarCoverage` enums.
+* Built-in calendar identities on `TabularCalendar`, `UmmAlQuraCalendar`, and
+  `MabimsCalendar`, with generated-table warnings and per-country MABIMS
+  digests.
+* `HijriDate::toArray()`.
+* Generated/arithmetic/official coverage semantics and the
+  `sunset_frame_maghrib_fallback`, `generated_calendar_table`, and
+  `tabular_calendar_estimate` warnings.
+* Documentation for Hijri metadata in `docs/provenance.md`, the published
+  metadata guide, the Hijri appendices, and the executable
+  `docs/integrations.md` recipe.
+
+## \[0.2.0] - 2026-11-15
+
+### Added
+
+* `MabimsCalendar::country()` exposes the bound member state so a per-country
+  `OffsetStore` can distinguish MY/ID/SG/BN; `name()` remains the generic
+  `'mabims'` pin key. `CivilDate::MIN_YEAR`/`MAX_YEAR` centralize the
+  1900–2100 window, and `HijriDataException` reports malformed generated
+  month-start data instead of silently normalizing an impossible day.
+* `tests/ArchShapeTest.php` now enforces the remaining `AGENTS.md`
+  conventions: `Contracts/` interfaces-only, the exact `*Interface` suffix
+  set, one named class per file, `readonly` value objects (property-free
+  static holders aside), private trait helpers, and `default()` factories
+  for public-context services (the two documented exceptions aside;
+  `Astro/Services/` is internal).
+* `docs/integrations.md` now has runnable recipes for Timetable, Sunnah,
+  Crescent visibility, and Hijri conversion. `tests/Wiring/` extracts and
+  executes every fenced PHP block, so the recipes cannot drift.
+* `docs/README.md` now defines the contributor-vs-published documentation
+  scope and maps every `docs/*.md` page to its user-facing counterpart;
+  `tests/ArchDocsTest` gates the map and the docs paths cited by error
+  messages.
+* `docs/user/changelog.md` is generated from `CHANGELOG.md` by
+  `tools/sync_changelog.php`; `composer changelog:check` runs in CI and the
+  release gate, so the published changelog can no longer drift.
+* Direct unit tests cover `Minutes::add()`, `Angle::toRadians()`,
+  `Coordinates::__toString()`, and `CivilDate::compareTo()`.
+
+### Changed
+
+* `HijriCalendar::shift()` now validates the starting date even when the
+  shift is zero, so an impossible date (e.g. day 30 of a 29-day month) can no
+  longer pass through or skip a day; the contract also documents the
+  ±3650-day magnitude cap. `TabularCalendar::toGregorian()` now rejects dates
+  outside the Gregorian 1900–2100 window with a truthful
+  `HijriOutOfRangeException` instead of a misleading range label or a raw
+  `TypeError` for huge years.
+* `Moon\ValueObjects\CrescentGeometry` now rejects a negative `widthArcmin` at
+  construction, making the value object the single owner of the width
+  invariant; the four criterion evaluators no longer repeat unreachable
+  finiteness/width guards. Restored instances are revalidated in
+  `__wakeup()`, so a serialized payload from before the guard cannot bypass
+  the constructor and reach the evaluators. `CrescentCalculator::atSunset()`
+  validates `deltaTOverride` before the sunset search, so an invalid override
+  always raises `ValidationException` instead of losing to a polar-night
+  `AstronomicalException`.
+* `QiblaResult` drops a dead Makkah-self exemption branch (the distance-zero
+  pair never admitted an out-of-range bearing), and
+  `Wgs84KarneyCalculator` relies on `KarneyInverse`'s documented finite-result
+  invariant instead of duplicating that guard.
+* `GregorianToHijriConverter` now takes the `maghribAt()` fallback for every
+  astronomical "schedule undefined" case (`AstronomicalException`), not only
+  `UndefinedScheduleException`; validation errors still surface.
+* `NightResolver` no longer computes high-latitude fallback portions on the
+  seasonal path (MSC / `SEASONAL_TWILIGHT`), where they were discarded.
+* **Breaking (0.2.0):** the prayer pipeline now rejects
+  `HighLatitudeRule::TWILIGHT_ANGLE` with an interval-based Isha rule before
+  the seasonal split, so `PrayerTimesCalculator::default()` / `defaultFor()`
+  raise `ConfigurationException` from `calculate()` instead of silently
+  skipping the check on the MSC / `SEASONAL_TWILIGHT` path. Use an
+  angle-based Isha or a compatible high-latitude rule.
+* `CalculationParameters` withers share one private `copyWith()` construction
+  site, so a future field cannot be dropped by a missed wither.
+* `NextPrayerResolver` and `TimetableService` expose `default()` factories.
+* Prayer engine: the solar triplet no longer recomputes the declination from
+  the Julian Day — it reuses the apparent longitude and obliquity it already
+  holds. `declinationFrom()` is now the single owner of the formula. Output
+  is unchanged (all 5,133 golden rows stay green); the redundant work was
+  measured at 19.8% of a solar triplet's trig cost.
+* Bench harness: the printed contract and the enforced contract now agree.
+  The tripwires are printed as the contract (single-day 50 ms, year 30,000 ms,
+  unchanged) and the PRD figures are printed on their own line as
+  hardware- and load-dependent references that are explicitly not gated.
+* Golden coverage: Turkey, Kemenag, MUIS and Brunei move from 2 golden rows
+  to the 6-date grid. MUIS gains four official rows from the published MUIS
+  2025 timetable; Turkey, Kemenag and Brunei gain drift-gate rows for the
+  dates their official tables could not cover.
+* The Kaaba coordinates get a single owner (`SharedKernel\ValueObjects\Kaaba`);
+  the public `GeodesyCalculator` constants now reference it, so the Prayer
+  polar fallback and the Qibla geodesy cannot drift apart.
+* `docs/user/api-reference.md` now names the whole public surface, and a new
+  arch gate (`tests/ArchApiReferenceTest.php`) fails the build when a public
+  class is added without a reference entry.
+* Docs-site dependencies are audit-gated (`npm audit --omit=dev --audit-level=moderate`) and tracked by Dependabot; `undici` and
+  `postcss-selector-parser` were refreshed to clear the current advisories.
+* `docs/migration.md` is scoped as the M1-M5 architecture record; the live
+  0.2.0 upgrade guide remains `docs/user/migration.md`.
+* `PrayerTimesCalculator::calculate()` documents the Asr clamp order: the
+  Maghrib clamp is the final authority, so `asr <= maghrib` always holds and
+  `dhuhr <= asr` holds whenever `dhuhr <= maghrib` (the empty-adjustment
+  ordering sweeps assert that for the supported grid). High-latitude caller
+  offsets can invert the anchors, in which case the Maghrib clamp wins by
+  design.
+* The `composer ci` gate now includes `changelog:check`; `AGENTS.md` records
+  the docs scope and the npm audit gate.
+
+### Removed
+
+* **Breaking (0.2.0):** `SharedKernel\Contracts\ClockView` — it shipped in
+  `v0.1.1`, but the library never used it. Host apps that implemented the
+  optional clock port should remove that implementation and migrate type
+  hints to a host-owned or PSR clock interface. Keep the adapter only if host
+  code still calls `now()` or uses it to supply `$nowUtc`; the library still
+  takes `$nowUtc` explicitly, and the `psr/clock` suggestion is unchanged.
+  This break requires a minor version (`0.2.0`), not a patch.
+* `Astro\ValueObjects\SolarPosition` and `MeanSolarCalculator::position()` —
+  the only caller was `position()`'s own test, and the class is `@internal`.
+
+### Fixed
+
+* The moon-age regression tests now exercise the real 2025-03-29 conjunction:
+  the conjunction-at-sunset floor and the previous-lunation branch are pinned
+  to recorded values, replacing tests that claimed those branches while
+  querying an unrelated Julian day. Reflection-only constructor/private-method
+  tests for the moon-age search and the WGS84 strategy were removed; the same
+  behavior is covered through the public API.
+* The sunset frame no longer fails when the backward probe has no previous
+  day to ask about: at `1900-01-01` the probe is skipped, and when the
+  previous UTC day's schedule is undefined (e.g. polar night) while the
+  current day's maghrib is defined, the current UTC day is used.
+* The public-API reference is checked in both directions: a documented class
+  that no longer exists fails the build.
+* The bench harness printed a budget it did not meet and enforced a gate 25x
+  looser than that budget. The printed contract and the enforced contract now
+  agree.
+* `composer mutation` could not run locally: Composer's default 300-second
+  process timeout killed the Infection run partway through (about 1,680 of
+  2,377 mutants). `composer.json` now sets `config.process-timeout: 0`,
+  matching the `COMPOSER_PROCESS_TIMEOUT=0` that CI already exports.
+* Inline source FQCNs and deleted-code blank-line runs were removed; new arch
+  gates reject both patterns so they cannot regrow.
+* `MeanSolarCalculator::afternoonAngle()` maps an exactly-cancelled Asr
+  cotangent denominator (`shadowLength === -tan(|lat - dec|)`, the pin's
+  `ZeroDivisionError` point, reachable for custom shadow factors past
+  \~2.3 at high latitudes) to the unreachable `NAN` sentinel instead of
+  letting PHP 8 raise a `DivisionByZeroError` that escapes the library
+  exception contract. Negative cotangents keep flowing through verbatim.
+* `Astro\ValueObjects\SolarTime` accepts any zero-offset zone: an
+  `@`-epoch instant or a `+00:00` zone is UTC but reports the zone name
+  `+00:00`, which the old `getTimezone()->getName() !== 'UTC'` check
+  falsely rejected. The check now tests `getOffset() !== 0`; non-UTC
+  offsets still reject with the same message. Accepted instants are
+  normalized to named UTC, so a zone such as `Europe/London` (offset 0 in
+  winter) cannot cross its DST transition inside interval math. The same
+  zero-offset rule now governs `Minutes::roundedHalfUp()`, `PrayerSchedule`,
+  and `NextPrayerResolver`; `Minutes` normalizes accepted instants to named
+  UTC, so explicitly-wired engines returning `@`-epoch or `+00:00` values
+  flow through `calculate()`.
+* `Astro\Services\GeodesyEngine::inverse()` now validates its four float
+  inputs at the engine boundary (finite latitudes within \[-90, 90] and
+  longitudes within \[-180, 180]), matching `KarneyInverse::inverse`, so a
+  direct call can no longer turn out-of-range coordinates into silent
+  finite garbage. Wired callers already passed validated `Coordinates`,
+  so no public-path output changes.
+* A `MaghribRule` or `IshaRule` that reports neither an angle nor an
+  interval now raises `ConfigurationException` at the pipeline boundary.
+  It previously raised `AstronomicalException`, which the Hijri sunset
+  bridge could mistake for an undefined schedule and retry. The Umm al-Qura
+  Ramadan interval override now validates the rule's own accessors first,
+  so an invalid custom `IshaRule` cannot be masked by the 120-minute
+  override. `docs/user/errors.md` now lists this source.
+* `SunnahCalculator` no longer duplicates `SunnahTimes`' degenerate-night
+  guard; the value object stays the single owner, and the sign-aware
+  seconds modifier keeps the intermediate arithmetic well-formed so the
+  value object's constructor reports the invalid night.
+* Unreachable `DateTimeImmutable::modify()`/`getTimezone()` failure guards
+  were removed from `Minutes`, `CivilDate`, `SunnahTimes`,
+  `SunnahCalculator`, and `NightResolver`: every modifier is generated and
+  valid, so the legacy `false` branch cannot run.
+* Reflection-only constructor/private-method coverage tests
+  (`ValueObjectPrivateConstructorTest`, `NightResolverPrivateTest`,
+  `PrayerTimesCalculatorPrivateTest`, and two `SharedKernelTest` cases)
+  were removed; the claimed pcov limitation was false, and the same
+  behavior is covered through public APIs.
+* `maghribAt()` docs now separate an undefined solar day
+  (`UndefinedScheduleException`: sunrise, transit, or sunset missing) from an
+  unreachable angle-based maghrib (`AstronomicalException`), with a
+  regression test pinning Tehran's 4.5° maghrib at 64°N where the sun sets
+  but never reaches the angle. `docs/hijri.md` now qualifies the polar-day
+  `UndefinedScheduleException` to rules that leave the day undefined and
+  documents the `NEAREST_DAY` 2100-12-31 edge.
+* Method-count docs now agree with the enum: 18 presets plus `NONE` = 19
+  cases. The M1 freeze shipped 17 presets plus `NONE` (11 pin cells and six
+  table-confirmed conventions); UOIF is the Wave-2 18th preset, never part
+  of pin parity.
+* The generated changelog page no longer starts with an HTML comment:
+  `starlight-versions` re-parses every page as MDX when freezing a release,
+  and `remark-mdx` rejects `<!-- -->`, so `npm run build` failed before the
+  0.2.0 docs snapshot could be generated. The page stays generated and
+  CI-checked; only the invisible marker is gone.
+
+## \[0.1.1] - 2026-10-14
+
+No library change since 0.1.0 (`src/`, `tests/`, Composer manifest untouched).
+
+### Added
+
+* Docs branding from the repository artwork (#39): header logo light/dark
+  128px pair (dark colour-negated, alpha preserved) plus a stable 96px PNG
+  favicon, generated by `docs_site/scripts/build-logo.mjs`
+  (`npm run build:logo`); root `al-falaq-logo.png` is `export-ignore`d from
+  Composer archives and triggers the docs workflow on change.
+
+### Fixed
+
+* Docs Starlight edit links and last-updated dates for symlinked sources
+  (#37): route middleware rebuilds both from the real `docs/user/` path;
+  synthetic routes get no edit link; misleading `editLink.baseUrl` removed.
+* Docs 404 page no longer shows a version selector pointing at nonexistent
+  version-specific 404 URLs (#38: `exclude: ['404.md']`).
+
+### Changed
+
+* CI github-actions group bump (#36): `actions/checkout` 5.1.0 → 7.0.1,
+  `actions/setup-node` 4.4.0 → 7.1.0, `actions/upload-pages-artifact`
+  3.0.1 → 5.0.0, `actions/deploy-pages` 4.0.5 → 5.0.1 (full-SHA pins kept).
+
+## \[0.1.0] - 2026-10-14
+
+### Added
+
+* Versioned user documentation (Astro Starlight, GitHub Pages): `docs/user/`
+  concept-first guides (prayer, methods, madhab, high-latitude, polar,
+  timetable, Qibla, Sunnah, moon, Hijri, timezones, framework integration,
+  errors, API reference, migration, changelog, citations) snapshotted per
+  release under `docs/user/vX.Y.Z/`, built via `docs_site/` with the
+  `starlight-versions` switcher.
+
+* UOIF 12/12 preset (Wave 2, issue #7): `CalculationMethod::UOIF` with
+  fajr 12°, isha `AngleIsha(12°)`, sunset maghrib, zero offsets and no
+  method adjustments (the single-source ±5 min claim rejected). Cited to
+  the 1994 Dar el-Fatwa text + Jaballah 2012 statement + ECFR Dublin 2004
+  toleration, communally confirmed current (Musulmans de France, Feb 2026)
+  and cross-checked against the praytimes.org France row; the 14/15
+  compromise never landed. Drift-gated golden
+  (`tests/Goldens/prayer_uoif.csv` via `tools/gen_self_prayer_goldens.php`;
+  pin has no UOIF cell — never claimed as pin parity).
+
+* Sunnah maghrib anchor + Tehran/Morocco provenance verdict: `SunnahTimes`
+  gains the 5th `maghrib` anchor (append-last; stale 4-arg calls fail with
+  `ArgumentCountError`) with dual degenerate guards (`fajr <= lastThird` +
+  `fajr <= maghrib`) and a working zone-agnostic `nightFraction()`
+  (UTC-normalize, same `round(nightSeconds * f)` + `Minutes::roundedHalfUp`
+  arithmetic as `SunnahCalculator`, convert back so `forZone()` commutes;
+  thirds-equality, invalid-fraction, and commutativity pins in
+  `SunnahCalculatorTest`). Tehran/Morocco arbitration per the §3 decision
+  rule was inconclusive — no machine-readable 30-day official archive at
+  `https://www.fm6oa.org/en/prayer-times/` (Habous Rabat dailies) or UT
+  Geophysics (convention documented at `https://praytimes.org/docs/methods`;
+  both accessed 2026-10-11) — so NO preset change: Tehran 17.7/14/maghrib-4.5
+  cross-checked exactly against `batoulapps/adhan-js@a2c4bda` `Tehran()`
+  (`src/CalculationMethod.ts`) and re-pinned as a drift gate (not an oracle);
+  Morocco 19/17 stays a labelled Habous convention (fajr 18-vs-19 undecided;
+  no `batoulapps/adhan-*` preset exists — verified adhan-js@a2c4bda and
+  adhan-java) and Tehran isha 14° is flagged convention, not official.
+  `self:` source tags retired; both CSVs regenerated byte-stable on times.
+  `docs/sunnah.md`, `docs/prayer.md`, design docs synced to code.
+
+* M0 skeleton: composer manifest, SharedKernel value objects, domain stubs per the §8 tree, Pest 3 + ArchTest, CI matrix, examples, tools placeholders.
+
+* M1 prayer parity: presets frozen (18 methods, dual-entered from pin
+  `a7baa8b202790d3bc84c47a610ac763be6c0b7e7`, freeze `c151828`
+  checksummed `sha256 3bb6df93…9356`); Meeus Ch.15/25 engine
+  (`MeanSolarCalculator`: transit/hour-angle interpolation, solar coordinates,
+  EoT); full pipeline (`PrayerTimesCalculator` + polar/high-latitude/Ramadan
+  branches) + `TimetableService` + `NextPrayerResolver`; goldens 100%
+  minute-equality (15 files: 11 pin + turkey/kemenag/muis/brunei official-table
+  vectors; tehran/morocco pending, no obtainable tables). Known gaps: UOIF
+  preset added in 0.1.0; pin-only cell — never claimed as pin parity;
+  provisional residual cells emptied per file with
+  reasons (`adee976`: turkey Dec maghrib +1 seasonal wobble; kemenag 13 cells
+  ±1 ephemeris gap vs Kemenag tables; muis June fajr single-cell rounding
+  noise; brunei dhuha — no published KHEU Doha definition — + Dec ±1 noise);
+  abs-vs-signed seventh-gate resolved to signed `latitude >= 55` (`47facea`).
+  `docs/prayer.md` algorithm appendix synced to code.
+
+* M2 qibla WGS84 ellipsoid: `Wgs84KarneyCalculator` (previously a
+  `LogicException` stub) now solves the Qibla on WGS84 via a vendored
+  GeographicLib 2.1 Karney (2013) inverse — `KarneyInverse` engine
+  (`src/Astro/Services/KarneyInverse.php`, `@internal`, MIT/X11 © Charles
+  Karney, pin `a7baa8b`), azimuth unwound from `(-180, 180]` into `[0, 360)`
+  with the `>= 360 → 0.0` re-clamp, Makkah-self clamped to `0.0`/`0.0`.
+  `QiblaCalculator::wgs84()` is usable; `default()` stays spherical.
+  The spherical engine (`GeodesyEngine::inverse`) gained the same
+  `>= 360 → 0.0` re-clamp: a bearing a few ulps below zero (a point
+  micrometres east of Makkah's meridian, e.g. `39.82618180000001`)
+  previously unwound to exactly `360.0` (ulp(360) ≈ 5.7e-14), which
+  `QiblaResult` rejects with `ValidationException`; pinned by
+  `testSphericalTinyNegativeAzimuthDoesNotWindTo360`.
+
+* M2 qibla goldens: `tests/Goldens/qibla_wgs84.csv` (23 cities, 6-dp
+  bearings / 3-dp distances, gates ≤ 1e-6° / ≤ 1e-3 km) +
+  `tools/gen_qibla_wgs84.py` regenerator; near-antipodal convergence
+  (`(-20.4, -139.2)` → `31.740215702°` / `19862471.480885 m`) and the
+  degenerate invariants pinned in `tests/Astro/KarneyInverseTest.php` /
+  `tests/Qibla/QiblaCalculatorTest.php`. Algorithm appendix synced to
+  the landed iteration caps (`_MAXIT1 = 20`, `_MAXIT2 = 83`, `_TOL0 = 2^-52`
+  ladder) — the Vincenty fallback clause is retired, none remains;
+  `docs/qibla.md` gained the WGS84 section with the measured
+  spherical-vs-ellipsoidal divergence (max |Δdirection| `0.252273°` at
+  Auckland NZ).
+
+* **M4 Hijri calendars**: `TabularCalendar`, `UmmAlQuraCalendar` and
+  `MabimsCalendar` implement the widened 5-method `HijriCalendar` contract
+  (`fromGregorian`, `toGregorian`, `monthLength`, `shift`, `name`).
+
+* `GregorianToHijriConverter` is implemented: own-zone or UTC civil-date frames,
+  optional sunset rollover against the observer's maghrib, and `OffsetStore`
+  corrections applied as a single Hijri shift.
+
+* `MabimsCountry` (`MY`/`ID`/`SG`/`BN`) as a pure table key.
+
+* Pin-generated, digest-pinned month-start tables in `src/Hijri/Data/`, with
+  `tools/gen_hijri.py` for reproducible regeneration.
+
+### Changed
+
+* `HijriCalendar::fromGregorian()` now takes `CivilDate` only.
+* Prayer wiring goes through the new `SolarDayEngine` port:
+  `PrayerTimesCalculator::__construct` takes the day engine first
+  (`default()`/`defaultFor()` supply `MeanSolarCalculator`; implement the
+  port for test doubles). `MeanSolarCalculator` is the stable default
+  adapter for explicit wiring. The shipped calculator still accepts
+  `Coordinates|array` via contravariance; the interface keeps `Coordinates`
+  so existing implementations keep loading.
+* `HighLatitudeCorrection::portions()` takes only the angles adapters read
+  (`float, ?float`); place/date dropped (breaking for custom implementations).
+* `PrayerTimesCalculatorInterface` gains `maghribAt()`; the Hijri converter
+  hints the interface (breaking for custom implementations, which must add
+  the method).
+* Moon age search extracted to the `ConjunctionSearch` port
+  (`EphemerisConjunctionSearch` adapter; breaking for direct
+  `CrescentCalculator` constructions, which take it as a new argument).
+* Ramadan consistency fails fast: `create()` and `withRamadan()` reject
+  `isRamadan` outside Umm al-Qura (previously thrown at `calculate()` time).
+* Wiring tests execute the documented snippets (calculate/resolve/shapes),
+  not just wiring existence.
+* Harness closure: degenerate Qibla rows owned once (`golden_cities`);
+  tool inventory single-sourced (ARCHITECTURE owns it); Rector removed
+  (configured-never-run, and its sets fight the doc gate); PHPStan scope
+  stays `src`/`tests` by explicit decision (strict max finds only working
+  idioms in maintainer scripts).
+* Night temps extracted to the internal `NightResolver` step (single owner
+  for seasonal / NONE-raw / portions fajr+isha logic; composed from the
+  injected strategies, no new port).
+* Day-engine port drops the unused `SolarModel` subdivision (folded in).
+  The `hourAngle` / `hourAngleFloat` pair stays deliberately: floored UTC
+  instants for Prayer minute parity vs raw fractional hours for sub-second
+  Julian-day math (unifying behind either precision breaks the other side's
+  gate — verified against the KL 1e-6 deg deep pin).
+* Prayer rule validation lives behind the rule interfaces: `IshaRule` and
+  `MaghribRule` gain `validate()` (angle finite in \[0, 30] or valid interval),
+  and `CalculationParameters` no longer branches on shipped concretes — custom
+  third-party rules are honored through the interface (breaking for custom
+  implementations, which must add the one method).
+* Coverage floor raised 80 → 85.
+* Coverage floor raised 85 → 95.
+* Infection MSI≥85% + covered-MSI≥85% gated in CI (`composer mutation`; `KarneyInverse` core file-excluded — survivors behavior-identical at the 1e-9°/1e-6m pins in `KarneyInverseTest`).
+* Harness truth fixes: removed dead `Comparator::floatsEqual()` (plus its two
+  tolerance constants) — the live golden story is minute equality; the coverage
+  gate prints a machine-readable `status=no-driver` marker on driverless runs
+  and parses the `Lines:` summary defensively; bench documented as loose
+  50ms/30000ms tripwires with the PRD 2ms/1000ms/16MB budgets as headroom.
+* Crescent null-window ownership: `Mabims1992Evaluator` owns the full rule plus
+  the no-moonset alt/elongation fallback; the orchestrator
+  delegates unconditionally, retiring its inline duplication.
+* Qibla normalization: `QiblaCalculator` requires its geodesy (no nullable +
+  throw); Kaaba facts move to the `GeodesyCalculator` seam; `Angle` owns the
+  unwind (incl. the 360.0 ulp guard) and one shared self-clamp serves both
+  adapters (breaking: `new QiblaCalculator()` without an argument).
+* Harness structure: arch god-test split by concern (`ArchShape/Docs/Layering`
+  * shared `ArchSupport`, same 14 tests); one `GoldenLoader` serves all four
+    golden suites (Qibla/Moon/Hijri/Prayer `checkFile` included); city grids
+    shared via `tools/golden_cities.py` (Qibla regens proven byte-identical);
+    `composer goldens` lists/delegates generator targets.
+
+### Removed
+
+* `HijriDate::plusDays()` — use `HijriCalendar::shift()`.
+* Prayer `AsrRule` seam (`AsrRule`, `ShafiAsr`, `HanafiAsr`) — the closed
+  `Madhab` enum already carries `shadowLength()` (1.0 Shafi, 2.0 Hanafi),
+  which the pipeline now reads directly.
+* Astro `LunarPosition` value object — test-only bundle never constructed in
+  `src/` (engines return shape-arrays; the live contract is
+  `CrescentGeometry`).
+
+### Fixed
+
+* A forward `shift()` that lands exactly on a table's sentinel month now raises
+  `HijriOutOfRangeException` instead of returning an unsupported date.
+* `SunnahTimes::nightFraction()` now returns a strictly interior instant
+  (`maghrib < result < fajr`); previously the minute-rounded output could land
+  exactly on an anchor (maghrib or fajr) on short nights. Regression test in
+  `tests/Prayer/SunnahCalculatorTest.php`.
+
+## How versioning works here
+
+* **Payload contracts are versioned.** `PrayerSchedule::all()` keys and order, `QiblaResult` shape, `CrescentGeometry` fields, and `HijriDate` shape do not change without a minor bump.
+* **Documentation is snapshotted per release.** When a version tag ships, the current user docs are frozen under `docs/user/vX.Y.Z/` with a `docs_site/src/content/versions/vX.Y.Z.json` sidebar snapshot, and `docs_site/versions.json` gains the entry. The `Latest` docs always track `main`.
+* **Goldens move with code.** Every numeric behaviour is pinned against golden vectors; intentional divergence updates docs and goldens together, with provenance cited.
+
+## See also
+
+* [Migration](migration.md) — upgrade instructions per change
+* [Citations](citations.md) — sources behind the numbers

@@ -16,9 +16,9 @@ use AlFalaq\AlFalaq\SharedKernel\Exceptions\ValidationException;
 final readonly class LibraryVersion
 {
     /**
-     * Checked-in runtime version for the next release.
+     * Checked-in runtime version for this release.
      */
-    public const CURRENT = '0.3.0-dev';
+    public const CURRENT = '0.3.0';
 
     /**
      * Bind a validated version string.

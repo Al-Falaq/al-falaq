@@ -11,6 +11,10 @@ Versioned snapshots of the whole documentation site are kept per release — use
 
 ## [Unreleased]
 
+No changes yet.
+
+## [0.3.0] - 2026-11-28
+
 ### Added
 
 - Opt-in calculation metadata: `PrayerTimesCalculator::calculateWithMetadata()`

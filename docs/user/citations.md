@@ -7,6 +7,10 @@ description: Every astronomical source, method provenance, and criterion referen
 
 Prayer software inherits trust: when your app says Fajr is at 05:42, someone sets an alarm by it. This page records *why* each number is what it is — the books, papers, committees, and official tables behind the code — so you (and your users) can check.
 
+The machine-readable source ids, digests, ranges, and field names emitted in
+provenance output are listed in [Calculation Metadata](calculation-metadata/);
+this page records the underlying sources, not the wire vocabulary.
+
 ## Core astronomy
 
 - **Jean Meeus, *Astronomical Algorithms*, 2nd ed. (Willmann-Bell, 1998).** The core solar theory: Ch. 7 (Julian Day), Ch. 15 p. 102 (transit and hour-angle interpolation), Ch. 25 pp. 163–165 (solar coordinates), Ch. 28 p. 183 (equation of time), Ch. 47 (lunar positions for crescent geometry), plus interpolation, altitude-correction, nutation, and obliquity treatments (pp. 24/93/144/147). Every engine formula cites its page.
