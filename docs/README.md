@@ -12,6 +12,7 @@ that owns it, and link to the other tree instead of repeating it.
 | `docs/plans/` | maintainers | historical implementation plans | no |
 | `docs/design/` | maintainers and implementers | design specs frozen before multi-phase implementation | no |
 | `docs/artifacts/` | maintainers and reviewers | dated point-in-time audits and strategic reports | no |
+| `docs/handoffs/` | maintainers starting a new session | next-leg handoffs: state, reading order, task sequence, definitions of done | no |
 | `ARCHITECTURE.md`, `UQ_PROVENANCE.md` | contributors | architecture and table provenance | repo only |
 
 ## Page map
@@ -37,6 +38,17 @@ task list. Implementation plans live in `docs/plans/` once the spec is accepted.
 | Spec | Scope |
 |---|---|
 | [2026-11-15-provenance-explainability-foundation.md](design/2026-11-15-provenance-explainability-foundation.md) | P0.1 provenance/explainability vocabulary, per-context metadata, serialization, and A1–A3 sequencing. Implementation: [A1 plan](plans/2026-11-16-provenance-a1-prayer.md), [A2 plan](plans/2026-11-17-provenance-a2-qibla-moon.md), [A3 plan](plans/2026-11-24-provenance-a3-hijri.md) |
+| [2026-11-28-applicability-uncertainty-status.md](design/2026-11-28-applicability-uncertainty-status.md) | P0.2 applicability matrix, calibrated/extrapolated states, assumptions and decision kinds; completes Release A as `0.4.0`. Not yet implemented. |
+
+## Handoffs
+
+Session-to-session handoffs for the next leg of the improvement programme.
+They point at the current tree state, the frozen design spec, and the exact
+task sequence; they are not design records or historical audits.
+
+| Handoff | Next leg |
+|---|---|
+| [2026-11-28-p0-2-applicability-handoff.md](handoffs/2026-11-28-p0-2-applicability-handoff.md) | P0.2 applicability/uncertainty/status after the `v0.3.0` provenance release; target `0.4.0` |
 
 ## Artifacts
 
