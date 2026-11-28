@@ -63,7 +63,7 @@ in Singapore.
     "schema_version": "1.0",
     "context": "prayer",
     "status": "complete",
-    "library_version": "0.3.0-dev",
+    "library_version": "0.3.0",
     "warnings": [],
     "sources": [
       {"id": "prayer.high-latitude.middle_of_night", "kind": "algorithm", "version": null, "digest": null, "range": null},
@@ -172,7 +172,7 @@ $metadata = $outcome->metadata;  // provenance
     "schema_version": "1.0",
     "context": "qibla",
     "status": "complete",
-    "library_version": "0.3.0-dev",
+    "library_version": "0.3.0",
     "warnings": [],
     "sources": [
       {"id": "qibla.wgs84-karney", "kind": "algorithm", "version": "geographiclib-2.1", "digest": null, "range": null}
@@ -224,7 +224,7 @@ $metadata = $outcome->metadata;
     "schema_version": "1.0",
     "context": "moon",
     "status": "complete",
-    "library_version": "0.3.0-dev",
+    "library_version": "0.3.0",
     "warnings": [],
     "sources": [
       {"id": "moon.conjunction-search.meeus-hourly", "kind": "algorithm", "version": "meeus-hourly", "digest": null, "range": null},
@@ -290,7 +290,7 @@ $reused = $moon->evaluateGeometryWithMetadata($geometry);
     "schema_version": "1.0",
     "context": "moon",
     "status": "decision_required",
-    "library_version": "0.3.0-dev",
+    "library_version": "0.3.0",
     "warnings": [
       {"code": "crescent_criterion_is_not_observation", "message": "Crescent criteria are computed verdicts, not observations.", "details": {"criteria": "yallop,odeh,mabims1992,neomabims2021"}}
     ],
@@ -398,7 +398,7 @@ calendar provenance or emit warnings.
     "schema_version": "1.0",
     "context": "hijri",
     "status": "complete",
-    "library_version": "0.3.0-dev",
+    "library_version": "0.3.0",
     "warnings": [
       {"code": "generated_calendar_table", "message": "This calendar is a generated table, not an official authority dataset.", "details": {"calendar": "mabims", "range": "1445-01..1500-12 AH"}}
     ],

@@ -24,7 +24,7 @@ Conventions: public services are `final` with explicit constructor injection and
 | `SharedKernel\Enums\CalculationStatus` | `complete`, `extrapolated`, `fallback_applied`, `indeterminate`, `decision_required` (ranked in that order; derived, never supplied) |
 | `SharedKernel\Enums\WarningCode` | Stable warning identifiers (`polar_fallback_applied`, `delta_t_extrapolated`, …); human messages are not part of the contract |
 | `SharedKernel\Enums\SourceKind` | `algorithm`, `generated_data`, `official_data`, `caller_input` |
-| `SharedKernel\ValueObjects\LibraryVersion` | `CURRENT = '0.3.0-dev'`; `current(): self`; `fromString(string): self` (semver with optional prerelease); `__toString()` |
+| `SharedKernel\ValueObjects\LibraryVersion` | `CURRENT = '0.3.0'`; `current(): self`; `fromString(string): self` (semver with optional prerelease); `__toString()` |
 | `SharedKernel\ValueObjects\CalculationWarning` | `__construct(WarningCode, string $message, array $details = [])`; scalar-only details with sorted keys; `toArray()` |
 | `SharedKernel\ValueObjects\CalculationSource` | `algorithm(id, ?version, ?range)`, `generatedData(id, digest, range, ?version)`, `officialData(...)`, `callerInput(id)`; five-key `toArray()` |
 | `SharedKernel\ValueObjects\CalculationMetadata` | `SCHEMA_VERSION = '1.0'`; `create(CalculationContext, warnings = [], sources = [], ?LibraryVersion): self` (sorts, de-duplicates, derives status); six-key `toArray()` |
